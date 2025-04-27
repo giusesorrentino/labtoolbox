@@ -1,0 +1,7 @@
+MIT License
+
+Copyright (c) [2025] [Giuseppe Sorrentino]
+
+Permessi concessi, gratuitamente, a chiunque ottenga una copia di questo software e dei relativi file di documentazione (il "Software"), di utilizzare il Software senza restrizioni, inclusi i diritti di usare, copiare, modificare, unire, pubblicare, distribuire, sub-licenziare e/o vendere copie del Software, e di permettere alle persone a cui il Software è fornito di farlo, a condizione che la seguente notifica di copyright e questa autorizzazione siano incluse in tutte le copie o porzioni sostanziali del Software.
+
+IL SOFTWARE VIENE FORNITO "COSÌ COM'È", SENZA ALCUNA GARANZIA DI QUALUNQUE TIPO, ESPRESSA O IMPLICITA, INCLUSI MA NON LIMITATI A GARANZIE DI COMMERCIABILITÀ, IDONEITÀ A UNO SCOPO PARTICOLARE E NON VIOLAZIONE. IN NESSUN CASO GLI AUTORI O I TITOLARI DEL COPYRIGHT SARANNO RESPONSABILI PER QUALSIASI RECLAMO, DANNO O ALTRA RESPONSABILITÀ, SIA IN UN'AZIONE CONTRATTUALE, TORTUOSA O ALTRIMENTI, DERIVANTE DA, FUORI O IN CONNESSIONE CON IL SOFTWARE O L'USO O ALTRE OPERAZIONI DEL SOFTWARE.

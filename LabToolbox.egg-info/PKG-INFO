@@ -1,0 +1,35 @@
+Metadata-Version: 2.4
+Name: LabToolbox
+Version: 1.0.6
+Summary: LabToolbox è una raccolta di strumenti per l'analisi e l'elaborazione di dati sperimentali in ambito scientifico. Fornisce funzioni intuitive e ottimizzate per il fitting, la propagazione delle incertezze, la gestione dei dati e la visualizzazione grafica, rendendo più rapido e rigoroso il trattamento dei dati di laboratorio. Pensata per studenti, ricercatori e chiunque lavori con dati sperimentali, combina semplicità d'uso con rigore metodologico.
+Author: Giuseppe Sorrentino
+Author-email: Giuseppe Sorrentino <sorrentinogiuse@icloud.com>
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: statsmodels
+Requires-Dist: emcee
+Requires-Dist: corner
+Requires-Dist: lmfit
+Dynamic: author
+Dynamic: license-file
+
+# LabToolbox
+
+**LabToolbox** è una libreria Python contenente una serie di funzioni utili per l'analisi di dati di laboratorio. Include moduli per il calcolo di covarianza, varianza, media, fitting lineare e altre funzionalità per l'elaborazione e l'analisi dei dati.
+
+## Disclaimer
+
+Le funzioni `my_cov`, `my_var`, `my_mean`, `my_line`, `my_lin_fit` e `y_estrapolato` fanno parte della libreria `my_lib_santanastasio`, sviluppata da F. Santanastasio (professore del corso di *Laboratorio di Meccanica* presso l'Università di Roma "La Sapienza"). Queste funzioni sono disponibili sul sito [https://baltig.infn.it/LabMeccanica/PythonJupyter](https://baltig.infn.it/LabMeccanica/PythonJupyter).
+
+Inoltre, questo pacchetto fa uso della libreria [**Uncertainty-Propagation**](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), in particolare del modulo `uncertainty_class`, che fornisce funzionalità per la propagazione delle incertezze nei calcoli.
+
+## Installazione
+
+Puoi installare **LabToolbox** facilmente utilizzando `pip`. Se il pacchetto è stato pubblicato su **PyPI**, puoi installarlo direttamente da lì:
+
+```bash
+pip install LabToolbox
