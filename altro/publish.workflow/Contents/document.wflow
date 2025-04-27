@@ -51,15 +51,15 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>source</key>
-					<string>do shell script "cd ~/Desktop/LabToolbox &amp;&amp; 
-git add . &amp;&amp; 
-git commit -m 'Preparazione release' &amp;&amp; 
-git push origin main &amp;&amp; 
-version=$(python3 -c 'import setup; print(setup.__version__)') &amp;&amp; 
-git tag -a v$version -m 'Release v$version' &amp;&amp; 
-git push origin v$version &amp;&amp; 
-python3 setup.py sdist bdist_wheel &amp;&amp; 
-twine upload --repository testpypi dist/* &amp;&amp; 
+					<string>do shell script "cd ~/Desktop/LabToolbox &amp;&amp; \
+git add . &amp;&amp; \
+git commit -m 'Preparazione release' &amp;&amp; \
+git push origin main &amp;&amp; \
+version=$(python3 -c 'from setup import __version__; print(__version__)') &amp;&amp; \
+git tag -a v$version -m 'Release v$version' &amp;&amp; \
+git push origin v$version" 
+python3 -m build &amp;&amp; \
+twine upload --repository testpypi dist/* &amp;&amp; \
 twine upload dist/*"</string>
 				</dict>
 				<key>BundleIdentifier</key>
