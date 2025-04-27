@@ -53,3 +53,10 @@ def format_value_auto(val, err, unit=None, scale=0):
         formatted += f"\\,\\mathrm{{{unit}}}"
 
     return formatted
+
+# Prepara la funzione wrapper che accetta un vettore di variabili
+# def wrapped_func(func, x_vector, params):
+#     if params is not None:
+#         return func(*[x_vector[i] for i in range(len(x_vector))], *params)
+#     else:
+#         return func(*[x_vector[i] for i in range(len(x_vector))])

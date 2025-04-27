@@ -1,8 +1,7 @@
 Metadata-Version: 2.4
 Name: LabToolbox
-Version: 1.0.6
-Summary: LabToolbox è una raccolta di strumenti per l'analisi e l'elaborazione di dati sperimentali in ambito scientifico. Fornisce funzioni intuitive e ottimizzate per il fitting, la propagazione delle incertezze, la gestione dei dati e la visualizzazione grafica, rendendo più rapido e rigoroso il trattamento dei dati di laboratorio. Pensata per studenti, ricercatori e chiunque lavori con dati sperimentali, combina semplicità d'uso con rigore metodologico.
-Author: Giuseppe Sorrentino
+Version: 1.0.7
+Summary: LabToolbox è una raccolta di strumenti per l'analisi e l'elaborazione di dati sperimentali in ambito scientifico.
 Author-email: Giuseppe Sorrentino <sorrentinogiuse@icloud.com>
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
@@ -14,12 +13,11 @@ Requires-Dist: statsmodels
 Requires-Dist: emcee
 Requires-Dist: corner
 Requires-Dist: lmfit
-Dynamic: author
 Dynamic: license-file
 
 # LabToolbox
 
-**LabToolbox** è una libreria Python contenente una serie di funzioni utili per l'analisi di dati di laboratorio. Include moduli per il calcolo di covarianza, varianza, media, fitting lineare e altre funzionalità per l'elaborazione e l'analisi dei dati.
+**LabToolbox** è una libreria Python contenente una serie di funzioni utili per l'analisi di dati di laboratorio. Fornisce funzioni intuitive e ottimizzate per il fitting, la propagazione delle incertezze, la gestione dei dati e la visualizzazione grafica, rendendo più rapido e rigoroso il trattamento dei dati di laboratorio. Pensata per studenti, ricercatori e chiunque lavori con dati sperimentali, combina semplicità d'uso con rigore metodologico.
 
 ## Disclaimer
 

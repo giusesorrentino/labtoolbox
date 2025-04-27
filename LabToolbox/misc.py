@@ -54,7 +54,7 @@ def PrintResult(mean, sigma, name = "", ux = ""):
 
     print(result)
 
-def histogram(x, sigmax, xlabel, ux, units = True):
+def histogram(x, sigmax, xlabel = "", ux = ""):
     """
     Grafica l'istogramma delle occorrenze di una variabile x, verificandone la gaussianità.
 
@@ -67,9 +67,7 @@ def histogram(x, sigmax, xlabel, ux, units = True):
         xlabel : str
             Nome della variabile x.
         ux : str
-            Unità di misura della variabile x.
-        units : bool
-            Se `True`, la legenda dell'asse x presenterà le unità di misura.
+            Unità di misura della variabile x. Defaul è `""`.
     """
 
     sigma = np.sqrt(x.std()**2 + np.sum(sigmax**2)/len(x))
@@ -112,14 +110,14 @@ def histogram(x, sigmax, xlabel, ux, units = True):
     plt.title(label=label_ist)
 
     # ==> draw a gaussian function
-    # create an array with 100 equally separated values in the x axis interval
-    lnspc = np.linspace(x.min()- sigma1, x.max() + sigma1, 100) 
+    # create an array with 500 equally separated values in the x axis interval
+    lnspc = np.linspace(x.min()- sigma1, x.max() + sigma1, 500) 
     # create an array with f(x) values, one for each of the above points
     # normalize properly the function such that integral from -inf to +inf is the total number of events
     norm_factor = x.size * binsize
     f_gaus = norm_factor*stats.norm.pdf(lnspc,mean1,sigma1)  
     # draw the function
-    if(units):
+    if ux != "":
         plt.plot(lnspc, f_gaus, linewidth=1, color='r',linestyle='--', label = f"Gaussiana\n$\mu = {mean1}$ "+ux+f"\n$\sigma = {sigma1}$ "+ux)
         plt.xlabel(xlabel+" ["+ux+"]")
     else:
@@ -247,12 +245,6 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
         plt.legend()
     else:
         plt.legend(legendloc)
-
-    # if legend == True:
-    #     if p_value < 0.05:
-    #         plt.text(0.05, 0.95, f'{pval_str}\n$\chi^2/\\text{{dof}} = {chi2_red:.2f}$', transform=plt.gca().transAxes, fontsize=12, color='red', verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
-    #     else: 
-    #         plt.text(0.05, 0.95, f'p-value = {p_value * 100:.2f}%\n$\chi^2/\\text{{dof}} = {chi2_red:.2f}$', transform=plt.gca().transAxes, fontsize=12, color='red', verticalalignment='top', bbox=dict(facecolor='white', alpha=0.5))
 
     if ux != "":
         plt.xlabel(xlabel+" ["+ux+"]")

@@ -136,46 +136,6 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     sigma_c2 = var_c2 ** 0.5
         
     cov_mc = - my_mean(x, weights) / ( my_var(x, weights) * np.sum(weights) ) 
-
-    # Arrotonda m1 e sm1
-    # exponent = int(math.floor(math.log10(abs(sigma_m))))
-    # factor = 10**(exponent - 1)
-    # rounded_sigma = round(sigma_m / factor) * factor
-
-    # # 2. Arrotonda mean allo stesso ordine di grandezza di sigma
-    # rounded_mean = round(m, -exponent + 1)
-
-    # # 3. Converte in stringa mantenendo zeri finali
-    # fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
-    # m1_str = f"{(rounded_mean/mscale2):.{max(0, -exponent + 1)}f}"
-    # sm1_str = f"{(rounded_sigma/mscale2):.{max(0, -exponent + 1)}f}"
-
-    # # Arrotondac1 e sc1
-    # exponent = int(math.floor(math.log10(abs(sigma_c))))
-    # factor = 10**(exponent - 1)
-    # rounded_sigma = round(sigma_c / factor) * factor
-
-    # # 2. Arrotonda mean allo stesso ordine di grandezza di sigma
-    # rounded_mean = round(c, -exponent + 1)
-
-    # # 3. Converte in stringa mantenendo zeri finali
-    # fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
-    # c1_str = f"{(rounded_mean / cscale2):.{max(0, -exponent + 1)}f}"
-    # sc1_str = f"{(rounded_sigma / cscale2):.{max(0, -exponent + 1)}f}"
-
-    # digits = np.abs(n_cifre(sigma_m)) + 1
-    # if(n_cifre(sigma_m) >= 0):
-    #     sm1 = round(sigma_m, -int(digits) + 2)
-    # else:
-    #     sm1 = round(sigma_m, digits)
-    # m1 = riscrivi_con_cifre_decimali(sm1, m)
-
-    # digits = np.abs(n_cifre(sigma_c)) + 1
-    # if(n_cifre(sigma_c) >= 0):
-    #     sc1 = round(sigma_c, -int(digits) + 2)
-    # else:
-    #     sc1 = round(sigma_c, digits)
-    # c1 = riscrivi_con_cifre_decimali(sc1, c)
     
     err_exp = int(np.floor(np.log10(abs(sigma_m))))
     err_coeff = sigma_m / 10**err_exp
@@ -225,34 +185,19 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     )
 
     if residuals:
-        # Ottieni le dimensioni standard di una figura matplotlib
-        #default_figsize = figure.figaspect(1.0)  # Dimensioni standard
         
         # Crea una figura con le dimensioni standard più spazio per il pannello residui
         fig = plt.figure(figsize=(6.4, 4.8))
-        #fig = plt.figure()
-        
-        # Crea due pannelli con GridSpec, mantenendo la dimensione originale per il pannello principale
-        # gs = GridSpec(2, 1, height_ratios=[0.1, 0.9],hspace=0)  # 1/10 per residui, 9/10 per il grafico principale
+
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
         
-        # Pannello residui (1/10 dell'altezza totale)
-        # ax_residuals = fig.add_subplot(gs[0])
-        
-        # Pannello principale (occupa 9/10 dell'altezza totale)
-        # ax_main = fig.add_subplot(gs[1:])
-
-        # Plot dei residui
-        
         # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
-        #axs[0].axhline(2, ls='dashed', color='crimson', lw=0.6)
-        #axs[0].axhline(-2, ls='dashed', color='crimson', lw=0.6)
+
         if norm == False:
             axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.)
             axs[0].plot(x/xscale, resid/yscale, color='k', drawstyle='steps-mid', lw=1.)
-            # axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.) # <-- prima era qui
             axs[0].plot(x/ xscale, confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
             axs[0].plot(x/ xscale, -confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
             res_min = -np.nanmean(3*sy*confidence/2)
@@ -261,7 +206,6 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
         else:
             axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.)
             axs[0].plot(x/xscale, resid_norm, color='k', drawstyle='steps-mid', lw=1.)
-            # axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.) # <-- prima era qui
             axs[0].plot(x1/ xscale, np.repeat(confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
             axs[0].plot(x1/ xscale, np.repeat(-confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
             axs[0].set_ylim(-3*confidence/2, 3*confidence/2)
@@ -269,7 +213,6 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
         # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
-        # axs[0].set_ylim(-3*confidence/2, 3*confidence/2)
         axs[1].set_xlim(xmin_plot/xscale,xmax_plot/xscale)
 
         if showlegend:
@@ -289,7 +232,8 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
                             color="black", label='Dati sperimentali', capsize=2)
 
         if confidencerange == True:
-            axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+            axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
+                                where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
         
         axs[1].set_xlabel(xlabel)
         axs[1].set_ylabel(ylabel)
@@ -501,32 +445,18 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
         pval_str = f"$\\text{{p–value}} < 10^{{-6}}$"
 
     if residuals:
-        # Ottieni le dimensioni standard di una figura matplotlib
-        #default_figsize = figure.figaspect(1.0)  # Dimensioni standard
-        
-        # Crea una figura con le dimensioni standard più spazio per il pannello residui
+
         fig = plt.figure(figsize=(6.4, 4.8))
-        #fig = plt.figure()
-        
-        # Crea due pannelli con GridSpec, mantenendo la dimensione originale per il pannello principale
-        # gs = GridSpec(2, 1, height_ratios=[0.1, 0.9],hspace=0)  # 1/10 per residui, 9/10 per il grafico principale
+
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
         
-        # Pannello residui (1/10 dell'altezza totale)
-        # ax_residuals = fig.add_subplot(gs[0])
-        
-        # Pannello principale (occupa 9/10 dell'altezza totale)
-        # ax_main = fig.add_subplot(gs[1:])
-        
         # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
-        #axs[0].axhline(2, ls='dashed', color='crimson', lw=0.6)
-        #axs[0].axhline(-2, ls='dashed', color='crimson', lw=0.6)
+
         if norm == False:
             axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.)
             axs[0].plot(x/xscale, resid/yscale, color='k', drawstyle='steps-mid', lw=1.)
-            # axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.) # <-- prima era qui
             axs[0].plot(x/xscale, confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
             axs[0].plot(x/xscale, -confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
             res_min = -np.nanmean(3*sy*confidence/2)
@@ -535,7 +465,6 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
         else:
             axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.)
             axs[0].plot(x/xscale, resid_norm, color='k', drawstyle='steps-mid', lw=1.)
-            # axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.) # <-- prima era qui
             axs[0].plot(x1/xscale, np.repeat(confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
             axs[0].plot(x1/xscale, np.repeat(-confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
             axs[0].set_ylim(-3*confidence/2, 3*confidence/2)
@@ -543,7 +472,6 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
         # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
-        # axs[0].set_ylim(-3*confidence/2, 3*confidence/2)
         axs[0].set_xlim((x.min() - amp)/xscale, (x.max() + amp)/xscale)
 
         if showlegend:
@@ -561,7 +489,8 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
             )
 
             if confidencerange == True:
-                axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+                axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale,  
+                                    where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
 
             if sx == None:
                 axs[1].errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
@@ -576,7 +505,8 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
                             linewidth=0.8, label=f"Best fit")
             
             if confidencerange == True:
-                axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+                axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
+                                    where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
 
             if sx == None:
                 axs[1].errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
@@ -626,7 +556,8 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
             )
 
             if confidencerange == True:
-                plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+                plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
+                                 where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
 
             if sx == None:
                 plt.errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
@@ -641,7 +572,8 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
                             linewidth=0.8, label=f"Best fit")
             
             if confidencerange == True:
-                plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+                plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
+                                 where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
 
             if sx == None:
                 plt.errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 

@@ -1,7 +1,6 @@
 import emcee
 import corner
 from lmfit import Model, Parameters
-
 from LabToolbox import np, plt, curve_fit
 
 def posterior(x, y, sy, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000):
