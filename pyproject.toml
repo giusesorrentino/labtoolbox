@@ -13,9 +13,13 @@ include-package-data = true
 # Specifica i file aggiuntivi da includere nel pacchetto
 "LabToolbox" = ["README.md", "CHANGELOG.md", "LICENSE"]
 
+[tool.setuptools.exclude-package-data]
+# Specifica quali file escludere (opzionale)
+"LabToolbox" = ["tests/*", "altro/*"]
+
 [project]
 name = "LabToolbox"
-version = "1.0.6"
+version = "1.0.7"
 description = "LabToolbox è una raccolta di strumenti per l'analisi e l'elaborazione di dati sperimentali in ambito scientifico."
 authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }

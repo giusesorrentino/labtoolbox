@@ -3,9 +3,11 @@ from setuptools import setup, find_packages
 with open('CHANGELOG.md', 'r') as f:
     long_description = f.read()
 
+__version__ = '1.0.7'
+
 setup(
     name='LabToolbox',
-    version='1.0.6',
+    version=__version__,
     packages=find_packages(),
     long_description=long_description,
     long_description_content_type='text/markdown',
