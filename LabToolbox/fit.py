@@ -116,7 +116,7 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     print(f"χ²/dof = {chi2_red:.2f}") # ≈ 1 se il fit è buono
 
     if p_value >= 0.10:
-        print(f"p-value = {p_value:.0f}%")
+        print(f"p-value = {p_value*100:.0f}%")
     elif 0.005 < p_value < 0.10:
         print(f"p-value = {p_value*100:.2f}%")
     elif 0.0005 < p_value <= 0.005:
@@ -155,9 +155,9 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     # Crea la stringa risultante
     if m_units != "":
         if mscale != 0:
-            result = f"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}} \, \mathrm{{{m_units}}}$"
+            result = rf"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}} \, \mathrm{{{m_units}}}$"
         else:
-            result = f"$m = ({mean_str} \pm {sigma_str}) \, {m_units}$"
+            result = rf"$m = ({mean_str} \pm {sigma_str}) \, {m_units}$"
     else:
         if mscale != 0:
             result = f"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}}$"
@@ -182,9 +182,9 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
         # Crea la stringa risultante
     if c_units != "":
         if cscale != 0:
-            result1 = f"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}} \, \mathrm{{{c_units}}}$"
+            result1 = rf"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}} \, \mathrm{{{c_units}}}$"
         else:
-            result1 = f"$c = ({mean_str} \pm {sigma_str}) \, {c_units}$"
+            result1 = rf"$c = ({mean_str} \pm {sigma_str}) \, {c_units}$"
     else:
         if cscale != 0:
             result1 = f"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}}$"
@@ -213,6 +213,12 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     y1_plus_1sigma = y1 + y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1] / yscale
     y1_minus_1sigma = y1 - y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1] / yscale
+
+    y = y / yscale
+    x = x / xscale
+    sy = sy / yscale
+    if sx is not None:
+        sx = sx / xscale
 
     if showlegend:
         label = (
@@ -409,8 +415,8 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
     print(f"χ²/dof = {chi2_red:.2f}")  # ≈ 1 se il fit è buono
 
     if p_value >= 0.10:
-        print(f"p-value = {p_value:.0f}%")
-        pval_str = f"$\\text{{p–value}} = {p_value:.0f}$%"
+        print(f"p-value = {p_value*100:.0f}%")
+        pval_str = f"$\\text{{p–value}} = {p_value*100:.0f}$%"
     elif 0.005 < p_value < 0.10:
         print(f"p-value = {p_value*100:.2f}%")
         pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
