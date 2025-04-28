@@ -13,4 +13,3 @@ LabToolbox.egg-info/SOURCES.txt
 LabToolbox.egg-info/dependency_links.txt
 LabToolbox.egg-info/requires.txt
 LabToolbox.egg-info/top_level.txt
-tests/test_mio_codice.py

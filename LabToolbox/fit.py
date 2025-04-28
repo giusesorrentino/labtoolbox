@@ -1,5 +1,6 @@
-from LabToolbox import curve_fit, plt, np, sm, chi2
-from .basics import my_cov, my_mean, my_var, my_line, y_estrapolato, format_value_auto
+from LabToolbox import curve_fit, plt, np, sm, chi2, math
+from .basics import my_cov, my_mean, my_var, my_line, y_estrapolato
+from .misc import PrintResult
 from .uncertainty import propagate_uncertainty
 
 def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, 
@@ -114,7 +115,9 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     print(f"χ²/dof = {chi2_red:.2f}") # ≈ 1 se il fit è buono
 
-    if p_value > 0.005:
+    if p_value >= 0.10:
+        print(f"p-value = {p_value:.0f}%")
+    elif 0.005 < p_value < 0.10:
         print(f"p-value = {p_value*100:.2f}%")
     elif 0.0005 < p_value <= 0.005:
         print(f"p-value = {p_value*1000:.2f}‰")
@@ -122,40 +125,73 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
         print(f"p-value = {p_value:.2e}")
     else:
         print(f"p-value < 1e-6")
-
-    #pesi
-    w_y = np.power(sy.astype(float), -2)
         
-    m2 = my_cov(x, y, w_y) / my_var(x, w_y)
-    var_m2 = 1 / ( my_var(x, w_y) * np.sum(w_y) )
+    m2 = my_cov(x, y, weights) / my_var(x, weights)
+    var_m2 = 1 / ( my_var(x, weights) * np.sum(weights) )
         
-    c2 = my_mean(y, w_y) - my_mean(x, w_y) * m
-    var_c2 = my_mean(x*x, w_y)  / ( my_var(x, w_y) * np.sum(w_y) )
+    c2 = my_mean(y, weights) - my_mean(x, weights) * m
+    var_c2 = my_mean(x*x, weights)  / ( my_var(x, weights) * np.sum(weights) )
 
     sigma_m2 = var_m2 ** 0.5
     sigma_c2 = var_c2 ** 0.5
         
-    cov_mc = - my_mean(x, weights) / ( my_var(x, weights) * np.sum(weights) ) 
+    cov_mc = - my_mean(x, weights) / ( my_var(x, weights) * np.sum(weights) )
+
+    # ------------------------ 
+
+    # Calcola l'esponente di sigma
+    exponent = int(math.floor(math.log10(abs(sigma_m))))
+    factor = 10**(exponent - 1)
+    rounded_sigma = (round(sigma_m / factor) * factor) / (10**mscale)
+
+    # Arrotonda la media
+    rounded_mean = round(m, -exponent + 1) / (10**mscale)
+
+    # Converte in stringa mantenendo zeri finali
+    fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
+    mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
+    sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
+
+    # Crea la stringa risultante
+    if m_units != "":
+        if mscale != 0:
+            result = f"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}} \, \mathrm{{{m_units}}}$"
+        else:
+            result = f"$m = ({mean_str} \pm {sigma_str}) \, {m_units}$"
+    else:
+        if mscale != 0:
+            result = f"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}}$"
+        else:
+            result = f"$m = {mean_str} \pm {sigma_str}$"
     
-    err_exp = int(np.floor(np.log10(abs(sigma_m))))
-    err_coeff = sigma_m / 10**err_exp
+    # ------------------------ 
 
-    if err_coeff < 1.5:
-        err_exp -= 1
-        err_coeff = sigma_m / 10**err_exp
+    # Calcola l'esponente di sigma
+    exponent = int(math.floor(math.log10(abs(sigma_c))))
+    factor = 10**(exponent - 1)
+    rounded_sigma = (round(sigma_c / factor) * factor) / (10**cscale)
 
-    sm1 = round(sigma_m, -err_exp + 1)
-    m1 = round(m, -err_exp + 1)
+    # Arrotonda la media
+    rounded_mean = round(c, -exponent + 1) / (10**cscale)
 
-    err_exp = int(np.floor(np.log10(abs(sigma_c))))
-    err_coeff = sigma_c / 10**err_exp
+    # Converte in stringa mantenendo zeri finali
+    fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
+    mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
+    sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
 
-    if err_coeff < 1.5:
-        err_exp -= 1
-        err_coeff = sigma_c / 10**err_exp
-
-    sc1 = round(sigma_c, -err_exp + 1)
-    c1 = round(c, -err_exp + 1)
+        # Crea la stringa risultante
+    if c_units != "":
+        if cscale != 0:
+            result1 = f"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}} \, \mathrm{{{c_units}}}$"
+        else:
+            result1 = f"$c = ({mean_str} \pm {sigma_str}) \, {c_units}$"
+    else:
+        if cscale != 0:
+            result1 = f"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}}$"
+        else:
+            result1 = f"$c = {mean_str} \pm {sigma_str}$"
+    
+    # ------------------------ 
 
     # Calcolo dei residui normalizzati
     resid = y - (m * x + c)
@@ -170,107 +206,79 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     # costruisco dei punti x su cui valutare la retta del fit              
     xmin = float(np.min(x)) 
     xmax = float(np.max(x))
-    xmin_plot = xmin-.2*(xmax-xmin)
-    xmax_plot = xmax+.2*(xmax-xmin)
+    xmin_plot = xmin-.2*(xmax-xmin) / xscale
+    xmax_plot = xmax+.2*(xmax-xmin) / xscale
     x1 = np.linspace(xmin_plot, xmax_plot, 500)
-    y1 = my_line(x1, m, c)
+    y1 = my_line(x1, m, c) / yscale
 
-    y1_plus_1sigma = y1 + y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1]
-    y1_minus_1sigma = y1 - y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1] 
+    y1_plus_1sigma = y1 + y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1] / yscale
+    y1_minus_1sigma = y1 - y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1] / yscale
 
-    label = (
-        "Best Fit\n"
-        + f"$m={format_value_auto(m1, sm1, unit = m_units, scale = mscale)}$\n"
-        + f"$c={format_value_auto(c1, sc1, unit = c_units, scale = cscale)}$"
-    )
+    if showlegend:
+        label = (
+            "Best fit\n"
+            + result + "\n"
+            + result1
+        )
+    else :
+        label = "Best fit"
+
+    if norm == True:
+        bar1 = np.repeat(1, len(x))
+        bar2 = resid_norm
+        dash = np.repeat(confidence, len(x1))
+    else :
+        bar1 = sy
+        bar2 = resid / yscale
+        dash = confidence * sy
+
+    fig = plt.figure(figsize=(6.4, 4.8))
 
     if residuals:
-        
-        # Crea una figura con le dimensioni standard più spazio per il pannello residui
-        fig = plt.figure(figsize=(6.4, 4.8))
-
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
-        
         # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
-
-        if norm == False:
-            axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.)
-            axs[0].plot(x/xscale, resid/yscale, color='k', drawstyle='steps-mid', lw=1.)
-            axs[0].plot(x/ xscale, confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x/ xscale, -confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
-            res_min = -np.nanmean(3*sy*confidence/2)
-            res_max = np.nanmean(3*sy*confidence/2)
-            axs[0].set_ylim(res_min,res_max)
+        axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.)
+        axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.)
+        if norm == True:
+            axs[0].plot(x1, dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x1, -dash, ls='dashed', color='crimson', lw=1.)
         else:
-            axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.)
-            axs[0].plot(x/xscale, resid_norm, color='k', drawstyle='steps-mid', lw=1.)
-            axs[0].plot(x1/ xscale, np.repeat(confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x1/ xscale, np.repeat(-confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
-            axs[0].set_ylim(-3*confidence/2, 3*confidence/2)
-        
+            axs[0].plot(x, dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x, -dash, ls='dashed', color='crimson', lw=1.)
+        axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
+
         # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
-        axs[1].set_xlim(xmin_plot/xscale,xmax_plot/xscale)
-
-        if showlegend:
-
-            axs[1].plot(x1/xscale, y1/yscale, linestyle="-", color="blue", linewidth=0.8, label=label)
-        
-        else:
-
-            axs[1].plot(x1/xscale, y1/yscale, linestyle = "-", color = "blue", linewidth = 0.8, label = f"Best Fit")
-
-        # Plot principale con dati e fit
-        if sx == None:
-            axs[1].errorbar(x / xscale, y / yscale, yerr=sy / yscale, ls='', marker='.', 
-                            color="black", label='Dati sperimentali', capsize=2)
-        else:
-            axs[1].errorbar(x / xscale, y / yscale, yerr=sy / yscale, xerr=sx/xscale, ls='', marker='.', 
-                            color="black", label='Dati sperimentali', capsize=2)
-
-        if confidencerange == True:
-            axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
-                                where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
-        
-        axs[1].set_xlabel(xlabel)
-        axs[1].set_ylabel(ylabel)
-        axs[1].set_xlim(xmin_plot/xscale,xmax_plot/xscale)
-        axs[1].legend()
-        if legendloc == None:
-            axs[1].legend()
-        else:
-            axs[1].legend(loc = legendloc)
-
+        axs[0].set_xlim(xmin_plot, xmax_plot)
     else:
+        gs = fig.add_gridspec(2, hspace=0, height_ratios=[0, 1])
+        axs = gs.subplots(sharex=True)
+        axs[0].remove()  # Rimuovi axs[0], axs[1] rimane valido
 
-        if showlegend:
+    axs[1].plot(x1, y1, color="blue", ls="-", linewidth=0.8, label = label)
 
-            plt.plot(x1/xscale, y1/yscale, linestyle="-", color="blue", linewidth=0.8, label=label)
+    if confidencerange == True:
+        axs[1].fill_between(x1, y1_plus_1sigma, y1_minus_1sigma,  
+                            where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
 
+    if sx == None:
+        axs[1].errorbar(x, y, yerr=sy, ls='', marker='.', 
+                        color="black", label='Dati sperimentali', capsize=2)       
+    else:
+        axs[1].errorbar(x, y, yerr=sy, xerr=sx, ls='', marker='.', 
+                        color="black", label='Dati sperimentali', capsize=2)
+    
+    axs[1].set_xlabel(xlabel)
+    axs[1].set_ylabel(ylabel)
+    axs[1].set_xlim(xmin_plot, xmax_plot)
 
-        else:
-
-            plt.plot(x1/xscale, y1/yscale, linestyle = "-", color = "blue", linewidth = 0.8, label = f"Best Fit")
-
-
-        if sx == None:
-            plt.errorbar(x/xscale, y/yscale, yerr=sy/yscale, capsize=2, label = "Dati sperimentali", linestyle='', marker = ".", color="black")
-        else:
-            plt.errorbar(x/xscale, y/yscale, yerr=sy/yscale, xerr = sx/xscale, capsize=2, label = "Dati sperimentali", linestyle='', marker = ".", color="black")
-
-        if confidencerange == True:
-            plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.xlim(xmin_plot/xscale,xmax_plot/xscale)
-
-        if legendloc == None:
-            plt.legend()
-        else:
-            plt.legend(loc = legendloc)
+    if legendloc == None:
+        axs[1].legend()
+    else:
+        axs[1].legend(loc = legendloc)
 
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
@@ -320,7 +328,7 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
         norm : bool
             Se `True`, i residui nel pannello superiore saranno normalizzati.
 
-    Parameters
+    Returns
     ----------
         popt : array-like
             Array dei parametri ottimali ottenuti dal fit.
@@ -400,14 +408,21 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
     
     print(f"χ²/dof = {chi2_red:.2f}")  # ≈ 1 se il fit è buono
 
-    if p_value > 0.005:
+    if p_value >= 0.10:
+        print(f"p-value = {p_value:.0f}%")
+        pval_str = f"$\\text{{p–value}} = {p_value:.0f}$%"
+    elif 0.005 < p_value < 0.10:
         print(f"p-value = {p_value*100:.2f}%")
+        pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
     elif 0.0005 < p_value <= 0.005:
         print(f"p-value = {p_value*1000:.2f}‰")
+        pval_str = f"$\\text{{p–value}} ={p_value * 1000:.2f}$‰"
     elif 1e-6 < p_value <= 0.0005:
         print(f"p-value = {p_value:.2e}")
+        pval_str = f"$\\text{{p–value}} = {p_value:.2e}$"
     else:
         print(f"p-value < 1e-6")
+        pval_str = f"$\\text{{p–value}} < 10^{{-6}}$"
 
     k = np.sum((-1 <= resid_norm) & (resid_norm <= 1))
 
@@ -431,173 +446,177 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
     # Ora puoi usarli nella propagazione
     _, _ , confid = propagate_uncertainty(f, lista, lista_err)
 
-    y1_plus_1sigma = confid[1]
-    y1_minus_1sigma = confid[0]
+    y1_plus_1sigma = confid[1] / yscale
+    y1_minus_1sigma = confid[0] / yscale
 
-    # Costruzione della stringa p-value
-    if p_value > 0.005:
-        pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
-    elif 0.0005 < p_value <= 0.005:
-        pval_str = f"$\\text{{p–value}} ={p_value * 1000:.2f}$‰"
-    elif 1e-6 < p_value <= 0.0005:
-        pval_str = f"$\\text{{p–value}} = {p_value:.2e}$"
-    else:
-        pval_str = f"$\\text{{p–value}} < 10^{{-6}}$"
+    x1 = x1 / xscale
+    x = x / xscale
+    y = y / yscale
+    sy = sy / yscale
+    y_fit_cont = y_fit_cont / yscale
+    y_fit = y_fit / yscale
+
+    if sx is not None:
+        sx = sx / xscale
+
+    if norm == True:
+        bar1 = np.repeat(1, len(x))
+        bar2 = resid_norm
+        dash = np.repeat(confidence, len(x1))
+    else :
+        bar1 = sy
+        bar2 = resid / yscale
+        dash = confidence * sy
+
+    fig = plt.figure(figsize=(6.4, 4.8))
 
     if residuals:
-
-        fig = plt.figure(figsize=(6.4, 4.8))
-
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
-        
         # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
-
-        if norm == False:
-            axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.)
-            axs[0].plot(x/xscale, resid/yscale, color='k', drawstyle='steps-mid', lw=1.)
-            axs[0].plot(x/xscale, confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x/xscale, -confidence*sy/yscale, ls='dashed', color='crimson', lw=1.)
-            res_min = -np.nanmean(3*sy*confidence/2)
-            res_max = np.nanmean(3*sy*confidence/2)
-            axs[0].set_ylim(res_min,res_max)
+        axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.)
+        axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.)
+        if norm == True:
+            axs[0].plot(x1, dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x1, -dash, ls='dashed', color='crimson', lw=1.)
         else:
-            axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.)
-            axs[0].plot(x/xscale, resid_norm, color='k', drawstyle='steps-mid', lw=1.)
-            axs[0].plot(x1/xscale, np.repeat(confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x1/xscale, np.repeat(-confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
-            axs[0].set_ylim(-3*confidence/2, 3*confidence/2)
-        
+            axs[0].plot(x, dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x, -dash, ls='dashed', color='crimson', lw=1.)
+        axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
+
         # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
-        axs[0].set_xlim((x.min() - amp)/xscale, (x.max() + amp)/xscale)
+        axs[0].set_xlim((x.min() - amp), (x.max() + amp))
+    else: 
+        gs = fig.add_gridspec(2, hspace=0, height_ratios=[0, 1])
+        axs = gs.subplots(sharex=True)
+        axs[0].remove()  # Rimuovi axs[0], axs[1] rimane valido
 
-        if showlegend:
+    if showlegend:
+        label = f"Best fit\n$\\chi^2/\\text{{dof}} = {chi2_red:.2f}$\n{pval_str}"
+    else :
+        label = "Best fit"
 
-            # Uso in label
-            axs[1].plot(
-                x1 / xscale,
-                y_fit_cont / yscale,
-                color="blue",
-                ls="-",
-                linewidth=0.8,
-                label=(
-                    f"Best fit\n$\\chi^2/\\text{{dof}} = {chi2_red:.2f}$\n{pval_str}"
-                )
-            )
+    axs[1].plot(x1, y_fit_cont, color="blue", ls="-", linewidth=0.8, label = label)
 
-            if confidencerange == True:
-                axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale,  
-                                    where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+    if confidencerange == True:
+        axs[1].fill_between(x1, y1_plus_1sigma, y1_minus_1sigma,  
+                            where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
 
-            if sx == None:
-                axs[1].errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2)       
-            else:
-                axs[1].errorbar(x / xscale, y/yscale, yerr=sy/yscale, xerr=sx/xscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2)
-        
-        else:
-
-            axs[1].plot(x1 / xscale, y_fit_cont / yscale, color="blue", ls="-", 
-                            linewidth=0.8, label=f"Best fit")
-            
-            if confidencerange == True:
-                axs[1].fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
-                                    where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
-
-            if sx == None:
-                axs[1].errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2)       
-            else:
-                axs[1].errorbar(x / xscale, y/yscale, yerr=sy/yscale, xerr=sx/xscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2) 
-        
-        axs[1].set_xlabel(xlabel)
-        axs[1].set_ylabel(ylabel)
-        axs[1].set_xlim((x.min() - amp)/xscale, (x.max() + amp)/xscale)
-
-        if legendloc == None:
-            axs[1].legend()
-        else:
-            axs[1].legend(loc = legendloc)
-        
-        # Gestione delle scale logaritmiche
-        if log == "x":
-            axs[1].set_xscale("log")
-            axs[0].set_xscale("log")
-        elif log == "y":
-            axs[1].set_yscale("log")
-        elif log == "xy":
-            axs[1].set_xscale("log")
-            axs[1].set_yscale("log")
-            axs[0].set_xscale("log")
-        
-        #plt.tight_layout()
-        
+    if sx == None:
+        axs[1].errorbar(x, y, yerr=sy, ls='', marker='.', 
+                        color="black", label='Dati sperimentali', capsize=2)       
     else:
-        # Plot originale senza residui
-        plt.figure()
+        axs[1].errorbar(x, y, yerr=sy, xerr=sx, ls='', marker='.', 
+                        color="black", label='Dati sperimentali', capsize=2)
+    
+    axs[1].set_xlabel(xlabel)
+    axs[1].set_ylabel(ylabel)
+    axs[1].set_xlim((x.min() - amp), (x.max() + amp))
 
-        if showlegend:
-        
-            # Uso in label
-            plt.plot(
-                x1 / xscale,
-                y_fit_cont / yscale,
-                color="blue",
-                ls="-",
-                linewidth=0.8,
-                label=(
-                    f"Best fit\n$\\chi^2/\\text{{dof}} = {chi2_red:.2f}$\n{pval_str}"
-                )
-            )
-
-            if confidencerange == True:
-                plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
-                                 where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
-
-            if sx == None:
-                plt.errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2)       
-            else:
-                plt.errorbar(x / xscale, y/yscale, yerr=sy/yscale, xerr=sx/xscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2)
-        
-        else:
-
-            plt.plot(x1 / xscale, y_fit_cont / yscale, color="blue", ls="-", 
-                            linewidth=0.8, label=f"Best fit")
-            
-            if confidencerange == True:
-                plt.fill_between(x1/xscale, y1_plus_1sigma/yscale, y1_minus_1sigma/yscale, 
-                                 where=(y1_plus_1sigma/yscale > y1_minus_1sigma/yscale), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
-
-            if sx == None:
-                plt.errorbar(x / xscale, y/yscale, yerr=sy/yscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2)       
-            else:
-                plt.errorbar(x / xscale, y/yscale, yerr=sy/yscale, xerr=sx/xscale, ls='', marker='.', 
-                                color="black", label='Dati sperimentali', capsize=2) 
-
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.xlim((x.min() - amp)/xscale, (x.max() + amp)/xscale)
-        if legendloc == None:
-            plt.legend()
-        else:
-            plt.legend(loc = legendloc)
-
-        if log == "x":
-            plt.xscale("log")
-        elif log == "y":
-            plt.yscale("log")
-        elif log == "xy":
-            plt.xscale("log")
-            plt.yscale("log")
-
-    plt.show()
+    if legendloc == None:
+        axs[1].legend()
+    else:
+        axs[1].legend(loc = legendloc)
+    
+    # Gestione delle scale logaritmiche
+    if log == "x":
+        axs[1].set_xscale("log")
+        if residuals:
+            axs[0].set_xscale("log")
+    elif log == "y":
+        axs[1].set_yscale("log")
+    elif log == "xy":
+        axs[1].set_xscale("log")
+        axs[1].set_yscale("log")
+        if residuals:
+            axs[0].set_xscale("log")
 
     return popt, errors, chi2_red, p_value
+
+def bootstrap_fit(func, xdata, ydata, sigma_y = None, p0 = None, punits = None, n_iter = 1000, bounds = (-np.inf, np.inf)):
+    """
+    Esegue un bootstrap del fit per stimare la distribuzione dei parametri, considerando opzionalmente le incertezze sigma_y.
+
+    Parameters
+    ----------
+        func : callable
+            Funzione modello da fittare, della forma `func(x, *params)`.
+        xdata : array_like
+            Dati indipendenti (ascisse).
+        ydata : array_like
+            Dati dipendenti (ordinate).
+        sigma_y : array_like, opzionale
+            Incertezze associate a `ydata`. Se fornite, il fit sarà pesato.
+        p0 : array_like, opzionale
+            Parametri iniziali per il fit.
+        punits : list of str, opzionale
+            Lista di stringhe (unità di misura dei parametri). Defaul è None.
+        n_iter : int, opzionale
+            Numero di iterazioni di bootstrap (default: `1000`).
+        bounds : 2-tuple di array, opzionale
+            Limiti inferiori e superiori sui parametri per il fit.
+
+    Returns
+    ----------
+        popt_mean : array
+            Parametri medi ottenuti dal bootstrap.
+        popt_std : array
+            Deviazioni standard dei parametri (stima delle incertezze).
+        all_popt : array
+            Array completo di tutte le stime dei parametri (forma: `[n_iter, n_params]`).
+
+    Notes
+    ----------
+    Se il parametro i-esimo è un numero puro, è sufficiente inserire `""` al corrispondente elemento della lista.
+    """
+
+    xdata = np.asarray(xdata)
+    ydata = np.asarray(ydata)
+    if sigma_y is not None:
+        sigma_y = np.asarray(sigma_y)
+    n_points = len(xdata)
+    all_popt = []
+
+    for _ in range(n_iter):
+        indices = np.random.choice(n_points, n_points, replace=True)
+        x_sample = xdata[indices]
+        y_sample = ydata[indices]
+        if sigma_y is not None:
+            sigma_sample = sigma_y[indices]
+        else:
+            sigma_sample = None
+
+        try:
+            popt, _ = curve_fit(func, x_sample, y_sample, p0=p0, bounds=bounds, sigma=sigma_sample, absolute_sigma=True)
+            all_popt.append(popt)
+        except Exception:
+            continue  # Ignora i fit che non convergono
+
+    all_popt = np.array(all_popt)
+    popt_mean = np.mean(all_popt, axis=0)
+    popt_std = np.std(all_popt, axis=0)
+
+    for i in range(len(all_popt)):
+        value = popt_mean[i]
+        error = popt_std[i]
+
+        if punits is not None:
+            unit = punits[i]
+        else:
+            unit = ""
+
+        if value > 1e4 or abs(value) < 1e-3:
+            # Scrittura in notazione scientifica
+            exponent = int(np.floor(np.log10(abs(value)))) if value != 0 else 0
+            scaled_value = value / 10**exponent
+            scaled_error = error / 10**exponent
+            name = f"Parametro {i+1}-esimo [1e{exponent}]"
+            PrintResult(scaled_value, scaled_error, name=name, ux=unit)
+        else:
+            name = f"Parametro {i+1}-esimo"
+            PrintResult(value, error, name=name, ux=unit)
+
+    return popt_mean, popt_std, all_popt

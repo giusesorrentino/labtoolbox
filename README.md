@@ -2,7 +2,7 @@
 
 **LabToolbox** è una libreria Python contenente una serie di funzioni utili per l'analisi di dati di laboratorio. Fornisce funzioni intuitive e ottimizzate per il fitting, la propagazione delle incertezze, la gestione dei dati e la visualizzazione grafica, rendendo più rapido e rigoroso il trattamento dei dati di laboratorio. Pensata per studenti, ricercatori e chiunque lavori con dati sperimentali, combina semplicità d'uso con rigore metodologico.
 
-Il file `example.ipynb`, disponibile sulla pagina [GitHub](https://github.com/giusesorrentino/LabToolbox) della libreria, contiene esempi di utilizzo delle principali funzioni della libreria.
+Il file `example.ipynb`, disponibile sulla pagina [GitHub](https://github.com/giusesorrentino/LabToolbox) della libreria, contiene esempi di utilizzo delle principali funzioni di `LabToolbox`.
 
 ## Disclaimer
 
@@ -14,7 +14,7 @@ Le funzioni `lin_fit` e `model_fit` includono un'opzione per visualizzare i resi
 
 ## Installazione
 
-Puoi installare **LabToolbox** facilmente utilizzando `pip`. Se il pacchetto è stato pubblicato su **PyPI**, puoi installarlo direttamente da lì:
+Puoi installare **LabToolbox** facilmente utilizzando `pip`:
 
 ```bash
 pip install LabToolbox

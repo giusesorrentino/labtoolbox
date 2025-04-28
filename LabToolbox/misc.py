@@ -136,7 +136,7 @@ def histogram(x, sigmax, xlabel = "", ux = ""):
 
     print(f"La curtosi di questo istogramma è: {curtosi:.2f}")
 
-def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0, yscale = 0, confidence = 2, norm = True, legendloc = None, newstyle = True, log = None):
+def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", marker = "d", xscale = 0, yscale = 0, confidence = 2, norm = True, legendloc = None, newstyle = True, log = None):
     """
     Grafica i residui normalizzati.
 
@@ -150,12 +150,16 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
         Valori previsti dal modello per la variabile dipendente.
     sy : array-like
         Incertezze della variabile dipendente misurata.
-    N : int     
-        Numero di parametri liberi del modello.
+    N : int, opzionale     
+        Numero di parametri liberi del modello. Può essere `None`
     xlabel : str          
         Nome della variabile indipendente.
     ux : str 
         Unità di misura della variabile indipendente. Default è `""`.
+    uy : str
+        Unità di misura della variabile indipendente. Default è `""`.
+    marker : str
+        Marker del residuo. Applicabile solo se `newstyle = False`.
     xscale : int
         Fattore di scala (10^xscale) dell'asse x (es. xscale = -2 se si vuole passare da m a cm). 
     yscale : int
@@ -163,7 +167,7 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
     confidence : int
         Definisce l'intervallo di confidenza `[-confidence, +confidence]`. Deve essere un numero positivo. Default è `2`.
     norm : bool
-        Se `True`, i residui saranno normalizzarti. Default è `True`.
+        Se `True`, i residui saranno normalizzarti. Default è `True`. 
     legendloc : str
         Posizionamento della legenda nel grafico ('upper right', 'lower left', 'upper center' etc.). Default è `None`.
     newstyle : bool
@@ -174,6 +178,10 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
     Returns
     ----------
     None
+
+    Notes
+    ----------
+    Se `N = None`, allora non verranno visualizzati i valori di χ²/dof e p-value.
     """
 
     if confidence <= 0:
@@ -185,61 +193,70 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
     resid = y_data - y_att
     resid_norm = resid/sy
 
-    chi2_value = np.sum(resid_norm ** 2)
+    if N is not None:
+        chi2_value = np.sum(resid_norm ** 2)
 
-    # Gradi di libertà (DOF)
-    dof = len(x_data) - N
+        # Gradi di libertà (DOF)
+        dof = len(x_data) - N
 
-    # Chi-quadrato ridotto
-    chi2_red = chi2_value / dof
+        # Chi-quadrato ridotto
+        chi2_red = chi2_value / dof
 
-    # p-value
-    p_value = chi2.sf(chi2_value, dof)
+        # p-value
+        p_value = chi2.sf(chi2_value, dof)
+
+        if p_value > 0.005:
+            pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
+        elif 0.0005 < p_value <= 0.005:
+            pval_str = f"$\\text{{p–value}} ={p_value * 1000:.2f}$‰"
+        elif 1e-6 < p_value <= 0.0005:
+            pval_str = f"$\\text{{p–value}} = {p_value:.2e}$"
+        else:
+            pval_str = f"$\\text{{p–value}} < 10^{{-6}}$"
+
+        label2 = f"\n{pval_str}\n$\chi^2/\\text{{dof}} = {chi2_red:.2f}$"
+    
+    else:
+        label2 = f"\n$\chi^2 = {chi2_value:.2f}$"
+
+    if norm == True:
+        label1 = "Residui normalizzati"
+        bar1 = np.repeat(1, len(x_data))
+        bar2 = resid_norm
+        dash = np.repeat(confidence, len(x1))
+    else :
+        label1 = "Residui"
+        bar1 = sy / yscale
+        bar2 = resid / yscale
+        dash = confidence * sy/yscale
+
+    label = label2+label1
 
     amp = np.abs(x_data.max()-x_data.min())/20
+
+    x_data = x_data / xscale
 
     xmin_plot = x_data.min()-amp
     xmax_plot = x_data.max()+amp
     x1 = np.linspace(xmin_plot, xmax_plot, 500)
 
-    if p_value > 0.005:
-        pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
-    elif 0.0005 < p_value <= 0.005:
-        pval_str = f"$\\text{{p–value}} ={p_value * 1000:.2f}$‰"
-    elif 1e-6 < p_value <= 0.0005:
-        pval_str = f"$\\text{{p–value}} = {p_value:.2e}$"
-    else:
-        pval_str = f"$\\text{{p–value}} < 10^{{-6}}$"
-
     if newstyle:
-        if norm == True:
-            plt.axhline(0., ls='--', color='0.7', lw=0.8)
-            #axs[0].axhline(2, ls='dashed', color='crimson', lw=0.6)
-            #axs[0].axhline(-2, ls='dashed', color='crimson', lw=0.6)
-            plt.errorbar(x_data/xscale, resid_norm, 1, ls='', color='gray', lw=1., label = f"Intervallo di confidenza $[-{confidence},\,{confidence}]$")
-            plt.plot(x_data/xscale, resid_norm, color='k', drawstyle='steps-mid', lw=1., label = f"Residui normalizzati\n{pval_str}\n$\chi^2/\\text{{dof}} = {chi2_red:.2f}$")
-            # axs[0].errorbar(x/xscale, resid_norm, 1, ls='', color='gray', lw=1.) # <-- prima era qui
-            plt.plot(x1/ xscale, np.repeat(confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
-            plt.plot(x1/ xscale, np.repeat(-confidence, len(x1)), ls='dashed', color='crimson', lw=1.)
-            plt.ylim(-3*confidence/2, 3*confidence/2)
-        else:
-            plt.errorbar(x_data/xscale, resid/yscale, sy, ls='', color='gray', lw=1.,label = f"Intervallo di confidenza $[-{confidence}\sigma,\,{confidence}\sigma]$")
-            plt.plot(x_data/xscale, resid/yscale, color='k', drawstyle='steps-mid', lw=1., label = f"Residui\n{pval_str}\n$\chi^2/\\text{{dof}} = {chi2_red:.2f}$")
-            # axs[0].errorbar(x/xscale, resid/yscale, sy, ls='', color='gray', lw=1.) # <-- prima era qui
-            plt.plot(x_data/ xscale, confidence * sy/yscale, ls='dashed', color='crimson', lw=1.)
-            plt.plot(x_data/ xscale, -confidence * sy/yscale, ls='dashed', color='crimson', lw=1.)
-            res_min = -np.nanmean(3 * sy * confidence/2)
-            res_max = np.nanmean(3 * sy * confidence/2)
-            plt.ylim(res_min,res_max)
-            if ux != "":
+        plt.axhline(0., ls='--', color='0.7', lw=0.8)
+        plt.errorbar(x_data, bar2, bar1, ls='', color='gray', lw=1., label = f"Intervallo di confidenza $[-{confidence},\,{confidence}]$")
+        plt.plot(x_data, bar2, color='k', drawstyle='steps-mid', lw=1., label = label)
+        plt.plot(x1, dash, ls='dashed', color='crimson', lw=1.)
+        plt.plot(x1, -dash, ls='dashed', color='crimson', lw=1.)
+        plt.ylim(-np.nanmean(3 * bar1 * confidence/2), np.nanmean(3 * bar1 * confidence/2))
+        if norm == False:
+            if uy != "":
                 plt.ylabel("Residui"+" ["+uy+"]")
             else:
                 plt.xlabel("Residui")
     else:
-        plt.plot([(x_data.min() - 2*amp)/xscale, (x_data.max() + 2*amp)/xscale], [0, 0], 'r--')
-        plt.errorbar(x_data/xscale, resid_norm, 1, marker='x', linestyle="", capsize = 2, color='black', label = f"Residui normalizzati\n$\chi^2/\\text{{dof}} = {chi2_red:.2f}$\n{pval_str}")
+        plt.plot(xmin_plot, xmax_plot, [0, 0], 'r--')
+        plt.errorbar(x_data, bar2, 1, marker=marker, linestyle="", capsize = 2, color='black', label = label)
 
-    plt.xlim(xmin_plot/xscale, xmax_plot/xscale)
+    plt.xlim(xmin_plot, xmax_plot)
 
     if legendloc == None:
         plt.legend()
@@ -250,10 +267,7 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
         plt.xlabel(xlabel+" ["+ux+"]")
     else:
         plt.xlabel(xlabel)
-    # plt.ylabel("Residui normalizzati $d/\sigma_V=(V-V_{atteso})/\sigma_V$")
-    #plt.ylabel("Residui normalizzati $d/\sigma_y = (y-y_{atteso})/\sigma_y$")
-    # plt.ylabel("Residui normalizzati")
-    # plt.grid()
+
     if log == "x":
         plt.xscale("log")
 
@@ -262,3 +276,69 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", xscale = 0
     n = k / len(resid_norm)
 
     print(f"Percentuale di residui compatibili con zero: {n*100:.1f}%")
+
+def remove_outliers(data, data_err=None, expected=None, method="zscore", threshold=3.0):
+    """
+    Rimuove outlier da un array di dati secondo il metodo specificato.
+
+    Parameters
+    ----------
+        data : array-like
+            Dati osservati.
+        data_err : array-like, opzionale
+            Incertezze sui dati. Necessario se si vuole confrontare con `'expected'`.
+        expected : array-like, opzionale
+            Valori attesi per i dati. Se forniti, viene usato automaticamente il metodo `'zscore'`.
+        method : str, opzionale
+            Metodo da usare (`"zscore"`, `"mad"` o `"iqr"`). Default: `"zscore"`.
+        threshold : float, opzionale
+            Valore soglia per identificare gli outlier. Default: `3.0`.
+
+    Returns
+    ----------
+        data_clean : ndarray
+            Dati senza outlier.
+    """
+    data = np.asarray(data)
+
+    # Caso 1: confronto con expected → forza 'zscore'
+    if expected is not None:
+        if data_err is None:
+            raise ValueError("Se fornisci 'expected', devi fornire anche 'data_err'.")
+        
+        expected = np.asarray(expected)
+        data_err = np.asarray(data_err)
+
+        if len(data) != len(expected) or len(data) != len(data_err):
+            raise ValueError("'data', 'expected' e 'data_err' devono avere la stessa lunghezza.")
+
+        # Metodo unico valido
+        z_scores = np.abs((data - expected) / data_err)
+        mask = z_scores < threshold
+
+    else:
+        # Caso 2: solo dati osservati → puoi scegliere il metodo
+        if method == "zscore":
+            mean = np.mean(data)
+            std = np.std(data)
+            z_scores = np.abs((data - mean) / std)
+            mask = z_scores < threshold
+
+        elif method == "mad":
+            median = np.median(data)
+            mad = np.median(np.abs(data - median))
+            modified_z_scores = 0.6745 * (data - median) / mad
+            mask = np.abs(modified_z_scores) < threshold
+
+        elif method == "iqr":
+            q1 = np.percentile(data, 25)
+            q3 = np.percentile(data, 75)
+            iqr = q3 - q1
+            lower_bound = q1 - threshold * iqr
+            upper_bound = q3 + threshold * iqr
+            mask = (data >= lower_bound) & (data <= upper_bound)
+
+        else:
+            raise ValueError("Metodo non riconosciuto. Usa 'zscore', 'mad' o 'iqr'.")
+
+    return data[mask]
