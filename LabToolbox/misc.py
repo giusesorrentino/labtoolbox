@@ -2,29 +2,29 @@ from LabToolbox import math, np, plt, stats, chi2
 
 def PrintResult(mean, sigma, name = "", ux = ""):
     """
-    Restituisce una stringa formattata nel formato "mean ± sigma", con sigma a due cifre significative,
-    e mean arrotondato in modo coerente.
+    Returns a formatted string in the "mean ± sigma" format, with sigma to two significant figures,
+    and the mean rounded consistently.
 
     Parameters
     ----------
     mean : float
-        Valore della variabile.
+        Value of the variable.
     sigma : float
-        Incertezza della variabile considerata.
+        Uncertainty of the variable considered.
     name : str, optional
-        Nome della variabile da visualizzare prima del valore (default è stringa vuota).
+        Name of the variable to display before the value (default is an empty string).
     ux : str, optional
-        Unità di misura da mostrare dopo il valore tra parentesi (default è stringa vuota).
+        Unit of measurement to display after the value in parentheses (default is an empty string).
 
     Returns
     -------
     None
-        Stampa direttamente la stringa formattata.
+        Prints the formatted string directly.
     """
 
     # 1. Arrotonda sigma a due cifre significative
     if sigma == 0:
-        raise ValueError("Sigma non può essere zero.")
+        raise ValueError("The uncertainty cannot be zero.")
         
     exponent = int(math.floor(math.log10(abs(sigma))))
     factor = 10**(exponent - 1)
@@ -54,36 +54,55 @@ def PrintResult(mean, sigma, name = "", ux = ""):
 
     print(result)
 
-def histogram(x, sigmax, xlabel = "", ux = ""):
+def histogram(x, sigmax, xscale = 0, xlabel = "", ux = ""):
     """
-    Grafica l'istogramma delle occorrenze di una variabile x, verificandone la gaussianità.
+    Plots the histogram of occurrences of a variable x, checking for its Gaussianity.
 
     Parameters
     ----------
-        x : array-like
-            Array del parametro d'interesse.
-        sigmax : array-like
-            Array delle incertezze dei singoli elementi di x.
-        xlabel : str
-            Nome della variabile x.
-        ux : str
-            Unità di misura della variabile x. Defaul è `""`.
+    x : array-like
+        Array of the parameter of interest.
+    sigmax : array-like
+        Array of the uncertainties for each element of x. Can be `None`.
+    xscale : int
+        Scaling factor for the x-axis (e.g., `xscale = -2` corresponds to 1e-2, to convert meters to centimeters).
+    xlabel : str
+        Name of the variable x.
+    ux : str
+        Unit of measurement of the variable x. Default is `""`.
     """
 
-    sigma = np.sqrt(x.std()**2 + np.sum(sigmax**2)/len(x))
+    x = x / 10**xscale
+
+    if sigmax is not None:
+        sigmax = sigmax / 10**xscale
+        sigma = np.sqrt(x.std()**2 + np.sum(sigmax**2)/len(x))
+    else:
+        sigma = x.std()
     mean = x.mean()
 
-    err_exp = int(np.floor(np.log10(abs(sigma))))
-    err_coeff = sigma / 10**err_exp
+    # err_exp = int(np.floor(np.log10(abs(sigma))))
+    # err_coeff = sigma / 10**err_exp
 
-    if err_coeff < 1.5:
-        err_exp -= 1
-        err_coeff = sigma / 10**err_exp
+    # if err_coeff < 1.5:
+    #     err_exp -= 1
+    #     err_coeff = sigma / 10**err_exp
 
-    sigma1 = round(sigma, -err_exp + 1)
-    mean1 = round(mean, -err_exp + 1)
+    # sigma1 = round(sigma, -err_exp + 1)
+    # mean1 = round(mean, -err_exp + 1)
 
-    label_ist = (f"Istogramma delle occorrenze")
+    # Calcola l'esponente di sigma
+    exponent = int(math.floor(math.log10(abs(sigma))))
+    factor = 10**(exponent - 1)
+    rounded_sigma = (round(sigma / factor) * factor)
+
+    # Arrotonda la media
+    rounded_mean = round(mean, -exponent + 1)
+
+    # Converte in stringa mantenendo zeri finali
+    fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
+
+    # label_ist = (f"Istogramma delle occorrenze")
 
     N = len(x)
     
@@ -106,74 +125,72 @@ def histogram(x, sigmax, xlabel = "", ux = ""):
 
     # histogram of the data
     plt.hist(x,bins=bins,color="blue",edgecolor='blue',alpha=0.75, histtype = "step")
-    plt.ylabel('Conteggi')
-    plt.title(label=label_ist)
+    plt.ylabel('Counts')
+    # plt.title(label=label_ist)
 
     # ==> draw a gaussian function
     # create an array with 500 equally separated values in the x axis interval
-    lnspc = np.linspace(x.min()- sigma1, x.max() + sigma1, 500) 
+    lnspc = np.linspace(x.min()- sigma, x.max() + sigma, 500) 
     # create an array with f(x) values, one for each of the above points
     # normalize properly the function such that integral from -inf to +inf is the total number of events
     norm_factor = x.size * binsize
-    f_gaus = norm_factor*stats.norm.pdf(lnspc,mean1,sigma1)  
+    f_gaus = norm_factor*stats.norm.pdf(lnspc,mean,sigma)  
     # draw the function
     if ux != "":
-        plt.plot(lnspc, f_gaus, linewidth=1, color='r',linestyle='--', label = f"Gaussiana\n$\mu = {mean1}$ "+ux+f"\n$\sigma = {sigma1}$ "+ux)
+        plt.plot(lnspc, f_gaus, linewidth=1, color='r',linestyle='--', label = f"Gaussian\n$\mu = {rounded_mean:.{max(0, -exponent + 1)}f}$ "+ux+f"\n$\sigma = {rounded_sigma:.{max(0, -exponent + 1)}f}$ "+ux)
         plt.xlabel(xlabel+" ["+ux+"]")
     else:
-        plt.plot(lnspc, f_gaus, linewidth=1, color='r',linestyle='--', label = f"$\mu = {mean1}$\n$\sigma = {sigma1}$")
+        plt.plot(lnspc, f_gaus, linewidth=1, color='r',linestyle='--', label = f"$\mu = {rounded_mean:.{max(0, -exponent + 1)}f}$\n$\sigma = {rounded_sigma:.{max(0, -exponent + 1)}f}$")
         plt.xlabel(xlabel)
 
     plt.legend()
 
-    tot = x
+    skewness = np.sum((x - x.mean())**3) / (len(x) * sigmax**3)
 
-    skewness = np.sum((tot - tot.mean())**3) / (len(tot) * sigmax**3)
+    print(f"This histogram has a skewness of {skewness:.2f}") #gamma 1
 
-    print(f"La skewness di questo istogramma è: {skewness:.2f}") #gamma 1
+    curtosi = np.sum((x - x.mean())**4) / (len(x) * sigmax**4) - 3  # momento terzo - 3, vedi wikipedia
 
-    curtosi = np.sum((tot - tot.mean())**4) / (len(tot) * sigmax**4) - 3  # momento terzo - 3, vedi wikipedia
-
-    print(f"La curtosi di questo istogramma è: {curtosi:.2f}")
+    print(f"This histogram has a kurtosis of {curtosi:.2f}")
 
 def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", marker = "d", xscale = 0, yscale = 0, confidence = 2, norm = True, legendloc = None, newstyle = True, log = None):
     """
-    Grafica i residui normalizzati.
+    Plots the normalized residuals.
 
     Parameters
     ----------
     x_data : array-like
-        Valori misurati per la variabile indipendente.
+        Measured values for the independent variable.
     y_data : array-like
-        Valori misurati per la variabile dipendente.
+        Measured values for the dependent variable.
     y_att : array-like
-        Valori previsti dal modello per la variabile dipendente.
+        Predicted values from the model for the dependent variable.
     sy : array-like
-        Incertezze della variabile dipendente misurata.
-    N : int, opzionale     
-        Numero di parametri liberi del modello. Può essere `None`
+        Uncertainties for the measured dependent variable.
+    N : int, optional     
+        Number of free parameters in the model. Can be `None`.
     xlabel : str          
-        Nome della variabile indipendente.
+        Name of the independent variable.
     ux : str 
-        Unità di misura della variabile indipendente. Default è `""`.
+        Unit of measurement of the independent variable. Default is `""`.
     uy : str
-        Unità di misura della variabile indipendente. Default è `""`.
+        Unit of measurement of the dependent variable. Default is `""`.
     marker : str
-        Marker del residuo. Applicabile solo se `newstyle = False`.
+        Marker for the residual. Only applicable if `newstyle = False`.
     xscale : int
-        Fattore di scala (10^xscale) dell'asse x (es. xscale = -2 se si vuole passare da m a cm). 
+        Scaling factor (10^xscale) for the x-axis (e.g., xscale = -2 if converting from meters to centimeters). 
     yscale : int
-        Fattore di scala (10^yscale) dell'asse y (es. yscale = -2 se si vuole passare da m a cm). 
+        Scaling factor (10^yscale) for the y-axis (e.g., yscale = -2 if converting from meters to centimeters). 
     confidence : int
-        Definisce l'intervallo di confidenza `[-confidence, +confidence]`. Deve essere un numero positivo. Default è `2`.
+        Defines the confidence interval `[-confidence, +confidence]`. Must be a positive number. Default is `2`.
     norm : bool
-        Se `True`, i residui saranno normalizzarti. Default è `True`. 
+        If `True`, the residuals will be normalized. Default is `True`. 
     legendloc : str
-        Posizionamento della legenda nel grafico ('upper right', 'lower left', 'upper center' etc.). Default è `None`.
+        Positioning of the legend in the plot ('upper right', 'lower left', 'upper center', etc.). Default is `None`.
     newstyle : bool
-        Stile alternativo per il plot.
+        Alternative style for the plot.
     log : bool
-        Se `x` l'asse x sarà in scala logaritmica. Default è `None`.
+        If `x`, the x-axis will be in logarithmic scale. Default is `None`.
 
     Returns
     ----------
@@ -181,7 +198,7 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", marker = "
 
     Notes
     ----------
-    Se `N = None`, allora non verranno visualizzati i valori di χ²/dof e p-value.
+    If `N = None`, the values of χ²/dof and p-value will not be displayed.
     """
 
     if confidence <= 0:
@@ -220,12 +237,12 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", marker = "
         label2 = f"\n$\chi^2 = {chi2_value:.2f}$"
 
     if norm == True:
-        label1 = "Residui normalizzati"
+        label1 = "Normalized residuals"
         bar1 = np.repeat(1, len(x_data))
         bar2 = resid_norm
         dash = np.repeat(confidence, len(x1))
     else :
-        label1 = "Residui"
+        label1 = "Residuals"
         bar1 = sy / yscale
         bar2 = resid / yscale
         dash = confidence * sy/yscale
@@ -242,16 +259,16 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", marker = "
 
     if newstyle:
         plt.axhline(0., ls='--', color='0.7', lw=0.8)
-        plt.errorbar(x_data, bar2, bar1, ls='', color='gray', lw=1., label = f"Intervallo di confidenza $[-{confidence},\,{confidence}]$")
+        plt.errorbar(x_data, bar2, bar1, ls='', color='gray', lw=1., label = f"Confidence interval $[-{confidence},\,{confidence}]$")
         plt.plot(x_data, bar2, color='k', drawstyle='steps-mid', lw=1., label = label)
         plt.plot(x1, dash, ls='dashed', color='crimson', lw=1.)
         plt.plot(x1, -dash, ls='dashed', color='crimson', lw=1.)
         plt.ylim(-np.nanmean(3 * bar1 * confidence/2), np.nanmean(3 * bar1 * confidence/2))
         if norm == False:
             if uy != "":
-                plt.ylabel("Residui"+" ["+uy+"]")
+                plt.ylabel("Residuals"+" ["+uy+"]")
             else:
-                plt.xlabel("Residui")
+                plt.xlabel("Residuals")
     else:
         plt.plot(xmin_plot, xmax_plot, [0, 0], 'r--')
         plt.errorbar(x_data, bar2, 1, marker=marker, linestyle="", capsize = 2, color='black', label = label)
@@ -275,42 +292,49 @@ def residuals(x_data, y_data, y_att, sy, N, xlabel, ux = "", uy = "", marker = "
 
     n = k / len(resid_norm)
 
-    print(f"Percentuale di residui compatibili con zero: {n*100:.1f}%")
+    if n >= 0.10:
+        print(f"{n*100:.0f}% of the residuals lie within ±2σ of zero.")
+    elif 0.005 < n < 0.10:
+        print(f"{n*100:.2f}% of the residuals lie within ±2σ of zero.")
+    elif 0.0005 < p_value <= 0.005:
+        print(f"{n*1000:.2f}‰ of the residuals lie within ±2σ of zero.")
+    else:
+        print(f"{n:.2e} of the residuals lie within ±2σ of zero.")
 
 def remove_outliers(data, data_err=None, expected=None, method="zscore", threshold=3.0):
     """
-    Rimuove outlier da un array di dati secondo il metodo specificato.
+    Removes outliers from a data array according to the specified method.
 
     Parameters
     ----------
-        data : array-like
-            Dati osservati.
-        data_err : array-like, opzionale
-            Incertezze sui dati. Necessario se si vuole confrontare con `'expected'`.
-        expected : array-like, opzionale
-            Valori attesi per i dati. Se forniti, viene usato automaticamente il metodo `'zscore'`.
-        method : str, opzionale
-            Metodo da usare (`"zscore"`, `"mad"` o `"iqr"`). Default: `"zscore"`.
-        threshold : float, opzionale
-            Valore soglia per identificare gli outlier. Default: `3.0`.
+    data : array-like
+        Observed data.
+    data_err : array-like, optional
+        Uncertainties on the data. Necessary if comparing with `'expected'`.
+    expected : array-like, optional
+        Expected values for the data. If provided, the `'zscore'` method is automatically used.
+    method : str, optional
+        Method to use (`"zscore"`, `"mad"`, or `"iqr"`). Default: `"zscore"`.
+    threshold : float, optional
+        Threshold value to identify outliers. Default: `3.0`.
 
     Returns
     ----------
-        data_clean : ndarray
-            Dati senza outlier.
+    data_clean : ndarray
+        Data without outliers.
     """
     data = np.asarray(data)
 
     # Caso 1: confronto con expected → forza 'zscore'
     if expected is not None:
         if data_err is None:
-            raise ValueError("Se fornisci 'expected', devi fornire anche 'data_err'.")
+            raise ValueError("If you provide 'expected', you must also provide 'data_err'.")
         
         expected = np.asarray(expected)
         data_err = np.asarray(data_err)
 
         if len(data) != len(expected) or len(data) != len(data_err):
-            raise ValueError("'data', 'expected' e 'data_err' devono avere la stessa lunghezza.")
+            raise ValueError("'data', 'expected', and 'data_err' must have the same length.")
 
         # Metodo unico valido
         z_scores = np.abs((data - expected) / data_err)
@@ -339,6 +363,6 @@ def remove_outliers(data, data_err=None, expected=None, method="zscore", thresho
             mask = (data >= lower_bound) & (data <= upper_bound)
 
         else:
-            raise ValueError("Metodo non riconosciuto. Usa 'zscore', 'mad' o 'iqr'.")
+            raise ValueError("Unrecognized method. Use 'zscore', 'mad', or 'iqr'.")
 
     return data[mask]

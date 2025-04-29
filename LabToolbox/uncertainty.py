@@ -3,26 +3,27 @@ from uncertainty_class import uncert_prop
 
 def uncertainty_diff(f, x_vars, sigma_x, params=()):
     """
-    Propagazione dell'incertezza tramite derivate numeriche.
+    Uncertainty propagation via numerical derivatives.
 
     Parameters
     ----------
         f : callable
-            Funzione `f(x1, ..., xn; a1, ..., am)`, restituisce array shape (N,).
+            Function `f(x1, ..., xn; a1, ..., am)` that returns an array of shape (N,).
         x_vars : list of np.ndarray
-            Lista degli array `x1,..., xn` ciascuno di shape (N,).
+            List of input arrays `x1,..., xn`, each with shape (N,).
         sigma_x : list of np.ndarray
-            Lista delle incertezze corrispondenti per ogni `x_i`, shape (N,).
+            List of uncertainty arrays corresponding to each `x_i`, shape (N,).
         params : tuple
-            Parametri `(a1, ..., am)` passati alla funzione.
+            Tuple of constant parameters `(a1, ..., am)` to be passed to the function.
 
     Returns
     ----------
         f_vals : np.ndarray
-            Valori centrali della funzione, shape (N,).
+            Central values of the function, shape (N,).
         f_std : np.ndarray
-            Incertezza propagata, shape (N,).
+            Propagated uncertainty, shape (N,).
     """
+
     N = x_vars[0].shape[0]
     n_vars = len(x_vars)
 
@@ -56,40 +57,40 @@ def uncertainty_diff(f, x_vars, sigma_x, params=()):
 
 def propagate_uncertainty(func, x_arrays, uncertainties, params = None, method='Delta', MC_sample_size = 10000):
     """
-    Propaga l'incertezza dagli array di input ad una generica funzione utilizzando la liberia `uncertainty_class`.
-    
+    Propagates uncertainty from input arrays to a generic function using the `uncertainty_class` library.
+
     Parameters
     ----------
     func : callable
-        La funzione base, nella forma `f(x,a)` dove:
-        - `x` è un vettore di variabili.
-        - `a` è un vettore di parametri (opzionale).
+        The base function, in the form `f(x, a)` where:
+        - `x` is a vector of variables.
+        - `a` is a vector of parameters (optional).
         
     x_arrays : list of numpy.ndarray
-        Lista contenente gli array delle variabili di input `[x1, x2, ..., xn]`.
-        Ogni `xi` deve avere la stessa lunghezza.
+        List containing the input variable arrays `[x1, x2, ..., xn]`.
+        Each `xi` must have the same length.
         
     uncertainties : list or numpy.ndarray
-        Lista delle incertezze per ciascuna variabile, o matrice di covarianza completa.
-        Se è una lista di incertezze sigma, verrà costruita una matrice di covarianza diagonale.
+        List of uncertainties for each variable, or a full covariance matrix.
+        If it's a list of uncertainties `sigma`, a diagonal covariance matrix will be constructed.
         
     params : list or numpy.ndarray, optional
-        Lista o array dei parametri costanti `[a1, a2, ..., am]`.
+        List or array of constant parameters `[a1, a2, ..., am]`.
         
     method : str, optional
-        Metodo di propagazione dell'incertezza ('Delta' o 'Monte_Carlo').
+        The uncertainty propagation method ('Delta' or 'Monte_Carlo').
         
     MC_sample_size : int, optional
-        Dimensione del campione per il metodo Monte Carlo.
+        Sample size for the Monte Carlo method.
         
     Returns
     --------
         f_values : numpy.ndarray
-            Valori della funzione calcolati in ogni punto `j`.
+            Values of the function calculated at each point `j`.
         f_uncertainties : numpy.ndarray
-            Incertezze propagate sulla funzione di output per ogni punto `j`.
+            Propagated uncertainties on the output function for each point `j`.
         confidence_bands : tuple of numpy.ndarray
-            Bande di confidenza inferiore e superiore per ogni punto `j`.
+            Lower and upper confidence bands for each point `j`.
 
     Notes
     --------
@@ -100,7 +101,7 @@ def propagate_uncertainty(func, x_arrays, uncertainties, params = None, method='
     n_points = len(x_arrays[0])
     for i, x in enumerate(x_arrays[1:], 1):
         if len(x) != n_points:
-            raise ValueError(f"L'array di input x{i+1} ha una lunghezza diversa dagli altri")
+            raise ValueError(f"Input array x{i+1} has a different length than the others.")
     
     # Inizializza gli array di output
     f_values = np.zeros(n_points)

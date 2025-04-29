@@ -5,43 +5,43 @@ from LabToolbox import np, plt, curve_fit
 
 def posterior(x, y, sy, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000):
     """
-    Analisi bayesiana con emcee per il fitting di una funzione a molti parametri. 
-    La funzione esegue un'analisi MCMC (Markov Chain Monte Carlo) per ottenere una distribuzione posteriore dei parametri, 
-    quindi calcola i parametri di massima verosimiglianza (MLE) e visualizza la corner plot dei risultati.
+    Bayesian analysis with emcee for fitting a function with many parameters.
+    This function performs a Markov Chain Monte Carlo (MCMC) analysis to obtain a posterior distribution of the parameters,
+    then calculates the Maximum Likelihood Estimation (MLE) parameters and visualizes the corner plot of the results.
 
     Parameters
     ----------
         x : array-like
-            Valori misurati per la variabile indipendente.
+            Measured values for the independent variable.
         y : array-like
-            Valori misurati per la variabile dipendente (da adattare al modello).
+            Measured values for the dependent variable (to be fitted to the model).
         sy : array-like
-            Incertezze sulle misure della variabile dipendente.
+            Uncertainties on the measurements of the dependent variable.
         f : function
-            Funzione modello da adattare ai dati. La funzione deve accettare una variabile indipendente 
-            `x` come primo argomento e i parametri liberi come argomenti successivi.
+            Model function to be fitted to the data. The function should accept an independent variable 
+            `x` as the first argument and the free parameters as subsequent arguments.
         p0 : list
-            Lista dei valori iniziali dei parametri liberi del modello. 
-            Esempio: [a0, b0, c0], dove ogni elemento corrisponde al valore iniziale del parametro.
-        burn : int, opzionale
-            Numero di "passi di burn-in" per escludere i primi campioni della catena di Markov 
-            che potrebbero essere correlati (default è 1000).
-        steps : int, opzionale
-            Numero totale di passi per la catena di Markov (default è 5000).
-        thin : int, opzionale
-            Fattore di sottocampionamento (default è 10), per ridurre la correlazione tra i campioni.
+            List of initial values for the free parameters of the model. 
+            Example: [a0, b0, c0], where each element corresponds to the initial value of a parameter.
+        burn : int, optional
+            Number of "burn-in steps" to exclude the first samples from the Markov chain 
+            that might be correlated (default is 1000).
+        steps : int, optional
+            Total number of steps for the Markov chain (default is 5000).
+        thin : int, optional
+            Subsampling factor (default is 10), to reduce correlation between samples.
         maxfev : int
-            Numero massimo di iterazioni della funzione `curve_fit`.
+            Maximum number of iterations for the `curve_fit` function.
 
     Returns
     ----------
         res.params : Params
-            Oggetto contenente i parametri ottimizzati e le incertezze sui parametri ottenuti.
+            Object containing the optimized parameters and uncertainties on the obtained parameters.
         res.flatchain : array-like
-            Catena appiattita dei campioni MCMC, utile per l'analisi statistica.
+            Flattened chain of MCMC samples, useful for statistical analysis.
 
-    La funzione visualizza una corner plot dei parametri posteriore e stampa i valori della mediana e delle incertezze 
-    sui parametri, insieme ai risultati della massima verosimiglianza (MLE).
+    The function visualizes a corner plot of the posterior parameters and prints the median values and uncertainties 
+    on the parameters, along with the results of the Maximum Likelihood Estimation (MLE).
 
     Notes
     ----------

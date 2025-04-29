@@ -6,71 +6,71 @@ from .uncertainty import propagate_uncertainty
 def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, 
             xscale = 0, yscale = 0, mscale = 0, cscale = 0, m_units = "", c_units = "", confidence = 2, confidencerange = True, residuals=True, norm = True, result = False):
     """
-    Esegue un fit lineare (Weighted Least Squares o Ordinary Least Squares) e visualizza i dati sperimentali con retta di regressione e incertezza.
+    Performs a linear fit (Weighted Least Squares or Ordinary Least Squares) and displays experimental data along with the regression line and uncertainty band.
 
     Parameters
     ----------
         x : array-like
-            Valori della variabile indipendente.
+            Values of the independent variable.
         y : array-like
-            Valori della variabile dipendente.
+            Values of the dependent variable.
         sy : array-like
-            Incertezze associate ai valori di y.
+            Uncertainties associated with y values.
         sx : array-like
-            Incertezze associate ai valori di x.
+            Uncertainties associated with x values.
         fitmodel : str
-            Modello del fit, "wls" o "ols". Default è "wls".
+            Fitting model, either "wls" or "ols". Default is "wls".
         xlabel : str
-            Etichetta dell'asse x, con unità tra parentesi quadre (es. "x [m]").
+            Label for the x-axis, including units in square brackets (e.g., "x [m]").
         ylabel : str
-            Etichetta dell'asse y, con unità tra parentesi quadre (es. "y [s]").
+            Label for the y-axis, including units in square brackets (e.g., "y [s]").
         showlegend : bool
-            Se `True`, mostra l'etichetta con i valori di m e c nel plot. 
+            If `True`, displays a legend with the values of m and c on the plot. 
         legendloc : str
-            Posizionamento della legenda nel grafico ('upper right', 'lower left', 'upper center' etc.). Default è `None`.
-        xscale : float
-            Fattore di scala dell'asse x (es. `xscale = -2`, cioè 10e-2, per passare da m a cm).
-        yscale : float
-            Fattore di scala dell'asse y.
-        mscale : float
-            Fattore di scala di `m`.
-        cscale : float
-            Fattore di scala di `c`.
+            Location of the legend on the plot ('upper right', 'lower left', 'upper center', etc.). Default is `None`.
+        xscale : int
+            Scaling factor for the x-axis (e.g., `xscale = -2` corresponds to 1e-2, to convert meters to centimeters).
+        yscale : int
+            Scaling factor for the y-axis.
+        mscale : int
+            Scaling factor for the slope `m`.
+        cscale : int
+            Scaling factor for the intercept `c`.
         m_units : str
-            Unità di misura di m (attenzione alla scala di m, x ed y). Default è `""`.
+            Unit of measurement for `m` (note the consistency with x, y, and scale factors). Default is `""`.
         c_units : str
-            Unità di misura di c (attenzione alla scala di c, x ed y). Default è `""`.
+            Unit of measurement for `c` (note the consistency with x, y, and scale factors). Default is `""`.
         confidence : int
-            Intervallo di confidenza dei residui, cioè `[-confidenze, +confidence]`.
+            Residual confidence interval to display, i.e., `[-confidence, +confidence]`.
         confidencerange : bool
-            Se `True`, mostra la fascia di incertezza del fit (1σ) come area evidenziata attorno alla retta del fit.
+            If `True`, shows the 1σ uncertainty band around the fit line.
         residuals : bool
-            Se `True`, aggiunge un pannello superiore con i residui del fit.
+            If `True`, adds an upper panel showing fit residuals.
         norm : bool
-            Se `True`, i residui nel pannello superiore saranno normalizzati.
+            If `True`, residuals in the upper panel will be normalized.
         result : bool
-            Se `True`, stampa su schermo il risultato di `wls_fit`. Default è `False`.
+            If `True`, prints the output of `wls_fit` to the screen. Default is `False`.
 
     Returns
     ----------
         m : float
-            Coefficiente angolare della retta di regressione.
+            Slope of the regression line.
         c : float
-            Intercetta della retta di regressione.
+            Intercept of the regression line.
         sigma_m : float
-            Incertezza sul coefficiente angolare.
+            Uncertainty on the slope.
         sigma_c : float
-            Incertezza sull'intercetta.
+            Uncertainty on the intercept.
         chi2_red : float
-            Valore del chi-quadro ridotto (χ²/dof).
+            Reduced chi-square value (χ²/dof).
         p_value : float
-            p-value del fit (probabilità che il χ² osservato sia compatibile con il modello).
+            Fit p-value (probability that the observed χ² is compatible with the model).
 
     Notes
     ----------
-    Il formato latex è già preimpostato all'interno delle stringhe che permettono la visualizzazione delle unità di misura di m e c. Non vi è bisogno di scrivere "$...$".
-    Se `c_scale = 0` (scelta consigliata se si utilizza l'opzione di unità di misura per `c`), allora `c_units` è il suffisso corrispondente a 10^yscale (+ `y_units`).
-    Se `m_scale = 0` (scelta consigliata se si utilizza l'opzione di unità di misura per `m`), allora `m_units` è il suffisso corrispondente a 10^(yscale - xscale) [+ `y_units/x_units`].
+    LaTeX formatting is already embedded in the strings used to display the units of `m` and `c`. You do not need to wrap them in "$...$".
+    If `c_scale = 0` (recommended when using `c_units`), then `c_units` will represent the suffix corresponding to 10^yscale (+ `y_units`).
+    If `m_scale = 0` (recommended when using `m_units`), then `m_units` will represent the suffix corresponding to 10^(yscale - xscale) [+ `y_units/x_units`].
     """
 
     xscale = 10**xscale
@@ -88,7 +88,7 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     elif fitmodel == "ols":
         model = sm.OLS(y, X)
     else:
-        raise ValueError('Errore! Modello non valido. Solo "wls" o "ols"')
+        raise ValueError('Invalid model. Only "wls" or "ols" allowed.')
     results = model.fit()
 
     if result:
@@ -155,9 +155,9 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
     # Crea la stringa risultante
     if m_units != "":
         if mscale != 0:
-            result = rf"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}} \, \mathrm{{{m_units}}}$"
+            result = f"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}} \, \\mathrm{{{m_units}}}$"
         else:
-            result = rf"$m = ({mean_str} \pm {sigma_str}) \, {m_units}$"
+            result = f"$m = ({mean_str} \pm {sigma_str}) \, \\mathrm{{{m_units}}}$"
     else:
         if mscale != 0:
             result = f"$m = ({mean_str} \pm {sigma_str}) \\times 10^{{{mscale}}}$"
@@ -182,9 +182,9 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
         # Crea la stringa risultante
     if c_units != "":
         if cscale != 0:
-            result1 = rf"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}} \, \mathrm{{{c_units}}}$"
+            result1 = f"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}} \, \\mathrm{{{c_units}}}$"
         else:
-            result1 = rf"$c = ({mean_str} \pm {sigma_str}) \, {c_units}$"
+            result1 = f"$c = ({mean_str} \pm {sigma_str}) \, \\mathrm{{{c_units}}}$"
     else:
         if cscale != 0:
             result1 = f"$c = ({mean_str} \pm {sigma_str}) \\times 10^{{{cscale}}}$"
@@ -201,13 +201,20 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     n = k / len(resid_norm)
 
-    print(f"Percentuale di residui compatibili con zero: {n*100:.1f}%")
+    if n >= 0.10:
+        print(f"{n*100:.0f}% of the residuals lie within ±2σ of zero.")
+    elif 0.005 < n < 0.10:
+        print(f"{n*100:.2f}% of the residuals lie within ±2σ of zero.")
+    elif 0.0005 < p_value <= 0.005:
+        print(f"{n*1000:.2f}‰ of the residuals lie within ±2σ of zero.")
+    else:
+        print(f"{n:.2e} of the residuals lie within ±2σ of zero.")
 
     # costruisco dei punti x su cui valutare la retta del fit              
     xmin = float(np.min(x)) 
     xmax = float(np.max(x))
-    xmin_plot = xmin-.2*(xmax-xmin) / xscale
-    xmax_plot = xmax+.2*(xmax-xmin) / xscale
+    xmin_plot = xmin-.12*(xmax-xmin)
+    xmax_plot = xmax+.12*(xmax-xmin)
     x1 = np.linspace(xmin_plot, xmax_plot, 500)
     y1 = my_line(x1, m, c) / yscale
 
@@ -216,6 +223,7 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     y = y / yscale
     x = x / xscale
+    x1 = x1 / xscale
     sy = sy / yscale
     if sx is not None:
         sx = sx / xscale
@@ -268,14 +276,14 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     if confidencerange == True:
         axs[1].fill_between(x1, y1_plus_1sigma, y1_minus_1sigma,  
-                            where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+                            where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Confidence interval")
 
     if sx == None:
         axs[1].errorbar(x, y, yerr=sy, ls='', marker='.', 
-                        color="black", label='Dati sperimentali', capsize=2)       
+                        color="black", label='Experimental data', capsize=2)       
     else:
         axs[1].errorbar(x, y, yerr=sy, xerr=sx, ls='', marker='.', 
-                        color="black", label='Dati sperimentali', capsize=2)
+                        color="black", label='Experimental data', capsize=2)
     
     axs[1].set_xlabel(xlabel)
     axs[1].set_ylabel(ylabel)
@@ -291,59 +299,59 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, 
               bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True):
     """
-    Fit universale di funzioni a molti parametri, con opzione per visualizzare i residui.
+    General-purpose fit of multi-parameter functions, with an option to display residuals.
 
     Parameters
     ----------
         x : array-like
-            Valori misurati per la variabile indipendente.
+            Measured values of the independent variable.
         y : array-like
-            Valori misurati per la variabile dipendente.
+            Measured values of the dependent variable.
         sy : array-like
-            Incertezze della variabile dipendente misurata.
+            Uncertainties associated with the dependent variable.
         f : function
-            Funzione ad una variabile (primo argomento di `f`) con `N` parametri liberi.
+            Function of one variable (first argument of `f`) with `N` free parameters.
         p0 : list
-            Lista dei valori iniziali dei parametri liberi del modello, nella forma `[a, ..., z]`.
+            Initial guess for the model parameters, in the form `[a, ..., z]`.
         sx : array-like
-            Incertezze della variabile indipendente misurata. Default è `None`.
+            Uncertainties associated with the independent variable. Default is `None`.
         xlabel : str
-            Nome (e unità) della variabile indipendente.
+            Label (and units) for the independent variable.
         ylabel : str
-            Nome (e unità) della variabile dipendente.
+            Label (and units) for the dependent variable.
         showlegend : bool
-            Se `True`, mostra l'etichetta del chi-quadro ridotto e p-value nel plot. 
+            If `True`, displays a legend with the reduced chi-square and p-value in the plot.
         legendloc : str
-            Posizionamento della legenda nel grafico ('upper right', 'lower left', 'upper center' etc.). Default è `None`.
+            Location of the legend in the plot ('upper right', 'lower left', 'upper center', etc.). Default is `None`.
         bounds : 2-tuple of array-like
-            Lista `([lower_bound],[upper_bound])` dei limiti dei parametri. Default è `None`.
+            Tuple `([lower_bounds], [upper_bounds])` specifying bounds for the parameters. Default is `None`.
         confidencerange : bool
-            Se `True`, mostra la fascia di incertezza del fit (1σ) come area evidenziata attorno alla curva del best fit.
+            If `True`, displays the 1σ uncertainty band around the best-fit curve.
         log : str
-            Se `x` o `y`, l'asse x o y sarà in scala logaritmica; se `xy`, entrambi gli assi.
+            If set to `'x'` or `'y'`, the corresponding axis is plotted on a logarithmic scale; if `'xy'`, both axes.
         maxfev : int
-            Numero massimo di iterazioni della funzione `curve_fit`.
+            Maximum number of iterations allowed by `curve_fit`.
         xscale : int
-            Fattore di scala dell'asse x (es. `xscale = -2`, cioè 10e-2, per passare da m a cm).
+            Scaling factor for the x-axis (e.g., `xscale = -2` corresponds to 1e-2, to convert meters to centimeters).
         yscale : int
-            Fattore di scala dell'asse y.
+            Scaling factor for the y-axis.
         confidence : int
-            Intervallo di confidenza dei residui, cioè `[-confidenze, +confidence]`.
+            Residual confidence interval to display, i.e., `[-confidence, +confidence]`.
         residuals : bool
-            Se `True`, aggiunge un pannello superiore con i residui del fit.
+            If `True`, adds an upper panel showing fit residuals.
         norm : bool
-            Se `True`, i residui nel pannello superiore saranno normalizzati.
+            If `True`, residuals in the upper panel will be normalized.
 
     Returns
     ----------
         popt : array-like
-            Array dei parametri ottimali ottenuti dal fit.
+            Array of optimal parameters estimated from the fit.
         errors : array-like
-            Incertezze sui parametri ottimali.
+            Uncertainties on the optimal parameters.
         chi2_red : float
-            Valore del chi-quadro ridotto (χ²/dof).
+            Reduced chi-square value (χ²/dof).
         p_value : float
-            p-value del fit (probabilità che il χ² osservato sia compatibile con il modello).
+            Fit p-value (probability that the observed χ² is compatible with the model).
     """
 
     xscale = 10**xscale
@@ -393,23 +401,27 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
 
     # Stampa dei parametri con incertezze
     for i in range(len(popt)):
-        err_exp = int(np.floor(np.log10(abs(errors[i]))))
-        err_coeff = errors[i] / 10**err_exp
 
-        if err_coeff < 1.5:
-            err_exp -= 1
-            err_coeff = errors[i] / 10**err_exp
+        # Calcola l'esponente di sigma
+        exponent = int(math.floor(math.log10(abs(errors[i]))))
+        factor = 10**(exponent - 1)
+        rounded_sigma = (round(errors[i] / factor) * factor)
 
-        sigma1 = round(errors[i], -err_exp + 1)
-        mean1 = round(popt[i], -err_exp + 1)
+        # Arrotonda la media
+        rounded_mean = round(popt[i], -exponent + 1) 
 
-        if mean1 != 0:
-            nu = sigma1 / mean1
+        # Converte in stringa mantenendo zeri finali
+        fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
+        mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
+        sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
+
+        if popt[i] != 0:
+            nu = errors[i] / popt[i]
             print(
-                f"Parametro {i + 1} = ({mean1} +/- {sigma1}) [{np.abs(nu) * 100:.2f}%]"
+                f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} +/- {rounded_sigma:.{max(0, -exponent + 1)}f}) [{np.abs(nu) * 100:.2f}%]"
             )
         else:
-            print(f"Parametro {i + 1} = ({mean1} +/- {sigma1})")
+            print(f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} +/- {rounded_sigma:.{max(0, -exponent + 1)}f})")
 
     
     print(f"χ²/dof = {chi2_red:.2f}")  # ≈ 1 se il fit è buono
@@ -434,11 +446,22 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
 
     n = k / len(resid_norm)
 
-    print(f"Percentuale di residui compatibili con zero: {n*100:.1f}%")
+    if n >= 0.10:
+        print(f"{n*100:.0f}% of the residuals lie within ±2σ of zero.")
+    elif 0.005 < n < 0.10:
+        print(f"{n*100:.2f}% of the residuals lie within ±2σ of zero.")
+    elif 0.0005 < p_value <= 0.005:
+        print(f"{n*1000:.2f}‰ of the residuals lie within ±2σ of zero.")
+    else:
+        print(f"{n:.2e} of the residuals lie within ±2σ of zero.")
 
-    amp = np.abs(x.max() - x.min()) / 20
+    # costruisco dei punti x su cui valutare la retta del fit              
+    xmin = float(np.min(x)) 
+    xmax = float(np.max(x))
+    xmin_plot = xmin-.12*(xmax-xmin)
+    xmax_plot = xmax+.12*(xmax-xmin)
 
-    x1 = np.linspace(min(x) - amp, max(x) + amp, 1000)
+    x1 = np.linspace(xmin_plot, xmax_plot, 500)
     y_fit_cont = f(x1, *popt)
 
     # Ripeti ciascun parametro per len(x1) volte
@@ -456,6 +479,8 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
     y1_minus_1sigma = confid[0] / yscale
 
     x1 = x1 / xscale
+    xmax_plot = xmax_plot / xscale
+    xmin_plot = xmin_plot / xscale
     x = x / xscale
     y = y / yscale
     sy = sy / yscale
@@ -494,7 +519,7 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
         # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
-        axs[0].set_xlim((x.min() - amp), (x.max() + amp))
+        axs[1].set_xlim(xmin_plot, xmax_plot)
     else: 
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0, 1])
         axs = gs.subplots(sharex=True)
@@ -509,18 +534,18 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
 
     if confidencerange == True:
         axs[1].fill_between(x1, y1_plus_1sigma, y1_minus_1sigma,  
-                            where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Intervallo di confidenza")
+                            where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Confidence interval")
 
     if sx == None:
         axs[1].errorbar(x, y, yerr=sy, ls='', marker='.', 
-                        color="black", label='Dati sperimentali', capsize=2)       
+                        color="black", label='Experimental data', capsize=2)       
     else:
         axs[1].errorbar(x, y, yerr=sy, xerr=sx, ls='', marker='.', 
-                        color="black", label='Dati sperimentali', capsize=2)
+                        color="black", label='Experimental data', capsize=2)
     
     axs[1].set_xlabel(xlabel)
     axs[1].set_ylabel(ylabel)
-    axs[1].set_xlim((x.min() - amp), (x.max() + amp))
+    axs[1].set_xlim(xmin_plot, xmax_plot)
 
     if legendloc == None:
         axs[1].legend()
@@ -544,40 +569,41 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
 
 def bootstrap_fit(func, xdata, ydata, sigma_y = None, p0 = None, punits = None, n_iter = 1000, bounds = (-np.inf, np.inf)):
     """
-    Esegue un bootstrap del fit per stimare la distribuzione dei parametri, considerando opzionalmente le incertezze sigma_y.
+    Performs a bootstrap analysis of the fit to estimate the parameter distributions, optionally accounting for the uncertainties sigma_y.
 
     Parameters
     ----------
         func : callable
-            Funzione modello da fittare, della forma `func(x, *params)`.
+            Model function to be fitted, in the form `func(x, *params)`.
         xdata : array_like
-            Dati indipendenti (ascisse).
+            Independent data (x-values).
         ydata : array_like
-            Dati dipendenti (ordinate).
-        sigma_y : array_like, opzionale
-            Incertezze associate a `ydata`. Se fornite, il fit sarà pesato.
-        p0 : array_like, opzionale
-            Parametri iniziali per il fit.
-        punits : list of str, opzionale
-            Lista di stringhe (unità di misura dei parametri). Defaul è None.
-        n_iter : int, opzionale
-            Numero di iterazioni di bootstrap (default: `1000`).
-        bounds : 2-tuple di array, opzionale
-            Limiti inferiori e superiori sui parametri per il fit.
+            Dependent data (y-values).
+        sigma_y : array_like, optional
+            Uncertainties associated with `ydata`. If provided, a weighted fit will be performed.
+        p0 : array_like, optional
+            Initial guess for the fit parameters.
+        punits : list of str, optional
+            List of strings specifying the units of each parameter. Default is `None`.
+        n_iter : int, optional
+            Number of bootstrap iterations (default: `1000`).
+        bounds : 2-tuple of arrays, optional
+            Lower and upper bounds for the fit parameters.
 
     Returns
     ----------
         popt_mean : array
-            Parametri medi ottenuti dal bootstrap.
+            Mean values of the parameters obtained from the bootstrap samples.
         popt_std : array
-            Deviazioni standard dei parametri (stima delle incertezze).
+            Standard deviations of the parameters (as uncertainty estimates).
         all_popt : array
-            Array completo di tutte le stime dei parametri (forma: `[n_iter, n_params]`).
+            Full array of all parameter estimates (shape: `[n_iter, n_params]`).
 
     Notes
     ----------
-    Se il parametro i-esimo è un numero puro, è sufficiente inserire `""` al corrispondente elemento della lista.
+    If the i-th parameter is dimensionless (a pure number), simply use an empty string `""` as the corresponding element in the `punits` list.
     """
+
 
     xdata = np.asarray(xdata)
     ydata = np.asarray(ydata)
@@ -619,10 +645,10 @@ def bootstrap_fit(func, xdata, ydata, sigma_y = None, p0 = None, punits = None, 
             exponent = int(np.floor(np.log10(abs(value)))) if value != 0 else 0
             scaled_value = value / 10**exponent
             scaled_error = error / 10**exponent
-            name = f"Parametro {i+1}-esimo [1e{exponent}]"
+            name = f"Parameter {i+1} [1e{exponent}]"
             PrintResult(scaled_value, scaled_error, name=name, ux=unit)
         else:
-            name = f"Parametro {i+1}-esimo"
+            name = f"Parameter {i+1} "
             PrintResult(value, error, name=name, ux=unit)
 
     return popt_mean, popt_std, all_popt
