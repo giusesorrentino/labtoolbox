@@ -1,7 +1,21 @@
 # LabToolbox
 
-**LabToolbox** is a Python library that provides a collection of useful tools for laboratory data analysis.  
-It offers intuitive and optimized functions for curve fitting, uncertainty propagation, data handling, and graphical visualization, enabling a faster and more rigorous approach to experimental data processing. Designed for students, researchers, and anyone working with experimental data, it combines ease of use with methodological accuracy.
+[![PyPI - Version](https://img.shields.io/pypi/v/LabToolbox)](https://pypi.org/project/LabToolbox/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/LabToolbox)](https://pypi.org/project/LabToolbox/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/LabToolbox)](https://pypi.org/project/LabToolbox/)
+[![License](https://img.shields.io/pypi/l/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE)
+![GitHub Issues](https://img.shields.io/github/issues/giusesorrentino/LabToolbox)
+![GitHub Pull Requests](https://img.shields.io/github/issues-pr/giusesorrentino/LabToolbox)
+![GitHub Repo stars](https://img.shields.io/github/stars/giusesorrentino/LabToolbox)
+![GitHub Forks](https://img.shields.io/github/forks/giusesorrentino/LabToolbox)
+```text
+    __          __  ______            ____              
+   / /   ____ _/ /_/_  __/___  ____  / / /_  ____  _  __
+  / /   / __ `/ __ \/ / / __ \/ __ \/ / __ \/ __ \| |/_/
+ / /___/ /_/ / /_/ / / / /_/ / /_/ / / /_/ / /_/ />  <  
+/_____/\__,_/_.___/_/  \____/\____/_/_.___/\____/_/|_|  
+```
+**LabToolbox** is a Python library that provides a collection of useful tools for laboratory data analysis. It offers intuitive and optimized functions for curve fitting, uncertainty propagation, data handling, and graphical visualization, enabling a faster and more rigorous approach to experimental data processing. Designed for students, researchers, and anyone working with experimental data, it combines ease of use with methodological accuracy.
 
 The `example.ipynb` notebook, available on the library's [GitHub page](https://github.com/giusesorrentino/LabToolbox), includes usage examples for the main functions of `LabToolbox`.
 
@@ -39,3 +53,8 @@ You can install **LabToolbox** easily using `pip`:
 
 ```bash
 pip install LabToolbox
+```
+
+## Citation
+
+If you use this software, please cite it using the metadata in [CITATION.cff](https://github.com/tuo-username/LabToolbox/blob/main/CITATION.cff). You can also use GitHub’s “Cite this repository” feature (available in the sidebar of the repository page).
