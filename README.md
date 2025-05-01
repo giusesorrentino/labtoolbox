@@ -56,7 +56,8 @@ MIT License – See the [LICENSE.txt](https://github.com/giusesorrentino/LabTool
 
 ## Ethical Guidelines
 
-This project includes a set of [Ethical Guidelines](https://github.com/giusesorrentino/LabToolbox/blob/main/ETHICAL_GUIDELINES.md) outlining the principles of responsible and respectful use. Users are encouraged to read and adhere to them when using or contributing to this software.
+This project’s ethical principles and usage policies are included in the [Code of Conduct](https://github.com/giusesorrentino/LabToolbox/blob/main/CODE_OF_CONDUCT.md) under the “Ethical Guidelines” section.  
+Users and contributors are encouraged to review and adhere to them when using or contributing to this software.
 
 ## Disclaimer
 
