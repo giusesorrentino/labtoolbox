@@ -36,8 +36,6 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 ## Ethical Guidelines
 
-<!--
-
 This project adheres to the following ethical principles:
 
 - It is intended as a tool for open, transparent, and collaborative research and learning.  
@@ -45,11 +43,11 @@ This project adheres to the following ethical principles:
 - Users are encouraged to acknowledge the intellectual contributions of others and cite appropriately.  
 - Any commercialization of the software must respect the licensing terms and the spirit of openness under which it was released.
 
--->
+## Author’s Ethical Requests
 
 This project is released under the MIT License, which allows anyone to use, modify, and distribute the software, including for commercial purposes.
 
-However, I kindly ask users and developers to respect the spirit of open collaboration by adhering to the following ethical guidelines:
+However, I kindly ask users and developers to respect the spirit of open collaboration by adhering to the following personal requests:
 
 - **Do not sell this software as-is** without providing substantial added value.
 - **Do not use this software in a way that misleads others** into thinking you are the original author.
