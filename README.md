@@ -57,4 +57,4 @@ pip install LabToolbox
 
 ## Citation
 
-If you use this software, please cite it using the metadata in [CITATION.cff](https://github.com/tuo-username/LabToolbox/blob/main/CITATION.cff). You can also use GitHub’s “Cite this repository” feature (available in the sidebar of the repository page).
+If you use this software, please cite it using the metadata in [CITATION.cff](https://github.com/giusesorrentino/LabToolbox/blob/main/CITATION.cff). You can also use GitHub’s “Cite this repository” feature (available in the sidebar of the repository page).
