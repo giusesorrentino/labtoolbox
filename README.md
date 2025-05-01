@@ -54,9 +54,11 @@ If you use this software, please cite it using the metadata in [CITATION.cff](ht
 
 MIT License – See the [LICENSE.txt](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE.txt) file.
 
-## Ethical Guidelines
+## Code of Conduct and Ethical Use
 
-This project’s ethical principles and usage policies are included in the [Code of Conduct](https://github.com/giusesorrentino/LabToolbox/blob/main/CODE_OF_CONDUCT.md) under the “Ethical Guidelines” section. Users and contributors are encouraged to review and adhere to them when using or contributing to this software.
+This project includes a [Code of Conduct](https://github.com/giusesorrentino/LabToolbox/blob/main/CODE_OF_CONDUCT.md), which all users and contributors are expected to read and follow.
+
+Additionally, the Code of Conduct contains a section titled “Author’s Ethical Requests” outlining the author's personal expectations regarding responsible and respectful use, especially in commercial or large-scale contexts. While not legally binding, these principles reflect the spirit in which this software was developed, and users are kindly asked to consider them when using the project.
 
 ## Disclaimer
 
