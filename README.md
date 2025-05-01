@@ -40,8 +40,7 @@ The **LabToolbox** library is organized into multiple submodules, each dedicated
 
 ## Disclaimer
 
-The functions `my_cov`, `my_var`, `my_mean`, `my_line`, `my_lin_fit`, and `y_estrapolato`, found in the modules `LabToolbox.basics` and `LabToolbox.fit`, originate from the `my_lib_santanastasio` library, developed by F. Santanastasio (professor of the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”).  
-These functions are available at [https://baltig.infn.it/LabMeccanica/PythonJupyter](https://baltig.infn.it/LabMeccanica/PythonJupyter).
+The functions `my_cov`, `my_var`, `my_mean`, `my_line`, `my_lin_fit`, and `y_estrapolato`, found in the modules `LabToolbox.basics` and `LabToolbox.fit`, originate from the `my_lib_santanastasio` library, developed by F. Santanastasio (professor of the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”). These functions are available at [https://baltig.infn.it/LabMeccanica/PythonJupyter](https://baltig.infn.it/LabMeccanica/PythonJupyter).
 
 Additionally, this package makes use of the `uncertainty_class` library, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within `LabToolbox`.
 
