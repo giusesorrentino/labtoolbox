@@ -13,7 +13,7 @@ def uncertainty_diff(f, x_vars, sigma_x, params=()):
             List of input arrays `x1,..., xn`, each with shape (N,).
         sigma_x : list of np.ndarray
             List of uncertainty arrays corresponding to each `x_i`, shape (N,).
-        params : tuple
+        params : tuple, optional
             Tuple of constant parameters `(a1, ..., am)` to be passed to the function.
 
     Returns
@@ -55,7 +55,7 @@ def uncertainty_diff(f, x_vars, sigma_x, params=()):
 
     return f_central, f_std
 
-def propagate_uncertainty(func, x_arrays, uncertainties, params = None, method='Delta', MC_sample_size = 10000):
+def propagate(func, x_arrays, uncertainties, params = None, method='Delta', MC_sample_size = 10000):
     """
     Propagates uncertainty from input arrays to a generic function using the `uncertainty_class` library.
 
@@ -155,3 +155,65 @@ def propagate_uncertainty(func, x_arrays, uncertainties, params = None, method='
         confidence_bands_upper[j] = ucb
     
     return f_values, f_uncertainties, (confidence_bands_lower, confidence_bands_upper)
+
+def montecarlo_uncertainty(func, values, uncertainties, N=10_000, seed=None):
+    """
+    Estimate the propagated uncertainty on a function of N variables using Monte Carlo simulation.
+
+    Parameters
+    ----------
+    func : callable
+        The function to evaluate. Must accept the same number of arguments as
+        the length of `values`.
+    values : array-like
+        Central values of the input variables. Must be of the same length as `uncertainties`.
+    uncertainties : array-like
+        Standard deviations (1-sigma uncertainties) of the input variables.
+    N : int, optional
+        Number of Monte Carlo samples to generate. Default is `1e4`.
+    seed : int or None, optional
+        Seed for the random number generator, for reproducibility. Default is None.
+
+    Returns
+    -------
+    mean : float
+        Mean value of the function evaluated over the sampled inputs.
+    std : float
+        Standard deviation (uncertainty) of the function output.
+
+    Notes
+    -----
+    - The input variables are sampled as independent normal distributions with given means
+      and standard deviations.
+    - The method assumes that the function is smooth and the uncertainties are small enough
+      that linear approximations are locally valid.
+    - Correlations between input variables are not taken into account.
+
+    Example
+    -------
+    >>> def f(x, y): return x * y
+    >>> montecarlo_uncertainty(f, [2.0, 3.0], [0.1, 0.2])
+    (6.00..., 0.42...)
+    """
+    values = np.array(values)
+    uncertainties = np.array(uncertainties)
+
+    if values.shape != uncertainties.shape:
+        raise ValueError("values and uncertainties must have the same shape.")
+
+    rng = np.random.default_rng(seed)
+
+    # Generate samples from normal distributions
+    samples = [
+        rng.normal(loc=mu, scale=sigma, size=N)
+        for mu, sigma in zip(values, uncertainties)
+    ]
+
+    # Evaluate the function over all sampled inputs
+    samples = np.array(samples)  # shape: (n_vars, N)
+    outputs = func(*samples)
+
+    mean = np.mean(outputs)
+    std = np.std(outputs, ddof=1)
+
+    return mean, std

@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: LabToolbox
-Version: 1.1.1
-Summary: LabToolbox è una raccolta di strumenti per l'analisi e l'elaborazione di dati sperimentali in ambito scientifico.
+Version: 1.1.2
+Summary: LabToolbox is a collection of tools for the analysis and processing of experimental data in scientific research.
 Author-email: Giuseppe Sorrentino <sorrentinogiuse@icloud.com>
 License-Expression: MIT
 Project-URL: Documentation, https://github.com/giusesorrentino/LabToolbox/wiki
@@ -22,21 +22,42 @@ Requires-Dist: lmfit
 
 # LabToolbox
 
-**LabToolbox** è una libreria Python contenente una serie di funzioni utili per l'analisi di dati di laboratorio. Fornisce funzioni intuitive e ottimizzate per il fitting, la propagazione delle incertezze, la gestione dei dati e la visualizzazione grafica, rendendo più rapido e rigoroso il trattamento dei dati di laboratorio. Pensata per studenti, ricercatori e chiunque lavori con dati sperimentali, combina semplicità d'uso con rigore metodologico.
+**LabToolbox** is a Python library that provides a collection of useful tools for laboratory data analysis.  
+It offers intuitive and optimized functions for curve fitting, uncertainty propagation, data handling, and graphical visualization, enabling a faster and more rigorous approach to experimental data processing. Designed for students, researchers, and anyone working with experimental data, it combines ease of use with methodological accuracy.
 
-Il file `example.ipynb`, disponibile sulla pagina [GitHub](https://github.com/giusesorrentino/LabToolbox) della libreria, contiene esempi di utilizzo delle principali funzioni di `LabToolbox`.
+The `example.ipynb` notebook, available on the library's [GitHub page](https://github.com/giusesorrentino/LabToolbox), includes usage examples for the main functions of `LabToolbox`.
+
+## Library Structure
+
+The **LabToolbox** library is organized into multiple submodules, each dedicated to a specific aspect of experimental data analysis:
+
+- `LabToolbox.basics`  
+  Contains fundamental functions for statistical analysis, such as computation of means, variances, and covariances. These tools provide the basis for most data pre-processing tasks and error analysis.
+
+- `LabToolbox.fit`  
+  Provides routines for linear and non-linear curve fitting, including uncertainty-aware methods. This module also includes tools for computing and visualizing fit residuals and statistical indicators such as the reduced chi-squared and p-values.
+
+- `LabToolbox.misc`  
+  A collection of utility functions for general data handling, including outlier removal, histogram analysis, and formatted display of values with uncertainties.
+
+- `LabToolbox.uncertainty`  
+  Implements numerical propagation of uncertainties for multivariate functions. The functions in this module use numerical derivatives and covariance matrices to return reliable error estimates for complex expressions.
+
+- `LabToolbox.posterior`  
+  Contains tools for Bayesian analysis of model parameters. This module allows you to visualize posterior distributions using MCMC sampling (powered by the `emcee` library), enabling a probabilistic interpretation of the fit results.
 
 ## Disclaimer
 
-Le funzioni `my_cov`, `my_var`, `my_mean`, `my_line`, `my_lin_fit` e `y_estrapolato` presenti nei moduli `LabToolbox.basics` e `LabToolbox.fit` fanno parte della libreria `my_lib_santanastasio`, sviluppata da F. Santanastasio (professore del corso di *Laboratorio di Meccanica* presso l'Università di Roma "La Sapienza"). Queste funzioni sono disponibili sul sito [https://baltig.infn.it/LabMeccanica/PythonJupyter](https://baltig.infn.it/LabMeccanica/PythonJupyter).
+The functions `my_cov`, `my_var`, `my_mean`, `my_line`, `my_lin_fit`, and `y_estrapolato`, found in the modules `LabToolbox.basics` and `LabToolbox.fit`, originate from the `my_lib_santanastasio` library, developed by F. Santanastasio (professor of the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”).  
+These functions are available at [https://baltig.infn.it/LabMeccanica/PythonJupyter](https://baltig.infn.it/LabMeccanica/PythonJupyter).
 
-Inoltre, questo pacchetto fa uso della libreria `uncertainty_class` disponibile su [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master). Fornisce funzionalità per la propagazione delle incertezze nei calcoli. Non è necessaria la sua installazione manuale, in quanto è presente come modulo in `LabToolbox`.
+Additionally, this package makes use of the `uncertainty_class` library, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within `LabToolbox`.
 
-Le funzioni `lin_fit` e `model_fit` includono un'opzione per visualizzare i residui del fit. Il codice responsabile di questa funzionalità proviene dalla libreria [**VoigtFit**](https://github.com/jkrogager/VoigtFit).
+The `lin_fit` and `model_fit` functions include an option to display fit residuals. The code responsible for this feature is adapted from the [**VoigtFit**](https://github.com/jkrogager/VoigtFit) library.
 
-## Installazione
+## Installation
 
-Puoi installare **LabToolbox** facilmente utilizzando `pip`:
+You can install **LabToolbox** easily using `pip`:
 
 ```bash
 pip install LabToolbox

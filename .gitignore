@@ -1,0 +1,15 @@
+LabToolbox.egg-info
+
+LabToolbox/io.py
+
+LabToolbox/signals.py
+
+docs/CHANGELOG.md
+
+.DS_Store
+
+docs/test.py
+
+dist
+
+docs/idee.txt

@@ -1,7 +1,6 @@
 from LabToolbox import curve_fit, plt, np, sm, chi2, math
-from .basics import my_cov, my_mean, my_var, my_line, y_estrapolato
-from .misc import PrintResult
-from .uncertainty import propagate_uncertainty
+from .utils import my_cov, my_mean, my_var, my_line, y_estrapolato, PrintResult
+from .uncertainty import propagate
 
 def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, 
             xscale = 0, yscale = 0, mscale = 0, cscale = 0, m_units = "", c_units = "", confidence = 2, confidencerange = True, residuals=True, norm = True, result = False):
@@ -16,40 +15,40 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
             Values of the dependent variable.
         sy : array-like
             Uncertainties associated with y values.
-        sx : array-like
+        sx : array-like, optional
             Uncertainties associated with x values.
-        fitmodel : str
+        fitmodel : str, optional
             Fitting model, either "wls" or "ols". Default is "wls".
-        xlabel : str
+        xlabel : str, optional
             Label for the x-axis, including units in square brackets (e.g., "x [m]").
-        ylabel : str
+        ylabel : str, optional
             Label for the y-axis, including units in square brackets (e.g., "y [s]").
-        showlegend : bool
+        showlegend : bool, optional
             If `True`, displays a legend with the values of m and c on the plot. 
-        legendloc : str
+        legendloc : str, optional
             Location of the legend on the plot ('upper right', 'lower left', 'upper center', etc.). Default is `None`.
-        xscale : int
+        xscale : int, optional
             Scaling factor for the x-axis (e.g., `xscale = -2` corresponds to 1e-2, to convert meters to centimeters).
-        yscale : int
+        yscale : int, optional
             Scaling factor for the y-axis.
-        mscale : int
+        mscale : int, optional
             Scaling factor for the slope `m`.
-        cscale : int
+        cscale : int, optional
             Scaling factor for the intercept `c`.
-        m_units : str
+        m_units : str, optional
             Unit of measurement for `m` (note the consistency with x, y, and scale factors). Default is `""`.
-        c_units : str
+        c_units : str, optional
             Unit of measurement for `c` (note the consistency with x, y, and scale factors). Default is `""`.
-        confidence : int
+        confidence : int, optional
             Residual confidence interval to display, i.e., `[-confidence, +confidence]`.
-        confidencerange : bool
+        confidencerange : bool, optional
             If `True`, shows the 1σ uncertainty band around the fit line.
-        residuals : bool
+        residuals : bool, optional
             If `True`, adds an upper panel showing fit residuals.
-        norm : bool
+        norm : bool, optional
             If `True`, residuals in the upper panel will be normalized.
-        result : bool
-            If `True`, prints the output of `wls_fit` to the screen. Default is `False`.
+        result : bool, optional
+            If `True`, prints the output of `wls_fit` (or `ols_fit`) to the screen. Default is `False`.
 
     Returns
     ----------
@@ -68,9 +67,10 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     Notes
     ----------
-    LaTeX formatting is already embedded in the strings used to display the units of `m` and `c`. You do not need to wrap them in "$...$".
-    If `c_scale = 0` (recommended when using `c_units`), then `c_units` will represent the suffix corresponding to 10^yscale (+ `y_units`).
-    If `m_scale = 0` (recommended when using `m_units`), then `m_units` will represent the suffix corresponding to 10^(yscale - xscale) [+ `y_units/x_units`].
+    - The values of `xscale` and `yscale` affect only the axis scaling in the plot and have no impact on the fitting computation itself. All model parameters are estimated using the original input data as provided.
+    - LaTeX formatting is already embedded in the strings used to display the units of `m` and `c`. You do not need to use "$...$".
+    - If `c_scale = 0` (recommended when using `c_units`), then `c_units` will represent the suffix corresponding to 10^yscale (+ `y_units`).
+    - If `m_scale = 0` (recommended when using `m_units`), then `m_units` will represent the suffix corresponding to 10^(yscale - xscale) [+ `y_units/x_units`].
     """
 
     xscale = 10**xscale
@@ -248,6 +248,10 @@ def lin_fit(x, y, sy, sx = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [u
 
     fig = plt.figure(figsize=(6.4, 4.8))
 
+    # The following code (lines 257-274) is adapted from the VoigtFit library,
+    # originally developed by Jens-Kristian Krogager under the MIT License.
+    # https://github.com/jkrogager/VoigtFit
+
     if residuals:
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
@@ -313,33 +317,33 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
             Function of one variable (first argument of `f`) with `N` free parameters.
         p0 : list
             Initial guess for the model parameters, in the form `[a, ..., z]`.
-        sx : array-like
+        sx : array-like, optional
             Uncertainties associated with the independent variable. Default is `None`.
-        xlabel : str
+        xlabel : str, optional
             Label (and units) for the independent variable.
-        ylabel : str
+        ylabel : str, optional
             Label (and units) for the dependent variable.
-        showlegend : bool
+        showlegend : bool, optional
             If `True`, displays a legend with the reduced chi-square and p-value in the plot.
-        legendloc : str
+        legendloc : str, optional
             Location of the legend in the plot ('upper right', 'lower left', 'upper center', etc.). Default is `None`.
-        bounds : 2-tuple of array-like
+        bounds : 2-tuple of array-like, optional
             Tuple `([lower_bounds], [upper_bounds])` specifying bounds for the parameters. Default is `None`.
-        confidencerange : bool
+        confidencerange : bool, optional
             If `True`, displays the 1σ uncertainty band around the best-fit curve.
-        log : str
+        log : str, optional
             If set to `'x'` or `'y'`, the corresponding axis is plotted on a logarithmic scale; if `'xy'`, both axes.
-        maxfev : int
+        maxfev : int, optional
             Maximum number of iterations allowed by `curve_fit`.
-        xscale : int
+        xscale : int, optional
             Scaling factor for the x-axis (e.g., `xscale = -2` corresponds to 1e-2, to convert meters to centimeters).
-        yscale : int
+        yscale : int, optional
             Scaling factor for the y-axis.
-        confidence : int
+        confidence : int, optional
             Residual confidence interval to display, i.e., `[-confidence, +confidence]`.
-        residuals : bool
+        residuals : bool, optional
             If `True`, adds an upper panel showing fit residuals.
-        norm : bool
+        norm : bool, optional
             If `True`, residuals in the upper panel will be normalized.
 
     Returns
@@ -352,6 +356,11 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
             Reduced chi-square value (χ²/dof).
         p_value : float
             Fit p-value (probability that the observed χ² is compatible with the model).
+
+    Notes
+    ----------
+    The values of `xscale` and `yscale` affect only the axis scaling in the plot and have no impact on the fitting computation itself. 
+    All model parameters are estimated using the original input data as provided.
     """
 
     xscale = 10**xscale
@@ -412,8 +421,6 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
 
         # Converte in stringa mantenendo zeri finali
         fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
-        mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
-        sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
 
         if popt[i] != 0:
             nu = errors[i] / popt[i]
@@ -432,15 +439,12 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
     elif 0.005 < p_value < 0.10:
         print(f"p-value = {p_value*100:.2f}%")
         pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
-    elif 0.0005 < p_value <= 0.005:
+    elif 0.0001 < p_value <= 0.005:
         print(f"p-value = {p_value*1000:.2f}‰")
-        pval_str = f"$\\text{{p–value}} ={p_value * 1000:.2f}$‰"
-    elif 1e-6 < p_value <= 0.0005:
-        print(f"p-value = {p_value:.2e}")
-        pval_str = f"$\\text{{p–value}} = {p_value:.2e}$"
+        pval_str = f"$\\text{{p–value}} = {p_value * 1000:.2f}$‰"
     else:
         print(f"p-value < 1e-6")
-        pval_str = f"$\\text{{p–value}} < 10^{{-6}}$"
+        pval_str = f"$\\text{{p–value}} < 10^{{-4}}$"
 
     k = np.sum((-1 <= resid_norm) & (resid_norm <= 1))
 
@@ -473,7 +477,7 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
     lista_err = [np.repeat(0, len(x1))] + errori_ripetuti
 
     # Ora puoi usarli nella propagazione
-    _, _ , confid = propagate_uncertainty(f, lista, lista_err)
+    _, _ , confid = propagate(f, lista, lista_err)
 
     y1_plus_1sigma = confid[1] / yscale
     y1_minus_1sigma = confid[0] / yscale
@@ -500,6 +504,10 @@ def model_fit(x, y, sy, f, p0, sx = None, xlabel="x [ux]", ylabel="y [uy]", show
         dash = confidence * sy
 
     fig = plt.figure(figsize=(6.4, 4.8))
+
+    # The following code (lines 518-535) is adapted from the VoigtFit library,
+    # originally developed by Jens-Kristian Krogager under the MIT License.
+    # https://github.com/jkrogager/VoigtFit
 
     if residuals:
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
