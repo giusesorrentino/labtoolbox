@@ -12,7 +12,7 @@ from scipy.interpolate import UnivariateSpline
 
 # Importazioni esplicite da moduli interni
 # from .io import *
-from .signals import *
+# from .signals import *
 from .utils import *
 from .fit import *     # Importa tutte le funzioni dal modulo fit
 from .stats import *

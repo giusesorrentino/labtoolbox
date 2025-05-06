@@ -15,7 +15,7 @@ include-package-data = true
 
 [project]
 name = "LabToolbox"
-version = "2.0.1"
+version = "2.0.3"
 description = "LabToolbox is a collection of tools for the analysis and processing of experimental data in scientific research."
 authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
