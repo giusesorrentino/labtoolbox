@@ -15,7 +15,7 @@ include-package-data = true
 
 [project]
 name = "LabToolbox"
-version = "2.0.0"
+version = "2.0.1"
 description = "LabToolbox is a collection of tools for the analysis and processing of experimental data in scientific research."
 authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
@@ -29,6 +29,9 @@ dependencies = [
     "emcee",
     "corner",
     "lmfit",
+    "astropy",
+    "astroplan",
+    "astroquery",
 ]
 requires-python = ">= 3.8"
 classifiers=[

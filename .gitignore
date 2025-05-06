@@ -1,8 +1,9 @@
-LabToolbox.egg-info
+LabToolbox.egg-info/
 
 LabToolbox/io.py
-
 LabToolbox/signals.py
+
+LabToolbox/__pycache__/
 
 docs/CHANGELOG.md
 
@@ -10,6 +11,6 @@ docs/CHANGELOG.md
 
 docs/test.py
 
-dist
+dist/
 
 docs/idee.txt

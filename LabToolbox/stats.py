@@ -169,7 +169,7 @@ def analyze_residuals(data, expected_data, sigma_data, scale = 0, unit = "", bin
     confidence : float, optional
         Confidence factor for visualizing bounds (e.g., `confidence = 2` draws ±2σ bounds). Default is `2`.
     norm : bool, optionale
-        If `True`, residuals in the upper panel will be normalized. Default is `False`.
+        If `True`, residuals will be normalized. Default is `False`.
 
     Returns
     -------
@@ -207,6 +207,10 @@ def analyze_residuals(data, expected_data, sigma_data, scale = 0, unit = "", bin
     sigma_data = sigma_data / 10**scale
 
     resid = data - expected_data
+
+    if norm == True:
+        resid = resid / sigma_data
+        sigma_data /= sigma_data
 
     mean = resid.mean()
 
@@ -267,12 +271,15 @@ def analyze_residuals(data, expected_data, sigma_data, scale = 0, unit = "", bin
     axs[0].set_yticklabels('')
     axs[0].set_xlim(x_data.min(), x_data.max())
 
+    if norm == False:
     # Prepara l'unità di misura, se presente
-    uy_str = f" [$\\mathrm{{{unit}}}$]" if unit else ""
+        uy_str = f" [$\\mathrm{{{unit}}}$]" if unit else ""
+        label1 = f"Residuals value{uy_str}"
+    else:
+        label1 = "Normalized residuals value"
 
     label = f"$\\mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
     # label1 = f"$\\text{{Residual}} = y_\\text{{data}} - y_\\text{{expected}}${uy_str}"
-    label1 = f"Residual values{uy_str}"
 
     temp = bin if bin is not None else 'auto'
 
@@ -529,117 +536,149 @@ def remove_outliers(data, data_err=None, expected=None, method="zscore", thresho
 
     return data[mask]
 
-def posterior(x, y, sy, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000):
+def posterior(x, y, sy, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, names=None, prior_bounds=None):
     """
-    Bayesian analysis with emcee for fitting a function with many parameters. 
-    
-    This function performs a Markov Chain Monte Carlo (MCMC) analysis to obtain a posterior distribution of the parameters, 
-    then calculates the Maximum Likelihood Estimation (MLE) parameters and visualizes the corner plot of the results.
+    Perform a Bayesian parameter estimation using MCMC for a user-defined model function.
+
+    This function fits a given model `f` to the experimental data `(x, y)` with associated uncertainties `sy` 
+    by first performing a frequentist optimization (`curve_fit`) to obtain initial estimates, and then 
+    running a Markov Chain Monte Carlo (MCMC) sampling using the `emcee` package to derive the full 
+    posterior distribution of the model parameters. It returns the optimized `lmfit` Parameters object 
+    and the flattened MCMC sample chain, and it visualizes a corner plot of the posterior.
 
     Parameters
     ----------
-        x : array-like
-            Measured values for the independent variable.
-        y : array-like
-            Measured values for the dependent variable (to be fitted to the model).
-        sy : array-like
-            Uncertainties on the measurements of the dependent variable.
-        f : function
-            Model function to be fitted to the data. The function should accept an independent variable 
-            `x` as the first argument and the free parameters as subsequent arguments.
-        p0 : list
-            List of initial values for the free parameters of the model. 
-            Example: [a0, b0, c0], where each element corresponds to the initial value of a parameter.
-        burn : int, optional
-            Number of "burn-in steps" to exclude the first samples from the Markov chain 
-            that might be correlated (default is 1000).
-        steps : int, optional
-            Total number of steps for the Markov chain (default is 5000).
-        thin : int, optional
-            Subsampling factor (default is 10), to reduce correlation between samples.
-        maxfev : int
-            Maximum number of iterations for the `curve_fit` function.
+    x : array-like,
+        Independent variable data points.
+
+    y : array-like,
+        Dependent variable data points to be fitted.
+
+    sy : array-like
+        Standard deviations (uncertainties) of the dependent data `y`. Used for computing chi-squared
+        and log-likelihood in the MCMC sampling.
+
+    f : callable
+        The model function to fit. Must be of the form `f(x, *params)`, where `x` is the independent variable
+        and `params` are the free parameters of the model.
+
+    p0 : list or array-like
+        Initial guess for the M free parameters of the model. Used both for `curve_fit` and to initialize 
+        the MCMC walkers.
+
+    burn : int, optional
+        Number of burn-in steps to discard from the beginning of each walker chain before flattening.
+        These initial steps are typically biased by the starting conditions. Default is 1000.
+
+    steps : int, optional
+        Total number of MCMC steps for each walker. Default is 5000
+
+    thin : int, optional
+        Subsampling factor to reduce autocorrelation between samples. Only every `thin`-th sample is retained. Default is 10.
+
+    maxfev : int, optional
+        Maximum number of function evaluations for the `curve_fit` routine. If exceeded, the fit will fail. Default is 5000.
+
+    names : list of str, optional
+        Parameter names to be used in the `corner` plot and output. If `None`, defaults to ['p0', 'p1', ..., 'pN'].
+
+    prior_bounds : list of tuple, optional
+        Prior bounds on the parameters, as a list of `(min, max)` tuples for each parameter. 
+        If `None`, assumes uninformative priors that only reject non-positive values.
 
     Returns
-    ----------
-        res.params : Params
-            Object containing the optimized parameters and uncertainties on the obtained parameters.
-        res.flatchain : array-like
-            Flattened chain of MCMC samples, useful for statistical analysis.
+    -------
+    params : lmfit.Parameters
+        A Parameters object with parameter names and initial values taken from `p0`.
+        Note: this object is not updated with the MCMC results.
 
-    The function visualizes a corner plot of the posterior parameters and prints the median values and uncertainties 
-    on the parameters, along with the results of the Maximum Likelihood Estimation (MLE).
+    flat_samples : ndarray, shape (n_samples, M)
+        Flattened MCMC sample chain (after burn-in and thinning). Each row is a sample of the M parameters.
+        This chain can be used for uncertainty analysis, plotting posteriors, or further statistical inference.
 
     Notes
-    ----------
-    https://lmfit.github.io/lmfit-py/fitting.html#lmfit.minimizer.MinimizerResult
+    -----
+    - This implementation assumes a **uniform prior** over all parameters, constrained to be strictly positive. 
+      Parameters less than or equal to zero are automatically rejected (log-prob = -inf).
+    - The `params` object returned is for reference only; it does not contain MCMC results. 
+      To use posterior values in further analysis, refer to `flat_samples`.
+    - The performance and correctness of the posterior heavily depend on the choice of priors, model structure, 
+      and convergence of the sampler. Always check convergence diagnostics in real analyses.
+
+    Example
+    --------
+    >>> def model(x, a, b):
+    ...     return a * x + b
+    >>> x = np.linspace(0, 10, 50)
+    >>> y = model(x, 2.5, 1.0) + np.random.normal(0, 0.5, size=x.size)
+    >>> sy = 0.5 * np.ones_like(y)
+    >>> posterior(x, y, sy, model, [1, 1])
     """
-    
-    # Creazione del modello lmfit con la funzione f
-    mod = Model(f)
-    params = Parameters()
 
-    # Inizializzazione dei parametri con p0
-    for i, name in enumerate(mod.param_names):
-        params.add(name, value=p0[i])
+    p0 = np.array(p0)
+    ndim = len(p0)
+    nwalkers = 2 * ndim
 
-    # --- Fitting con curve_fit per ottenere una stima iniziale dei parametri ---
-    popt, pcov = curve_fit(f, x, y, p0=p0, sigma=sy, absolute_sigma=True, maxfev=maxfev)
-    
-    # Residui normalizzati
-    residual = (y - f(x, *popt)) / sy
+    if names is None:
+        names = [f"p{i}" for i in range(ndim)]
 
-    # --- Esegui l'analisi bayesiana con emcee ---
-    def lnprob(p, x, y, sy):
-        # Calcola la log-likelihood e aggiungi una prior (come una prior uniforme)
-        model = f(x, *p)
-        chi_squared = np.sum(((y - model) / sy) ** 2)
-        log_likelihood = -0.5 * chi_squared
-        
-        # Prior (in questo caso una prior uniforme)
-        log_prior = 0
-        for param in p:
-            if param <= 0:
-                return -np.inf  # Prior che rifiuta parametri non positivi
-        
-        return log_likelihood + log_prior
+    if prior_bounds is None:
+        # Wide uninformative priors
+        prior_bounds = [(-np.inf, np.inf)] * ndim
 
-    # Configurazione di emcee
-    ndim = len(p0)  # Numero di parametri da stimare
-    nwalkers = 2 * ndim  # Numero di walkers
-    p0_emcee = [popt + 1e-4 * np.random.randn(ndim) for i in range(nwalkers)]  # Inizializzazione dei walkers
-    
-    # Esecuzione del campionamento MCMC
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(x, y, sy))
-    sampler.run_mcmc(p0_emcee, steps)
-    
-    # Appiattire la catena MCMC
+    # Fit iniziale per inizializzare bene i walkers
+    popt, _ = curve_fit(f, x, y, p0=p0, sigma=sy, absolute_sigma=True, maxfev=maxfev)
+
+    # Log-likelihood
+    def log_likelihood(theta):
+        model = f(x, *theta)
+        return -0.5 * np.sum(((y - model) / sy) ** 2)
+
+    # Log-prior uniforme (con bound)
+    def log_prior(theta):
+        for i, (p, (low, high)) in enumerate(zip(theta, prior_bounds)):
+            if not (low < p < high):
+                return -np.inf
+        return 0.0
+
+    # Log-posterior
+    def log_posterior(theta):
+        lp = log_prior(theta)
+        if not np.isfinite(lp):
+            return -np.inf
+        return lp + log_likelihood(theta)
+
+    # Inizializzazione walker intorno a popt
+    p0_walkers = popt + 1e-4 * np.random.randn(nwalkers, ndim)
+
+    # Sampling
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_posterior)
+    sampler.run_mcmc(p0_walkers, steps, progress=True)
+
+    # Estrai i samples
     flat_samples = sampler.get_chain(discard=burn, thin=thin, flat=True)
-    
-    # Visualizzazione della corner plot
-    corner.corner(flat_samples, labels=mod.param_names, truths=popt)
+
+    # Plot corner
+    corner.corner(flat_samples, labels=names, truths=popt)
     plt.show()
 
-    # Stampa la mediana e le incertezze della distribuzione posteriore
-    print("Median of posterior probability distribution:")
-    print("-------------------------------------------")
-    for i, name in enumerate(mod.param_names):
+    # Statistiche
+    print("Posterior medians and 1σ intervals:")
+    print("-----------------------------------")
+    for i, name in enumerate(names):
         median = np.median(flat_samples[:, i])
         lower = np.percentile(flat_samples[:, i], 16)
         upper = np.percentile(flat_samples[:, i], 84)
-        print(f"{name}: {median:.5f} (+{upper - median:.5f}, -{median - lower:.5f})")
+        print(f"{name} = {median:.5f} (+{upper - median:.5f}, -{median - lower:.5f})")
 
-    # Massima verosimiglianza (MLE) - Otteniamo l'indice corretto
-    # Qui vogliamo l'indice della log-probabilità massima
+    # MLE (massima log-probabilità)
     log_prob = sampler.get_log_prob(discard=burn, thin=thin, flat=True)
-    highest_prob_index = np.argmax(log_prob)
-    
-    # Estraiamo i parametri corrispondenti
-    mle_soln = flat_samples[highest_prob_index]
+    mle_index = np.argmax(log_prob)
+    mle_params = flat_samples[mle_index]
 
     print("\nMaximum Likelihood Estimation (MLE):")
     print("-------------------------------------")
-    for i, name in enumerate(mod.param_names):
-        print(f"{name}: {mle_soln[i]:.5f}")
+    for i, name in enumerate(names):
+        print(f"{name} = {mle_params[i]:.5f}")
 
-    return params, flat_samples
+    return flat_samples, mle_params

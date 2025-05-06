@@ -1,5 +1,5 @@
 from LabToolbox import np
-from uncertainty_class import uncert_prop
+from .uncertainty_class import uncert_prop
 
 def uncertainty_diff(f, x_vars, sigma_x, params=()):
     """
