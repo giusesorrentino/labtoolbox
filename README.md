@@ -12,7 +12,7 @@
 <p align="left">
   <picture>
     <source srcset="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
-    <img src="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo2.png" alt="LabToolbox logo" width="700">
+    <img src="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo_light.png" alt="LabToolbox logo" width="700">
   </picture>
 </p>
 
