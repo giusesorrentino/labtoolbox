@@ -3,24 +3,24 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-# Elenco dei pacchetti nel progetto
-packages = ["LabToolbox"]
-
-# Indica che i file non Python (come README.md, LICENSE) devono essere inclusi
+packages = { find = {} }
 include-package-data = true
 
 [tool.setuptools.package-data]
-# Specifica i file aggiuntivi da includere nel pacchetto
-"LabToolbox" = ["README.md", "LICENSE"]
+LabToolbox = ["README.md", "LICENSE"]
 
 [project]
 name = "LabToolbox"
-version = "2.0.3"
-description = "LabToolbox is a collection of tools for the analysis and processing of experimental data in scientific research."
+version = "3.0.0"
+description = "A Python package for the analysis and processing of experimental data in scientific research."
 authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
 ]
 readme = "README.md"
+license = 'MIT'
+license-files = ["LICENSE"]
+requires-python = ">= 3.9.6"
+
 dependencies = [
     "numpy",
     "scipy",
@@ -29,17 +29,13 @@ dependencies = [
     "emcee",
     "corner",
     "lmfit",
-    "astropy",
-    "astroplan",
-    "astroquery",
+    "astropy"
 ]
-requires-python = ">= 3.8"
-classifiers=[
-    'Programming Language :: Python :: 3',
-    'Operating System :: OS Independent',
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
 ]
-license = 'MIT'
-license-files = ["LICENSE"]
 
 [project.urls]
 Documentation = "https://github.com/giusesorrentino/LabToolbox/wiki"

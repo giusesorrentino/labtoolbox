@@ -1,4 +1,4 @@
-# LabToolbox
+<!-- # LabToolbox -->
 
 [![PyPI - Version](https://img.shields.io/pypi/v/LabToolbox?label=PyPI)](https://pypi.org/project/LabToolbox/)
 ![Python Versions](https://img.shields.io/pypi/pyversions/LabToolbox)
@@ -10,20 +10,53 @@
 ![GitHub Forks](https://img.shields.io/github/forks/giusesorrentino/LabToolbox)
 
 <p align="left">
-  <img src="https://raw.githubusercontent.com/giusesorrentino/LabToolbox/main/docs/logo2.png" width="700">
+  <picture>
+    <source srcset="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
+    <img src="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo2.png" alt="LabToolbox logo" width="700">
+  </picture>
 </p>
 
 **LabToolbox** is a Python package that provides a collection of useful tools for laboratory data analysis. It offers intuitive and optimized functions for curve fitting, uncertainty propagation, data handling, and graphical visualization, enabling a faster and more rigorous approach to experimental data processing. Designed for students, researchers, and anyone working with experimental data, it combines ease of use with methodological accuracy.
 
-The `example.ipynb` notebook, available on the package's [GitHub page](https://github.com/giusesorrentino/LabToolbox/blob/main/example.ipynb), includes usage examples for the main functions of `LabToolbox`.
+<!-- The `example.ipynb` notebook, available on the package's [GitHub page](https://github.com/giusesorrentino/LabToolbox/blob/main/example.ipynb), includes usage examples for the main functions of `LabToolbox`. -->
 
 ## Installation
 
-You can install **LabToolbox** easily using `pip`:
+You can install **LabToolbox** from PyPI using `pip`:
 
 ```bash
 pip install LabToolbox
 ```
+<!-- 
+Alternatively, you can install the latest development version directly from GitHub:
+
+```bash
+pip install git+https://github.com/giusesorrentino/LabToolbox.git
+``` -->
+
+<!-- If you prefer to clone the repository and install manually: -->
+Alternatively, you can clone the repository and install it manually:
+
+```bash
+git clone https://github.com/giusesorrentino/LabToolbox.git
+cd LabToolbox
+pip install .
+```
+
+## Dependencies
+
+LabToolbox relies on a set of well-established scientific Python libraries. When installed via `pip`, these dependencies are automatically handled. However, for reference or manual setup, here is the list of core dependencies:
+
+- **numpy** – fundamental package for numerical computing.
+- **scipy** – scientific and technical computing tools.
+- **matplotlib** – for plotting and data visualization.
+- **statsmodels** – statistical modeling and inference.
+- **emcee** – affine-invariant ensemble sampler for MCMC.
+- **corner** – corner plots for visualizing multidimensional distributions.
+- **lmfit** – flexible curve-fitting with parameter constraints.
+- **astropy** – core astronomy library for Python.
+
+> **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9.6. Starting from version 3.0.0, it has been tested only on Python 3.13.3. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.
 
 ## Library Structure
 
@@ -43,13 +76,15 @@ Methods for estimating and propagating uncertainties in experimental contexts, a
 
 ### `LabToolbox.signals`
 Signal analysis tools tailored for laboratory experiments, featuring frequency domain analysis and post-processing of acquired data. -->
-- `LabToolbox.utils`: A collection of helper functions for tasks like data formatting and general-purpose utilities used throughout the package.
+- **LabToolbox.fit**: Routines for linear and non-linear curve fitting.
 
-- `LabToolbox.stats`: Statistical tools for experimental data analysis, including generation of synthetic datasets, histogram construction, outlier removal, residual analysis (normality, skewness, kurtosis), and likelihood/posterior computation for parametric models.
+- **LabToolbox.signals**: Signal analysis tools tailored for laboratory experiments, featuring frequency domain analysis and post-processing of acquired data.
 
-- `LabToolbox.fit`: Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods.
+- **LabToolbox.stats**: Statistical tools for experimental data analysis, including generation of synthetic datasets, histogram construction, outlier removal, residual analysis (normality, skewness, kurtosis), and likelihood/posterior computation for parametric models.
 
-- `LabToolbox.uncertainty`: Methods for estimating and propagating uncertainties in experimental contexts, allowing quantification of how input errors affect model outputs.
+- **LabToolbox.uncertainty**: Methods for estimating and propagating uncertainties in experimental contexts, allowing quantification of how input errors affect model outputs.
+
+- **LabToolbox.utils**: A collection of helper functions for tasks like data formatting and general-purpose utilities used throughout the package.
 
 ## Documentation
 
@@ -59,9 +94,9 @@ Detailed documentation for all modules and functions is available in the [GitHub
 
 If you use this software, please cite it using the metadata in [CITATION.cff](https://github.com/giusesorrentino/LabToolbox/blob/main/CITATION.cff). You can also use GitHub’s “Cite this repository” feature (available in the sidebar of the repository page).
 
-## License 
+<!-- ## License 
 
-MIT License – See the [LICENSE.txt](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE.txt) file.
+MIT License – See the [LICENSE.txt](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE.txt) file. -->
 
 ## Code of Conduct
 
@@ -71,8 +106,8 @@ Additionally, the Code of Conduct contains a section titled “Author’s Ethica
 
 ## Disclaimer
 
-This package makes use of the `uncertainty_class` library, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within `LabToolbox`.
+LabToolbox makes use of the **uncertainty_class** package, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within LabToolbox.
 
-The functions `my_cov`, `my_var`, `my_mean`, `my_line` and `y_estrapolato`, found in the modules `LabToolbox.utils` and `LabToolbox.fit`, originate from the `my_lib_santanastasio` library, developed by F. Santanastasio (professor of the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”), available at [this link](https://baltig.infn.it/LabMeccanica/PythonJupyter).
+Some utility functions — namely `my_cov`, `my_var`, `my_mean`, `my_line`, and `y_estrapolato` — available in the **LabToolbox.utils** module, are adapted from the [**my_lib_santanastasio**](https://baltig.infn.it/LabMeccanica/PythonJupyter) package, originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
 
-Tools such as `lin_fit` and `model_fit` include an option to display fit residuals. This functionality incorporates elements from the [**VoigtFit**](https://github.com/jkrogager/VoigtFit) library. The relevant portions of code are clearly marked in the source with a dedicated comment.
+Additionally, the `lin_fit` and `model_fit` functions provide the option to visualize fit residuals. This feature draws inspiration from the [**VoigtFit**](https://github.com/jkrogager/VoigtFit) library, with the relevant portions of code clearly annotated within the source.

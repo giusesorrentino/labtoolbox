@@ -1,9 +1,10 @@
 LabToolbox.egg-info/
 
 LabToolbox/io.py
-LabToolbox/signals.py
 
 LabToolbox/__pycache__/
+
+LabToolbox/.DS_Store
 
 docs/CHANGELOG.md
 
@@ -14,3 +15,7 @@ docs/test.py
 dist/
 
 docs/idee.txt
+
+docs/wiki.md
+
+example.ipynb
