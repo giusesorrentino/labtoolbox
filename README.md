@@ -4,7 +4,6 @@
 ![Python Versions](https://img.shields.io/pypi/pyversions/LabToolbox)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/LabToolbox)
 [![License](https://img.shields.io/pypi/l/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE.txt)
-[![Documentation Status](https://readthedocs.org/projects/labtoolbox/badge/?version=latest)](https://labtoolbox.readthedocs.io/en/latest/?badge=latest)
 [![GitHub Issues](https://img.shields.io/github/issues/giusesorrentino/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/giusesorrentino/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/pulls)
 ![GitHub Repo stars](https://img.shields.io/github/stars/giusesorrentino/LabToolbox)
