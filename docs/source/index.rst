@@ -3,30 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-LabToolbox documentation
-========================
+Welcome to LabToolbox's documentation!
+======================================
 
-.. automodule:: LabToolbox.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
+   :caption: Wiki:
 
-.. automodule:: LabToolbox.fit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: LabToolbox.stats
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: LabToolbox.signals
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: LabToolbox.uncertainty
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   wiki/Home
+   wiki/LabToolbox.fit
+   wiki/LabToolbox.signals
+   wiki/LabToolbox.stats
+   wiki/LabToolbox.uncertainty
+   wiki/LabToolbox.utils
