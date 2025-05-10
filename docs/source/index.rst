@@ -6,18 +6,27 @@
 LabToolbox documentation
 ========================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+.. automodule:: LabToolbox.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Modules:
+.. automodule:: LabToolbox.fit
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   LabToolbox.utils
-   LabToolbox.fit
-   LabToolbox.stats
-   LabToolbox.linalg
-   LabToolbox.optics
-   LabToolbox.signals
-   LabToolbox.uncertainty
+.. automodule:: LabToolbox.stats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: LabToolbox.signals
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: LabToolbox.uncertainty
+   :members:
+   :undoc-members:
+   :show-inheritance:
