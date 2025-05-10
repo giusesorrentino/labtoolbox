@@ -10,9 +10,9 @@ Welcome to LabToolbox's documentation!
    :maxdepth: 2
    :caption: Wiki:
 
-   wiki/Home
-   wiki/LabToolbox.fit
-   wiki/LabToolbox.signals
-   wiki/LabToolbox.stats
-   wiki/LabToolbox.uncertainty
-   wiki/LabToolbox.utils
+   Home
+   fit
+   signals
+   stats
+   uncertainty
+   utils
