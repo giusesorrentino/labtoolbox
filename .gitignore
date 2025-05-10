@@ -2,6 +2,8 @@ LabToolbox.egg-info/
 
 LabToolbox/io.py
 
+LabToolbox/test2.py
+
 LabToolbox/__pycache__/
 
 LabToolbox/.DS_Store
@@ -13,6 +15,8 @@ docs/CHANGELOG.md
 docs/test.py
 
 dist/
+
+build/
 
 docs/idee.txt
 

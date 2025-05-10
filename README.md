@@ -4,6 +4,7 @@
 ![Python Versions](https://img.shields.io/pypi/pyversions/LabToolbox)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/LabToolbox)
 [![License](https://img.shields.io/pypi/l/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE.txt)
+[![Documentation Status](https://readthedocs.org/projects/labtoolbox/badge/?version=latest)](https://labtoolbox.readthedocs.io/en/latest/?badge=latest)
 [![GitHub Issues](https://img.shields.io/github/issues/giusesorrentino/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/giusesorrentino/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/pulls)
 ![GitHub Repo stars](https://img.shields.io/github/stars/giusesorrentino/LabToolbox)
@@ -108,6 +109,6 @@ Additionally, the Code of Conduct contains a section titled “Author’s Ethica
 
 LabToolbox makes use of the **uncertainty_class** package, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within LabToolbox.
 
-Some utility functions — namely `my_cov`, `my_var`, `my_mean`, `my_line`, and `y_estrapolato` — available in the **LabToolbox.utils** module, are adapted from the [**my_lib_santanastasio**](https://baltig.infn.it/LabMeccanica/PythonJupyter) package, originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
+Some utility functions — namely `my_cov`, `my_var`, `my_mean`, `my_line`, and `y_estrapolato` — are adapted from the [**my_lib_santanastasio**](https://baltig.infn.it/LabMeccanica/PythonJupyter) package, originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
 
 Additionally, the `lin_fit` and `model_fit` functions provide the option to visualize fit residuals. This feature draws inspiration from the [**VoigtFit**](https://github.com/jkrogager/VoigtFit) library, with the relevant portions of code clearly annotated within the source.

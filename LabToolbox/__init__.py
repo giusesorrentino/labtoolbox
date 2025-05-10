@@ -11,6 +11,8 @@ Submodules
 
  utils         --- Utility functions
  fit           --- Curve fitting tools
+ linalg        ---
+ optics        ---
  stats         --- Statistical and probabilistic analysis
  signals       --- Signal processing routines
  uncertainty   --- Propagation of uncertainty
@@ -34,6 +36,8 @@ from . import utils
 from . import fit
 from . import stats
 from . import uncertainty
+from . import linalg
+from . import optics
 
 # Public symbols
 __all__ = [
@@ -42,4 +46,6 @@ __all__ = [
     'fit',
     'stats',
     'uncertainty',
+    'linalg',
+    'optics'
 ]

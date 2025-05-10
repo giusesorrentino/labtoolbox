@@ -220,3 +220,38 @@ def convert(value, from_unit: str, to_unit: str):
         raise UnitConversionError(f"Cannot convert from '{from_unit}' to '{to_unit}': {e}")
     except ValueError as e:
         raise ValueError(f"Invalid unit specified: {e}")
+
+def proj(u, v):
+    """Project vector v onto vector u."""
+    return np.dot(v, u) * u / np.dot(u, u)
+
+def gramschmid(vect, first=0, norm=True):
+    """
+    Perform Gram-Schmidt orthogonalization on a list of vectors.
+
+    Parameters
+    ----------
+    vect : list of np.ndarray
+        Input list of linearly independent vectors.
+    first : int, optional
+        Index of the first vector to use as starting point (default is 0).
+    norm : bool, optional
+        If True, returns an orthonormal basis. If False, returns an orthogonal basis.
+
+    Returns
+    -------
+    list of np.ndarray
+        Orthogonal (or orthonormal) vectors forming the basis.
+    """
+    u = []
+    for i in range(len(vect)):
+        if i < first:
+            u.append(vect[i])
+            continue
+        vec = vect[i].copy()
+        for j in range(first, i):
+            vec -= proj(u[j], vect[i])
+        if norm:
+            vec = vec / np.linalg.norm(vec)
+        u.append(vec)
+    return u
