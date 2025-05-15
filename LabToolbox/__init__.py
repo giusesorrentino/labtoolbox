@@ -9,13 +9,13 @@ Submodules
 ----------
 ::
 
- utils         --- Utility functions
  fit           --- Curve fitting tools
  linalg        ---
  optics        ---
- stats         --- Statistical and probabilistic analysis
  signals       --- Signal processing routines
+ stats         --- Statistical and probabilistic analysis
  uncertainty   --- Propagation of uncertainty
+ utils         --- Utility functions
 
 Public API in the LabToolbox namespace
 --------------------------------------
@@ -38,6 +38,7 @@ from . import stats
 from . import uncertainty
 from . import linalg
 from . import optics
+# from . import special
 
 # Public symbols
 __all__ = [
@@ -47,5 +48,5 @@ __all__ = [
     'stats',
     'uncertainty',
     'linalg',
-    'optics'
+    'optics',
 ]

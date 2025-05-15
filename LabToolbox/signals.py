@@ -6,101 +6,6 @@ from scipy.integrate import quad, simpson
 from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 
-# def power_spectrum(t, y, interval = None, xscale = 0, yscale = 0, normalize=True, logscale=True, density=False, unit=""):
-#     """
-#     Computes and plots the power spectrum or power spectral density (PSD)
-#     of a real-valued discrete signal.
-
-#     Parameters
-#     ----------
-#     t : array_like
-#         Time array corresponding to the samples of the signal.
-#     y : array_like
-#         Input signal, assumed to be real and sampled at times given by `t`.
-#     interval : tuple of float or None, optional
-#         The interval (a, b) over which to view the plot. Default is `None.`
-#     xscale : int, optional
-#         If non-zero, rescale frequency axis by 10**(-xscale) and update label.
-#     xscale : int, optional
-#         If non-zero, rescale y-axis by 10**(-yscale) and update label.
-#     normalize : bool, optional
-#         If True, normalize the spectrum so that its sum equals 1.
-#     logscale : bool, optional
-#         If True, display the power in log scale (dB). Default is True.
-#     density : bool, optional
-#         If True, return the PSD (power per Hz). Default is False.
-#     unit : str, optional
-#         Physical unit of the signal y (e.g. "V", "A", "counts"). This will appear
-#         (squared) in the y‑axis label when `logscale = False`.
-
-#     Returns
-#     -------
-#     freqs : ndarray
-#         Array of frequencies (Hz).
-#     power : ndarray
-#         Power spectrum or PSD (normalized if normalize=True).
-
-#     Notes
-#     -------
-#     LaTeX formatting is already embedded in the strings used to display the units of the y-axis. You do not need to use "$...$".
-#     """
-
-#     t = np.asarray(t)
-#     y = np.asarray(y)
-#     if len(t) != len(y):
-#         raise ValueError("Time and signal arrays must have the same length.")
-
-#     dt = np.mean(np.diff(t))
-#     N = len(y)
-#     yf = np.fft.fft(y)
-#     freqs = np.fft.fftfreq(N, d=dt)
-
-#     idx = freqs > 0
-#     freqs = freqs[idx]
-#     power = np.abs(yf[idx])**2
-
-#     if density:
-#         power *= 2 * dt / N
-#     else:
-#         power *= 2 / N**2
-
-#     if normalize:
-#         power /= np.sum(power)
-
-#     if logscale:
-#         power_plot = 10 * np.log10(power + 1e-20)
-#     else:
-#         power_plot = power
-
-#     if xscale != 0:
-#         freqs_scaled = freqs * 10**(-xscale)
-#         freq_label = f"Frequency [$\\times 10^{{{xscale}}}$ Hz]"
-#     else:
-#         freqs_scaled = freqs
-#         freq_label = "Frequency [Hz]"
-
-#     if yscale != 0:
-#         factor = f"\\times 10^{{{yscale}}} "
-#     else:
-#         factor = ""
-
-#     plt.plot(freqs_scaled, power_plot / 10**yscale, color="blue")
-#     if interval is not None:
-#         plt.xlim(*interval)
-#     plt.xlabel(freq_label)
-
-#     # Costruzione dell'etichetta y includendo l'unità
-#     if logscale:
-#         y_label = f"Power spectral density [{factor}dB$\,$Hz$^{{-1}}$]" if density else f"Power spectrum [{factor}dB]"
-#     else:
-#         # se c'è un'unità, la eleviamo al quadrato
-#         unit_sq = f"$\\mathrm{{{unit}}}^2$" if unit else ""
-#         y_label = f"Power spectral density [{factor}{unit_sq}$\,$Hz$^{{-1}}$]" if density else f"Power spectrum [{factor}{unit_sq}]"
-
-#     plt.ylabel(y_label)
-
-#     return freqs, power
-
 def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel = "y [uy]", xscale = 0, yscale = 0):
     """
     Computes the discrete Fourier series approximation of a sampled function.
@@ -400,3 +305,68 @@ def decompose(t, y, freqs):
         })
 
     return components
+
+def quality(t, signal, nev, responsivity=None):
+    """
+    Calculate the Signal-to-Noise Ratio (S/N) and Noise Equivalent Power (NEP).
+
+    Parameters:
+    -----------
+    t : array-like
+        Array of time values (in seconds).
+    signal : array-like
+        Array of signal amplitudes (e.g., in volts).
+    nev : float
+        Noise Equivalent Voltage (in volts).
+    responsivity : float, optional
+        System responsivity (in V/W). If None, NEP is not calculated.
+
+    Returns:
+    --------
+    tuple : (snr, nep, bandwidth)
+        - snr : float
+            Signal-to-Noise Ratio (dimensionless).
+        - nep : float or None
+            Noise Equivalent Power (in W/sqrt(Hz)) or None if responsivity is not provided.
+        - bandwidth : float
+            Effective signal bandwidth (in Hz).
+    """
+    # Convert inputs to numpy arrays
+    t = np.array(t)
+    signal = np.array(signal)
+    
+    # Calculate time step and sampling frequency
+    dt = np.mean(np.diff(t))
+    fs = 1 / dt  # Sampling frequency
+    
+    # Calculate RMS of the signal
+    signal_rms = np.sqrt(np.mean(signal**2))
+    
+    # Calculate S/N
+    snr = signal_rms / nev
+    
+    # Calculate bandwidth using FFT
+    N = len(signal)
+    yf = fft(signal)
+    xf = fftfreq(N, dt)[:N//2]  # Positive frequencies
+    power_spectrum = np.abs(yf[:N//2])**2 / N  # Power spectrum
+    
+    # Calculate effective (RMS) bandwidth
+    power_total = np.sum(power_spectrum)
+    freq_weighted = np.sum(xf * power_spectrum) / power_total
+    freq_squared_weighted = np.sum(xf**2 * power_spectrum) / power_total
+    bandwidth = np.sqrt(freq_squared_weighted - freq_weighted**2)
+    
+    # Calculate NEP
+    nep = None
+    if responsivity is not None:
+        nep = nev / responsivity / np.sqrt(bandwidth)
+
+    print(f"S/N:\t\t{snr:.2f}")
+    print(f"Bandwidth:\t{bandwidth:.2f} Hz")
+    if nep is not None:
+        print(f"NEP:\t\t{nep:.2e} W/sqrt(Hz)")
+    else:
+        print("NEP not calculated: provide responsivity.")
+    
+    return snr, nep, bandwidth

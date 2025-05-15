@@ -1,12 +1,16 @@
 import math
+import emcee
+import corner
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as spstats
+import warnings as warn
+
 from scipy.optimize import curve_fit
 from matplotlib.ticker import MaxNLocator
 from statsmodels.stats.stattools import durbin_watson
-import emcee
-import corner
+from ._uncertainty_class import uncert_prop
+from ._helper import format_BIC
 
 def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
     """
@@ -124,18 +128,16 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
     elif 0.005 < p_value < 0.10:
         pval_str = f"{p_value * 100:.2f}%"
     elif 0.0005 < p_value <= 0.005:
-        pval_str = f"{p_value * 1000:.2f}‰"
-    elif 1e-6 < p_value <= 0.0005:
-        pval_str = f"{p_value:.2e}"
+        pval_str = f"{p_value * 100:.3f}%"
     else:
-        pval_str = f"< 1e-6"
+        pval_str = f"< 0.05%"
 
     # Prepara l'unità di misura, se presente
     ux_str = f" {unit}" if unit else ""
 
     # Crea la stringa stampabile
     stamp = (
-        f"Mean value: {rounded_mean:.{max(0, -exponent1 + 1)}f}{ux_str}\n"
+        f"Mean value: {rounded_mean:.{max(0, -exponent + 1)}f}{ux_str}\n"
         f"Standard deviation: {rounded_sigma:.{max(0, -exponent + 1)}f}{ux_str}\n"
         f"Skewness: {skewness:.2f}\n"
         f"Kurtosis: {kurtosis:.2f}\n"
@@ -150,9 +152,13 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
 
     return mean, sigma, skewness, kurtosis, p_value
 
-def analyze_residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False):
+def analyze_residuals(*args, **kwargs):
+    warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
+    return residuals(args, kwargs)
+
+def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False):
     """
-    Analyzes and visualizes the residuals of a fit, including histogram, Gaussianity test, and autocorrelation test (Durbin-Watson statistic).
+    Analyzes and visualizes the residuals of the quantity of interes, including histogram, Gaussianity test, and autocorrelation test (Durbin-Watson statistic).
 
     Parameters
     ----------
@@ -191,7 +197,7 @@ def analyze_residuals(data, expected_data, data_err, scale = 0, unit = "", bins 
     Notes
     -----
     - The residuals are computed as `resid = data - expected_data`, and scaled by `10**scale`.
-    - The standard deviation is computed as `np.sqrt(resid.std()**2 + np.sum(data_err**2)/len(data_err))`.
+    - The standard deviation is computed as`np.sqrt(resid.std()**2 + np.sum(data_err**2)/len(data_err))`.
     - The normal distribution is refferd to as `N(mu, sigma**2)`.
     - The Shapiro–Wilk test is used to test for normality of the residuals:
         - If `p_value >= 0.05`, residuals are considered consistent with a normal distribution.
@@ -308,11 +314,9 @@ def analyze_residuals(data, expected_data, data_err, scale = 0, unit = "", bins 
     elif 0.005 < p_value < 0.10:
         pval_str = f"{p_value * 100:.2f}%"
     elif 0.0005 < p_value <= 0.005:
-        pval_str = f"{p_value * 1000:.2f}‰"
-    elif 1e-6 < p_value <= 0.0005:
-        pval_str = f"{p_value:.2e}"
+        pval_str = f"{p_value * 100:.3f}%"
     else:
-        pval_str = f"< 1e-6"
+        pval_str = f"< 0.05%"
 
     dw = durbin_watson(resid)
 
@@ -383,6 +387,8 @@ def samples(n, distribution='normal', **params):
     >>> samples(200, 'poisson', lam=3)
     array([...])
     """
+    warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+
     dist = distribution.lower()
     rng = np.random.default_rng()
     
@@ -529,7 +535,7 @@ def remove_outliers(data, data_err=None, expected=None, method="zscore", thresho
 
     return data[mask]
 
-def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, names=None, prior_bounds=None):
+def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, names=None, prior_bounds=None, plot_dataset = False, plot_density = False, **kwargs):
     """
     Performs a Bayesian parameter estimation using MCMC for a user-defined model function.
 
@@ -568,6 +574,12 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
     prior_bounds : list of tuple, optional
         Prior bounds on the parameters, as a list of `(min, max)` tuples for each parameter. 
         If `None`, assumes uninformative priors that only reject non-positive values.
+    plot_dataset : bool, optional
+        Draw the individual data points. Default is `False`.
+    plot_density : bool, optional
+        Draw the density colormap. Default is `False`.
+    **kwargs
+        Any remaining keyword arguments are passed to `corner.corner`.
 
     Returns
     -------
@@ -641,8 +653,15 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
     # Estrai i samples
     flat_samples = sampler.get_chain(discard=burn, thin=thin, flat=True)
 
+    # ho tolto truths = popt
+
     # Plot corner
-    corner.corner(flat_samples, labels=names, truths=popt)
+    # Rimuovi eventuali duplicati nel kwargs
+    kwargs.setdefault("plot_density", plot_density)
+    kwargs.setdefault("plot_datapoints", plot_dataset)
+    # corner.corner(flat_samples, labels=names, no_fill_contours=True, color="royalblue", hist_kwargs={"color": "royalblue", "alpha": 0.8, "linewidth": 1.5}, 
+    #               contour_kwargs={"colors": ["darkblue"], "levels": [0.864, 0.675,]}, **kwargs)
+    corner.corner(flat_samples, labels=names, no_fill_contours=True, **kwargs)
     plt.show()
 
     # Statistiche
@@ -665,3 +684,250 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
         print(f"{name} = {mle_params[i]:.5f}")
 
     return flat_samples, mle_params
+
+def propagate(func, x_val, x_err, params = None, method='Delta', MC_sample_size = 10000):
+    """
+    Propagates uncertainty from input arrays to a generic function using the `uncertainty_class` library.
+
+    Parameters
+    ----------
+    func : callable
+        The base function, in the form `f(x, a)` where:
+        - `x` is a vector of variables.
+        - `a` is a vector of parameters (optional).
+        
+    x_val : list of numpy.ndarray
+        List containing the input variable arrays `[x1, x2, ..., xn]`. Each entry can be:
+        - a scalar,
+        - a numpy array of values (same length across all xi).
+        
+    x_err : list or numpy.ndarray
+        List of uncertainties for each variable (scalars or arrays), 
+        or a full covariance matrix.
+        
+    params : list or numpy.ndarray, optional
+        List or array of constant parameters `[a1, a2, ..., am]`.
+        
+    method : str, optional
+        The uncertainty propagation method ('Delta' or 'Monte_Carlo').
+        
+    MC_sample_size : int, optional
+        Sample size for the Monte Carlo method.
+        
+    Returns
+    --------
+        f_values : numpy.ndarray
+            Values of the function calculated at each point `j`.
+        f_err : numpy.ndarray
+            Propagated uncertainties on the output function for each point `j`.
+        confidence_bands : tuple of numpy.ndarray
+            Lower and upper confidence bands for each point `j`.
+    """
+
+    # # Verifica che tutti gli array di input abbiano la stessa lunghezza
+    # n_points = len(x_val[0])
+    # for i, x in enumerate(x_val[1:], 1):
+    #     if len(x) != n_points:
+    #         raise ValueError(f"Input array x{i+1} has a different length than the others.")
+
+    # Normalizza x_val in lista di array
+    x_val = [np.atleast_1d(xi) for xi in x_val]
+
+    # Determina la lunghezza degli array
+    lengths = [len(xi) for xi in x_val]
+    unique_lengths = set(lengths)
+
+    if len(unique_lengths) == 1:
+        n_points = lengths[0]
+    else:
+        raise ValueError("All input arrays (or scalars) must have the same length.")
+
+    # Normalizza x_err se è una lista di scalari
+    if isinstance(x_err, list):
+        if all(isinstance(u, (int, float)) for u in x_err):
+            x_err = [np.full(n_points, u) for u in x_err]
+        elif all(isinstance(u, np.ndarray) for u in x_err):
+            x_err = [np.atleast_1d(u) for u in x_err]
+        else:
+            raise ValueError("x_err must be a list of scalars or a list of numpy arrays.")
+    elif isinstance(x_err, np.ndarray):
+        if x_err.shape != (len(x_val), len(x_val)):
+            raise ValueError("Covariance matrix must be square with dimension equal to number of variables.")
+    else:
+        raise TypeError("x_err must be a list or a covariance matrix.")
+    
+    # Inizializza gli array di output
+    f_values = np.zeros(n_points)
+    f_err = np.zeros(n_points)
+    confidence_bands_lower = np.zeros(n_points)
+    confidence_bands_upper = np.zeros(n_points)
+    
+    # Prepara la funzione wrapper che accetta un vettore di variabili
+    def wrapped_func(x_vector):
+        if params is not None:
+            return func(*x_vector, *params)
+        else:
+            return func(*x_vector)
+    
+    # Per ogni punto j, calcola f[j] e la sua incertezza
+    for j in range(n_points):
+        # Estrai i valori per il punto j
+        x_point = np.array([x[j] for x in x_val])
+        
+        # Prepara la matrice di covarianza
+        if isinstance(x_err, list):
+            # Se uncertainties è una lista di incertezze per ogni variabile
+            if all(isinstance(u, (int, float)) for u in x_err):
+                # Se sono scalari, crea una matrice diagonale
+                cov_matrix = np.diag([u**2 for u in x_err])
+            else:
+                # Se sono array, prendi il valore per il punto j
+                cov_matrix = np.diag([u[j]**2 for u in x_err])
+        else:
+            # Assume che uncertainties sia già una matrice di covarianza
+            cov_matrix = x_err
+            
+        # Crea l'oggetto uncert_prop
+        uncertainty_propagator = uncert_prop(
+            func = wrapped_func,
+            x = x_point,
+            cov_matrix = cov_matrix,
+            method = method,
+            MC_sample_size = MC_sample_size
+        )
+        
+        # Calcola il valore della funzione
+        f_values[j] = wrapped_func(x_point)
+        
+        # Calcola l'incertezza propagata
+        f_err[j] = uncertainty_propagator.SEM()
+        
+        # Calcola le bande di confidenza
+        lcb, ucb = uncertainty_propagator.confband()
+        confidence_bands_lower[j] = lcb
+        confidence_bands_upper[j] = ucb
+    
+    return f_values, f_err, (confidence_bands_lower, confidence_bands_upper)
+
+def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10, maxfev=5000, prior_bounds1=None, prior_bounds2=None):
+    """
+    Estimate the Bayes factor between two models using the Bayesian Information Criterion (BIC).
+
+    Parameters
+    ----------
+    x : array-like
+        Independent variable values of the dataset.
+    y : array-like
+        Dependent variable (observed data).
+    y_err : array-like
+        Uncertainties (standard deviations) on the observed data.
+    f1 : callable
+        First model function to compare. Must have signature f(x, *params).
+    p0_1 : list or array-like
+        Initial guess for the parameters of the first model.
+    f2 : callable
+        Second model function to compare. Must have signature f(x, *params).
+    p0_2 : list or array-like
+        Initial guess for the parameters of the second model.
+    burn : int, optional
+        Number of initial MCMC steps to discard (default is 1000).
+    steps : int, optional
+        Total number of MCMC steps per walker (default is 5000).
+    thin : int, optional
+        Thinning factor applied when flattening the MCMC chains (default is 10).
+    maxfev : int, optional
+        Maximum number of function evaluations for the curve fitting (default is 5000).
+    prior_bounds1 : list of tuples, optional
+        Bounds for the uniform priors of the first model. Each element must be a (min, max) tuple.
+        If None, unbounded uniform priors are assumed.
+    prior_bounds2 : list of tuples, optional
+        Bounds for the uniform priors of the second model.
+
+    Returns
+    -------
+    lnB12 : float
+        Estimated natural logarithm of the Bayes factor ln(B₁₂) = ln(p(D|M₁)/p(D|M₂)).
+        A positive value favors model M₁; a negative value favors model M₂.
+    BIC1 : float
+        Bayesian Information Criterion for the first model.
+    BIC2 : float
+        Bayesian Information Criterion for the second model.
+
+    Notes
+    -----
+    The Bayes factor is estimated using the approximation:
+
+        ln B12 ≈ -0.5 * (BIC1 - BIC2)
+
+    which is valid under regularity conditions and large sample sizes.
+
+    Interpretation of ln(B12):
+
+        - ln B12 > 5            : Strong evidence for model 1
+        - ln B12 ∈ [2.5, 5)     : Moderate evidence for model 1
+        - ln B12 ∈ [1, 2.5)     : Weak evidence for model 1
+        - ln B12 ∈ [-1, 1)      : Inconclusive
+        - ln B12 ∈ [-2.5, -1)   : Weak evidence for model 2
+        - ln B12 ∈ [-5, -2.5)   : Moderate evidence for model 2
+        - ln B12 < -5           : Strong evidence for model 2
+
+    The approximation assumes that the prior volume is not too informative and that the maximum a posteriori estimate is close to the maximum likelihood.
+    """
+
+    def fit_model(f, p0, prior_bounds):
+        ndim = len(p0)
+        nwalkers = 2 * ndim
+        popt, _ = curve_fit(f, x, y, p0=p0, sigma=y_err, absolute_sigma=True, maxfev=maxfev)
+
+        def log_likelihood(theta):
+            model = f(x, *theta)
+            return -0.5 * np.sum(((y - model) / y_err) ** 2)
+
+        def log_prior(theta):
+            if prior_bounds is None:
+                return 0.0
+            for p, (low, high) in zip(theta, prior_bounds):
+                if not (low < p < high):
+                    return -np.inf
+            return 0.0
+
+        def log_posterior(theta):
+            lp = log_prior(theta)
+            if not np.isfinite(lp):
+                return -np.inf
+            return lp + log_likelihood(theta)
+
+        # Sampling
+        p0_walkers = popt + 1e-4 * np.random.randn(nwalkers, ndim)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, log_posterior)
+        sampler.run_mcmc(p0_walkers, steps, progress=True)
+
+        flat_log_prob = sampler.get_log_prob(discard=burn, thin=thin, flat=True)
+        max_log_like = np.max(flat_log_prob)
+
+        bic = ndim * np.log(len(x)) - 2 * max_log_like
+        return bic, max_log_like
+
+    BIC1, logL1 = fit_model(f1, p0_1, prior_bounds1)
+    BIC2, logL2 = fit_model(f2, p0_2, prior_bounds2)
+
+    lnB12 = -0.5 * (BIC1 - BIC2)
+
+    BIC1_s = format_BIC(BIC1, False)
+    BIC2_s = format_BIC(BIC2, False)
+    logL1_s = format_BIC(logL1, False)
+    logL2_s = format_BIC(logL2, False)
+    lnB12_s = format_BIC(lnB12, False)
+    # print("\nModel 1:")
+    # print(f"  BIC = {BIC1:.2f}\tlogL = {logL1:.2f}")
+    # print("Model 2:")
+    # print(f"  BIC = {BIC2:.2f}\tlogL = {logL2:.2f}")
+    # print(f"\nEstimated log(Bayes Factor) = {lnB12:.2f}")
+
+    print("\nModel 1:")
+    print(f"  BIC {BIC1_s}\tlogL {logL1_s}")
+    print("Model 2:")
+    print(f"  BIC {BIC2_s}\tlogL {logL2_s}")
+    print(f"\nEstimated log(Bayes Factor) {lnB12_s}")
+
+    return lnB12, BIC1, BIC2

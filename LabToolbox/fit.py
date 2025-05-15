@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2
 from scipy.optimize import curve_fit
 from .utils import PrintResult
-from .uncertainty import propagate
+from .stats import propagate
 from ._helper import my_cov, my_mean, my_var, my_line, y_estrapolato
 
 def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, log = None,
@@ -121,18 +121,27 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     # p-value
     p_value = chi2.sf(chi2_value, dof)
 
-    print(f"χ²/dof = {chi2_red:.2f}") # ≈ 1 se il fit è buono
+    if chi2_red > 100:
+        chi2_str = f"> 100"
+        print(f"χ²/dof {chi2_str}")
+    elif 10 <= chi2_red <= 100:
+        chi2_str = f"= {chi2_red:.0f}"
+        print(f"χ²/dof {chi2_str}")
+    elif 0.01 < chi2_red < 10:
+        chi2_str = f"= {chi2_red:.2f}"
+        print(f"χ²/dof {chi2_str}")
+    else:
+        chi2_str = f"< 0.01"
+        print(f"χ²/dof {chi2_str}")
 
     if p_value >= 0.10:
         print(f"p-value = {p_value*100:.0f}%")
     elif 0.005 < p_value < 0.10:
-        print(f"p-value = {p_value*100:.2f}%")
+        print(f"p-value = {p_value * 100:.2f}%")
     elif 0.0005 < p_value <= 0.005:
-        print(f"p-value = {p_value*1000:.2f}‰")
-    elif 1e-6 < p_value <= 0.0005:
-        print(f"p-value = {p_value:.2e}")
+        print(f"p-value = {p_value * 100:.3f}%")
     else:
-        print(f"p-value < 1e-6")
+        print(f"p-value < 0.05%")
         
     m2 = my_cov(x, y, weights) / my_var(x, weights)
     var_m2 = 1 / ( my_var(x, weights) * np.sum(weights) )
@@ -450,26 +459,51 @@ def model_fit(x, y, y_err, f, p0, x_err = None, xlabel="x [ux]", ylabel="y [uy]"
         if popt[i] != 0:
             nu = perr[i] / popt[i]
             print(
-                f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} +/- {rounded_sigma:.{max(0, -exponent + 1)}f}) [{np.abs(nu) * 100:.2f}%]"
+                f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f}) [{np.abs(nu) * 100:.2f}%]"
             )
         else:
-            print(f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} +/- {rounded_sigma:.{max(0, -exponent + 1)}f})")
+            print(f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f})")
 
-    
-    print(f"\nχ²/dof = {chi2_red:.2f}")  # ≈ 1 se il fit è buono
+    if chi2_red > 100:
+        chi2_str = f"> 100"
+        print(f"\nχ²/dof {chi2_str}")
+    elif 10 <= chi2_red <= 100:
+        chi2_str = f"= {chi2_red:.0f}"
+        print(f"\nχ²/dof {chi2_str}")
+    elif 0.01 < chi2_red < 10:
+        chi2_str = f"= {chi2_red:.2f}"
+        print(f"\nχ²/dof {chi2_str}")
+    else:
+        chi2_str = f"< 0.01"
+        print(f"\nχ²/dof {chi2_str}")
+
+    # print(f"\nχ²/dof = {chi2_red:.2f}")  # ≈ 1 se il fit è buono
+
+    # if p_value >= 0.10:
+    #     print(f"p-value = {p_value*100:.0f}%")
+    #     pval_str = f"$\\text{{p–value}} = {p_value*100:.0f}$%"
+    # elif 0.005 < p_value < 0.10:
+    #     print(f"p-value = {p_value*100:.2f}%\n")
+    #     pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
+    # elif 0.0001 < p_value <= 0.005:
+    #     print(f"p-value = {p_value*1000:.2f}‰")
+    #     pval_str = f"$\\text{{p–value}} = {p_value * 1000:.2f}$‰"
+    # else:
+    #     print(f"p-value < 1e-6")
+    #     pval_str = f"$\\text{{p–value}} < 10^{{-4}}$"
 
     if p_value >= 0.10:
         print(f"p-value = {p_value*100:.0f}%")
-        pval_str = f"$\\text{{p–value}} = {p_value*100:.0f}$%"
+        pval_str = f"p-value = {p_value*100:.0f}%"
     elif 0.005 < p_value < 0.10:
-        print(f"p-value = {p_value*100:.2f}%\n")
-        pval_str = f"$\\text{{p–value}} = {p_value * 100:.2f}$%"
-    elif 0.0001 < p_value <= 0.005:
-        print(f"p-value = {p_value*1000:.2f}‰")
-        pval_str = f"$\\text{{p–value}} = {p_value * 1000:.2f}$‰"
+        print(f"p-value = {p_value * 100:.2f}%")
+        pval_str = f"p-value = {p_value * 100:.2f}%"
+    elif 0.0005 < p_value <= 0.005:
+        print(f"p-value = {p_value * 100:.3f}%")
+        pval_str = f"p-value = {p_value * 100:.3f}%"
     else:
-        print(f"p-value < 1e-6")
-        pval_str = f"$\\text{{p–value}} < 10^{{-4}}$"
+        print("p-value < 0.05%")
+        pval_str = f"p-value < 0.05%"
 
     k = np.sum((-1 <= resid_norm) & (resid_norm <= 1))
 
@@ -569,7 +603,7 @@ def model_fit(x, y, y_err, f, p0, x_err = None, xlabel="x [ux]", ylabel="y [uy]"
         axs[0].remove()  # Rimuovi axs[0], axs[1] rimane valido
 
     if showlegend:
-        label = f"Best fit\n$\\chi^2/\\text{{dof}} = {chi2_red:.2f}$\n{pval_str}"
+        label = f"Best fit\n$\\chi^2/\\text{{dof}}{chi2_str}$\n{pval_str}"
     else :
         label = "Best fit"
 

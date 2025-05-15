@@ -1,25 +1,37 @@
-LabToolbox.egg-info/
+# Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
 
-LabToolbox/io.py
+# Compiled extensions
+*.pyd
+*.so
 
-LabToolbox/test2.py
-
-LabToolbox/__pycache__/
-
-LabToolbox/.DS_Store
-
-docs/CHANGELOG.md
-
-.DS_Store
-
-docs/test.py
-
+# Build directories
+build/
 dist/
 
-build/
+# Egg-info directories
+*.egg-info/
 
+# Virtual environments
+venv/
+env/
+*.env
+
+# IDE specific files
+.DS_Store
+
+# Documentation files
+docs/CHANGELOG.md
 docs/idee.txt
-
 docs/wiki.md
+docs/test.py
+docs/code.py
 
+# Jupyter notebooks
 example.ipynb
+
+# Configuration files
+setup.py
+setup.cfg

@@ -87,3 +87,75 @@ def format_value_auto(val, err, unit=None, scale=0):
         formatted += f"\\,\\mathrm{{{unit}}}"
 
     return formatted
+
+def format_stokes(value, is_percentage=True):
+    """
+    Format a value (percentage or absolute) according to specified rules.
+    
+    Parameters
+    ----------
+    value : float
+        The value to format.
+    is_percentage : bool
+        If True, treat value as a percentage (multiply by 100).
+        If False, treat value as an absolute number (e.g., for I, ψ, χ).
+
+    Returns
+    -------
+    str
+        Formatted string representation of the value.
+    """
+    # Converti il valore in percentuale se necessario
+    if is_percentage:
+        display_value = value * 100  # Converti in percentuale
+    else:
+        display_value = value  # Valore assoluto (es. I, ψ, χ)
+
+    # Usa il valore assoluto per determinare la formattazione
+    p_value = abs(display_value)  # Valore in termini di percentuale o assoluto
+
+    # Applica le regole di formattazione
+    if p_value >= 10:  # Corrisponde a 0.10 se fosse normalizzato
+        return f"= {display_value:.0f}" + ("%" if is_percentage else "")
+    elif 0.05 < p_value < 10:  # Corrisponde a 0.005 < p_value < 0.10 se fosse normalizzato
+        return f"= {display_value:.1f}" + ("%" if is_percentage else "")
+    elif 0.05 < p_value <= 0.5:  # Corrisponde a 0.0005 < p_value <= 0.005 se fosse normalizzato
+        return f"= {display_value:.2f}" + ("%" if is_percentage else "")
+    else:
+        return f"≃ 0" + ("%" if is_percentage else "")
+    
+def format_BIC(value, is_percentage=True):
+    """
+    Format a value (percentage or absolute) according to specified rules.
+    
+    Parameters
+    ----------
+    value : float
+        The value to format.
+    is_percentage : bool
+        If True, treat value as a percentage (multiply by 100).
+        If False, treat value as an absolute number (e.g., for I, ψ, χ).
+
+    Returns
+    -------
+    str
+        Formatted string representation of the value.
+    """
+    # Converti il valore in percentuale se necessario
+    if is_percentage:
+        display_value = value * 100  # Converti in percentuale
+    else:
+        display_value = value  # Valore assoluto (es. I, ψ, χ)
+
+    # Usa il valore assoluto per determinare la formattazione
+    p_value = abs(display_value)  # Valore in termini di percentuale o assoluto
+
+    # Applica le regole di formattazione
+    if p_value >= 10:  # Corrisponde a 0.10 se fosse normalizzato
+        return f"= {display_value:.0f}" + ("%" if is_percentage else "")
+    elif 0.05 < p_value < 10:  # Corrisponde a 0.005 < p_value < 0.10 se fosse normalizzato
+        return f"= {display_value:.2f}" + ("%" if is_percentage else "")
+    elif 0.05 < p_value <= 0.5:  # Corrisponde a 0.0005 < p_value <= 0.005 se fosse normalizzato
+        return f"= {display_value:.3f}" + ("%" if is_percentage else "")
+    else:
+        return f"≃ 0" + ("%" if is_percentage else "")

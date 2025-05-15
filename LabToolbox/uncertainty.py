@@ -1,59 +1,15 @@
 import numpy as np
+
+"""
+DEPRECATED: This module is deprecated and will be removed in a future release.
+
+The function `propagate` is now available in `labtoolbox.stats`.
+Please update your code accordingly.
+"""
+
+# Opzionalmente re-importi la funzione per compatibilità temporanea
+from warnings import warn
 from ._uncertainty_class import uncert_prop
-
-def numerical(f, x_val, x_err, params=()):
-    """
-    Uncertainty propagation via numerical derivatives.
-
-    Parameters
-    ----------
-        f : callable
-            Function `f(x1, ..., xn; a1, ..., am)` that returns an array of shape (N,).
-        x_val : list of np.ndarray
-            List of input arrays `x1,..., xn`, each with shape (N,).
-        x_err : list of np.ndarray
-            List of uncertainty arrays corresponding to each `x_i`, shape (N,).
-        params : tuple, optional
-            Tuple of constant parameters `(a1, ..., am)` to be passed to the function.
-
-    Returns
-    ----------
-        f_val : np.ndarray
-            Central values of the function, shape (N,).
-        f_err : np.ndarray
-            Propagated uncertainty, shape (N,).
-    """
-
-    N = x_val[0].shape[0]
-    n_vars = len(x_val)
-
-    # Valori centrali della funzione
-    f_val = f(*x_val, *params)
-    f_var = np.zeros(N)
-
-    for i in range(n_vars):
-        x = x_val[i]
-
-        # Calcolo h_i come distanza minima tra punti consecutivi diviso 100
-        dx = np.diff(x)
-        min_dx = np.min(np.abs(dx[dx != 0])) if np.any(dx != 0) else 1.0
-        h = min_dx / 100
-
-        # Copia degli array per ±h
-        x_plus = [x.copy() for x in x_val]
-        x_minus = [x.copy() for x in x_val]
-        x_plus[i]  += h
-        x_minus[i] -= h
-
-        f_plus = f(*x_plus, *params)
-        f_minus = f(*x_minus, *params)
-
-        df_dxi = (f_plus - f_minus) / (2 * h)
-        f_var += (df_dxi * x_err[i])**2
-
-    f_err = np.sqrt(f_var)
-
-    return f_val, f_err
 
 def propagate(func, x_val, x_err, params = None, method='Delta', MC_sample_size = 10000):
     """
@@ -91,6 +47,8 @@ def propagate(func, x_val, x_err, params = None, method='Delta', MC_sample_size 
         confidence_bands : tuple of numpy.ndarray
             Lower and upper confidence bands for each point `j`.
     """
+
+    warn("This module is deprecated and will be removed in a future release. Use 'labtoolbox.stats' instead, where this function is now available.", DeprecationWarning)
 
     # Verifica che tutti gli array di input abbiano la stessa lunghezza
     n_points = len(x_val[0])
@@ -151,6 +109,62 @@ def propagate(func, x_val, x_err, params = None, method='Delta', MC_sample_size 
     
     return f_values, f_err, (confidence_bands_lower, confidence_bands_upper)
 
+def numerical(f, x_val, x_err, params=()):
+    """
+    Uncertainty propagation via numerical derivatives.
+
+    Parameters
+    ----------
+        f : callable
+            Function `f(x1, ..., xn; a1, ..., am)` that returns an array of shape (N,).
+        x_val : list of np.ndarray
+            List of input arrays `x1,..., xn`, each with shape (N,).
+        x_err : list of np.ndarray
+            List of uncertainty arrays corresponding to each `x_i`, shape (N,).
+        params : tuple, optional
+            Tuple of constant parameters `(a1, ..., am)` to be passed to the function.
+
+    Returns
+    ----------
+        f_val : np.ndarray
+            Central values of the function, shape (N,).
+        f_err : np.ndarray
+            Propagated uncertainty, shape (N,).
+    """
+
+    warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.propagate instead.", DeprecationWarning)
+
+    N = x_val[0].shape[0]
+    n_vars = len(x_val)
+
+    # Valori centrali della funzione
+    f_val = f(*x_val, *params)
+    f_var = np.zeros(N)
+
+    for i in range(n_vars):
+        x = x_val[i]
+
+        # Calcolo h_i come distanza minima tra punti consecutivi diviso 100
+        dx = np.diff(x)
+        min_dx = np.min(np.abs(dx[dx != 0])) if np.any(dx != 0) else 1.0
+        h = min_dx / 100
+
+        # Copia degli array per ±h
+        x_plus = [x.copy() for x in x_val]
+        x_minus = [x.copy() for x in x_val]
+        x_plus[i]  += h
+        x_minus[i] -= h
+
+        f_plus = f(*x_plus, *params)
+        f_minus = f(*x_minus, *params)
+
+        df_dxi = (f_plus - f_minus) / (2 * h)
+        f_var += (df_dxi * x_err[i])**2
+
+    f_err = np.sqrt(f_var)
+
+    return f_val, f_err
+
 def montecarlo(func, values, errs, N=10_000, seed=None):
     """
     Estimate the propagated uncertainty on a function of N variables using Monte Carlo simulation.
@@ -190,6 +204,8 @@ def montecarlo(func, values, errs, N=10_000, seed=None):
     """
     values = np.array(values)
     errs = np.array(errs)
+
+    warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.propagate instead.", DeprecationWarning)
 
     if values.shape != errs.shape:
         raise ValueError("values and uncertainties must have the same shape.")
