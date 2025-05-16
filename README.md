@@ -3,7 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/LabToolbox?label=PyPI)](https://pypi.org/project/LabToolbox/)
 ![Python Versions](https://img.shields.io/pypi/pyversions/LabToolbox)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/LabToolbox)
-[![License](https://img.shields.io/pypi/l/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/blob/main/LICENSE.txt)
+[![License](https://img.shields.io/pypi/l/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/blob/master/LICENSE.txt)
 [![GitHub Issues](https://img.shields.io/github/issues/giusesorrentino/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/giusesorrentino/LabToolbox)](https://github.com/giusesorrentino/LabToolbox/pulls)
 ![GitHub Repo stars](https://img.shields.io/github/stars/giusesorrentino/LabToolbox)
@@ -11,8 +11,8 @@
 
 <p align="left">
   <picture>
-    <source srcset="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
-    <img src="https://github.com/giusesorrentino/LabToolbox/raw/main/docs/logo_light.png" alt="LabToolbox logo" width="700">
+    <source srcset="https://github.com/giusesorrentino/LabToolbox/raw/master/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
+    <img src="https://github.com/giusesorrentino/LabToolbox/raw/master/docs/logo_light.png" alt="LabToolbox logo" width="700">
   </picture>
 </p>
 
