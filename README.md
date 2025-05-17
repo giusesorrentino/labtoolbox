@@ -1,7 +1,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/labtoolbox?label=PyPI)](https://pypi.org/project/labtoolbox/)
 ![Python Versions](https://img.shields.io/pypi/pyversions/labtoolbox)
 [![PyPI Downloads](https://static.pepy.tech/badge/labtoolbox)](https://pepy.tech/projects/labtoolbox)
-[![License](https://img.shields.io/pypi/l/labtoolbox)](https://github.com/giusesorrentino/labtoolbox/blob/main/LICENSE.txt)
+[![License](https://img.shields.io/pypi/l/labtoolbox)](https://github.com/giusesorrentino/labtoolbox/blob/master/LICENSE.txt)
 [![GitHub Issues](https://img.shields.io/github/issues/giusesorrentino/labtoolbox)](https://github.com/giusesorrentino/labtoolbox/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/giusesorrentino/labtoolbox)](https://github.com/giusesorrentino/labtoolbox/pulls)
 ![GitHub Repo stars](https://img.shields.io/github/stars/giusesorrentino/labtoolbox)
@@ -9,8 +9,8 @@
 
 <p align="left">
   <picture>
-    <source srcset="https://github.com/giusesorrentino/labtoolbox/raw/main/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
-    <img src="https://github.com/giusesorrentino/labtoolbox/raw/main/docs/logo_light.png" alt="LabToolbox logo" width="700">
+    <source srcset="https://github.com/giusesorrentino/labtoolbox/raw/master/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
+    <img src="https://github.com/giusesorrentino/labtoolbox/raw/master/docs/logo_light.png" alt="LabToolbox logo" width="700">
   </picture>
 </p>
 
@@ -38,6 +38,14 @@ git clone https://github.com/giusesorrentino/labtoolbox.git
 cd labtoolbox
 pip install .
 ```
+
+As for now, the package is not [disponibile su] conda-foge if you are using Anaconda/Jupyter Notebook. If you still want to install LabToolbox, you can run (only the first time [non so se per ogni file .ipynb o basta una volta]) the following code in your firt cell:
+
+```bash
+!pip install labtoolbox
+```
+
+and then you can import the library.
 
 ### Important Note
 

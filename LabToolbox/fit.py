@@ -273,7 +273,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
 
     fig = plt.figure(figsize=(6.4, 4.8))
 
-    # The following code (lines 257-274) is adapted from the VoigtFit library,
+    # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 
@@ -571,7 +571,7 @@ def model_fit(x, y, y_err, f, p0, x_err = None, xlabel="x [ux]", ylabel="y [uy]"
 
     fig = plt.figure(figsize=(6.4, 4.8))
 
-    # The following code (lines 518-535) is adapted from the VoigtFit library,
+    # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 

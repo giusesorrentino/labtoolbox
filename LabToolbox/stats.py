@@ -84,7 +84,7 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
 
     # ----------------------------
 
-    # Calcola l'esponente di sigma
+    # Calcola l'esponente di var
     exponent1 = int(math.floor(math.log10(abs(sigma**2))))
     factor = 10**(exponent1 - 1)
     rounded_var = (round(sigma**2 / factor) * factor)
@@ -137,11 +137,11 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
 
     # Crea la stringa stampabile
     stamp = (
-        f"Mean value: {rounded_mean:.{max(0, -exponent + 1)}f}{ux_str}\n"
-        f"Standard deviation: {rounded_sigma:.{max(0, -exponent + 1)}f}{ux_str}\n"
-        f"Skewness: {skewness:.2f}\n"
-        f"Kurtosis: {kurtosis:.2f}\n"
-        f"p-value: {pval_str}\n"
+        f"Mean value:\t{rounded_mean:.{max(0, -exponent + 1)}f}{ux_str}\n"
+        f"Std dev:\t{rounded_sigma:.{max(0, -exponent + 1)}f}{ux_str}\n"
+        f"Skewness:\t{skewness:.2f}\n"
+        f"Kurtosis:\t{kurtosis:.2f}\n"
+        f"p-value:\t{pval_str}\n"
     )
     print(stamp)
 
@@ -257,7 +257,7 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
         bar2 = resid
         dash = confidence * data_err
 
-    # The following code (lines 239-247) is adapted from the VoigtFit library,
+    # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 
@@ -325,12 +325,12 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
 
     # Crea la stringa stampabile
     stamp = (
-        f"Mean value: {rounded_mean:.{max(0, -exponent + 1)}f}{uy_str}\n"
-        f"Standard deviation: {rounded_sigma:.{max(0, -exponent + 1)}f}{uy_str}\n"
-        f"Skewness: {skewness:.2f}\n"
-        f"Kurtosis: {kurtosis:.2f}\n"
-        f"p-value: {pval_str}\n"
-        f"Durbin-Watson statistic: {dw:.3f}"
+        f"Mean value:\t\t{rounded_mean:.{max(0, -exponent + 1)}f}{uy_str}\n"
+        f"Standard deviation:\t{rounded_sigma:.{max(0, -exponent + 1)}f}{uy_str}\n"
+        f"Skewness:\t\t{skewness:.2f}\n"
+        f"Kurtosis:\t\t{kurtosis:.2f}\n"
+        f"p-value:\t\t{pval_str}\n"
+        f"Durbin-Watson:\t\t{dw:.3f}"
     )
 
     print(stamp)

@@ -29,6 +29,9 @@ docs/wiki.md
 docs/test.py
 docs/code.py
 
+# Other
+labtoolbox/io.py
+
 # Jupyter notebooks
 example.ipynb
 
