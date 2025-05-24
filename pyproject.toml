@@ -25,11 +25,6 @@ dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
-    "statsmodels",
-    "emcee",
-    "corner",
-    "lmfit",
-    "astropy",
 ]
 
 keywords = [
@@ -56,6 +51,31 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+# Optional dependencies for Bayesian analysis
+bayesian = [
+    "emcee",
+    "corner",
+]
+
+# Optional dependencies for units conversion
+units = [
+    "astropy",
+]
+
+# Optional dependencies for statistical models and tests
+stats = [
+    "statsmodels",
+]
+
+# Optional group to install all optional dependencies
+all = [
+    "emcee",
+    "corner",
+    "astropy",
+    "statsmodels",
 ]
 
 [project.urls]

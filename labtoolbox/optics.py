@@ -650,28 +650,34 @@ def polstate(vector):
     s3 = S3 / S0
 
     # Calcola il grado di polarizzazione (P)
-    P = np.sqrt(s1**2 + s2**2 + s3**2)
+    P = np.sqrt(S1**2 + S2**2 + S3**2)/S0
     if P > 1.0:
         P = 1.0  # Normalizza se supera 1 (errore numerico)
 
     # Calcola gli angoli ψ (orientamento) e χ (ellitticità)
     psi = 0.5 * np.arctan2(S2, S1)  # Angolo di orientamento in radianti
-    chi = 0.5 * np.arcsin(s3)  # Angolo di ellitticità in radianti
 
-    # Determina il verso di percorrenza (LH o RH)
-    if S3 > 0:
-        handedness = "Right-Handed (RH)"
-    elif S3 < 0:
-        handedness = "Left-Handed (LH)"
+    denominator = np.sqrt(S1**2 + S2**2)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        chi = 0.5 * np.arctan(np.divide(S3, denominator, where=denominator!=0))
+        chi = np.where(denominator == 0,
+                    0.5 * np.pi * np.sign(S3),  # Quando denominator è zero
+                    chi)
 
-    # Tipo di polarizzazione approssimativo
-    if abs(s3) < 0.1:  # S3 vicino a zero indica polarizzazione lineare
+    tolerance = 1e-2
+
+    if np.isclose(P, 0.0, atol=tolerance):
+        polarization_type = "Unpolarized"
+        handedness = "None"
+    elif np.isclose(s3, 0.0, atol=tolerance):  # Linear
         polarization_type = "Linear"
-        handedness = "No handedness"
-    elif abs(chi) > np.pi/4 - 0.1 and abs(chi) < np.pi/4 + 0.1:  # χ vicino a ±45° indica circolare
+        handedness = "None"
+    elif np.isclose(abs(s3), 1.0, atol=tolerance):  # Circular
         polarization_type = "Circular"
-    else:
+        handedness = "Right-Handed (RH)" if s3 > 0 else "Left-Handed (LH)"
+    else:  # Elliptical
         polarization_type = "Elliptical"
+        handedness = "Right-Handed (RH)" if s3 > 0 else "Left-Handed (LH)"
 
     # Formatta i valori
     I_str = format_stokes(S0, is_percentage=False)
@@ -682,16 +688,40 @@ def polstate(vector):
     psi_str = format_stokes(np.degrees(psi), is_percentage=False)
     chi_str = format_stokes(np.degrees(chi), is_percentage=False)
 
-    # Stampa i risultati
-    print(f"I {I_str}")
-    print(f"Q {Q_str}")
-    print(f"U {U_str}")
-    print(f"V {V_str}\n")
-    print(f"Degree of Polarization\t {P_str}")
-    print(f"Orientation Angle\t {psi_str} degrees")
-    print(f"Ellipticity Angle\t {chi_str} degrees")
-    print(f"Polarization Handedness\t : {handedness}")
-    print(f"Polarization Type\t : {polarization_type}")
+    # Prepara le stringhe dei risultati
+    lines = [
+        f"I (Intensity)               {I_str}",
+        f"Q (Linear Polarization 0°)  {Q_str}",
+        f"U (Linear Polarization 45°) {U_str}",
+        f"V (Circular Polarization)   {V_str}",
+        "-"*0,  # placeholder per la linea divisoria
+        f"Degree of Polarization      {P_str}",
+        f"Orientation Angle (ψ)       {psi_str} degrees",
+        f"Ellipticity Angle (χ)       {chi_str} degrees",
+        f"Polarization Handedness     : {handedness}",
+        f"Polarization Type           : {polarization_type}"
+    ]
+
+    # Calcola la lunghezza massima delle linee (ignorando il placeholder)
+    max_length = max(len(line) for line in lines if len(line) > 0)
+    # Aggiorna la linea divisoria per uniformità
+    divider = "-" * max_length
+
+    # Titolo e decorazioni dinamiche
+    title = "Polarization Analysis Results"
+    border = "=" * max_length
+    centered_title = title.center(max_length)
+
+    # Stampa dinamica e ben formattata
+    print(border)
+    print(centered_title)
+    print(border)
+    for line in lines:
+        if len(line) == 0:  # sostituisce il placeholder con la linea divisoria dinamica
+            print(divider)
+        else:
+            print(line)
+    print(border)
 
     # Restituisci i parametri
     return P, S0, s1, s2, s3

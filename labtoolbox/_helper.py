@@ -124,38 +124,177 @@ def format_stokes(value, is_percentage=True):
     else:
         return f"≃ 0" + ("%" if is_percentage else "")
     
-def format_BIC(value, is_percentage=True):
-    """
-    Format a value (percentage or absolute) according to specified rules.
+# def format_BIC(value, is_percentage=True):
+#     """
+#     Format a value (percentage or absolute) according to specified rules.
     
+#     Parameters
+#     ----------
+#     value : float
+#         The value to format.
+#     is_percentage : bool
+#         If True, treat value as a percentage (multiply by 100).
+#         If False, treat value as an absolute number (e.g., for I, ψ, χ).
+
+#     Returns
+#     -------
+#     str
+#         Formatted string representation of the value.
+#     """
+#     # Converti il valore in percentuale se necessario
+#     if is_percentage:
+#         display_value = value * 100  # Converti in percentuale
+#     else:
+#         display_value = value  # Valore assoluto (es. I, ψ, χ)
+
+#     # Usa il valore assoluto per determinare la formattazione
+#     p_value = abs(display_value)  # Valore in termini di percentuale o assoluto
+
+#     # Applica le regole di formattazione
+#     if p_value >= 10:  # Corrisponde a 0.10 se fosse normalizzato
+#         return f"= {display_value:.0f}" + ("%" if is_percentage else "")
+#     elif 0.05 < p_value < 10:  # Corrisponde a 0.005 < p_value < 0.10 se fosse normalizzato
+#         return f"= {display_value:.2f}" + ("%" if is_percentage else "")
+#     elif 0.05 < p_value <= 0.5:  # Corrisponde a 0.0005 < p_value <= 0.005 se fosse normalizzato
+#         return f"= {display_value:.3f}" + ("%" if is_percentage else "")
+#     else:
+#         return f"≃ 0" + ("%" if is_percentage else "")
+
+def format_smart(value, width=None, min_thresh=1e-3, max_thresh=1e6, equalsign=True):
+    """
+    Format a float for aligned table display with adaptive precision.
+
     Parameters
     ----------
     value : float
         The value to format.
-    is_percentage : bool
-        If True, treat value as a percentage (multiply by 100).
-        If False, treat value as an absolute number (e.g., for I, ψ, χ).
+    width : int, optional
+        Width of the field.
+    min_thresh : float, optional
+        Lower threshold for using <min format.
+    max_thresh : float, optional
+        Upper threshold for using >max format.
+    equalsign : bool, optional
+        If True, prepend '=' to the formatted value; otherwise, omit it.
 
     Returns
     -------
     str
-        Formatted string representation of the value.
+        Formatted string of specified width.
     """
-    # Converti il valore in percentuale se necessario
-    if is_percentage:
-        display_value = value * 100  # Converti in percentuale
-    else:
-        display_value = value  # Valore assoluto (es. I, ψ, χ)
+    abs_val = abs(value)
+    prefix = "= " if equalsign else ""
 
-    # Usa il valore assoluto per determinare la formattazione
-    p_value = abs(display_value)  # Valore in termini di percentuale o assoluto
-
-    # Applica le regole di formattazione
-    if p_value >= 10:  # Corrisponde a 0.10 se fosse normalizzato
-        return f"= {display_value:.0f}" + ("%" if is_percentage else "")
-    elif 0.05 < p_value < 10:  # Corrisponde a 0.005 < p_value < 0.10 se fosse normalizzato
-        return f"= {display_value:.2f}" + ("%" if is_percentage else "")
-    elif 0.05 < p_value <= 0.5:  # Corrisponde a 0.0005 < p_value <= 0.005 se fosse normalizzato
-        return f"= {display_value:.3f}" + ("%" if is_percentage else "")
+    if width is not None:
+        if abs_val < min_thresh and value != 0:
+            return f"< {min_thresh:.0e}".rjust(width)
+        elif abs_val > max_thresh:
+            return f"> {max_thresh:.0e}".rjust(width)
+        elif abs_val >= 100:
+            return f"{prefix}{value:>{width}.0f}"
+        elif abs_val >= 10:
+            return f"{prefix}{value:>{width}.1f}"
+        elif abs_val >= 1:
+            return f"{prefix}{value:>{width}.2f}"
+        else:
+            return f"{prefix}{value:>{width}.3f}"
     else:
-        return f"≃ 0" + ("%" if is_percentage else "")
+        if abs_val < min_thresh and value != 0:
+            return f"< {min_thresh:.0e}"
+        elif abs_val > max_thresh:
+            return f"> {max_thresh:.0e}"
+        elif abs_val >= 100:
+            return f"{prefix}{value:.0f}"
+        elif abs_val >= 10:
+            return f"{prefix}{value:.1f}"
+        elif abs_val >= 1:
+            return f"{prefix}{value:.2f}"
+        else:
+            return f"{prefix}{value:.3f}"    
+    
+def ispow2(n):
+    return n > 0 and (n & (n-1)) == 0
+
+def fft_cooley_tukey(data):
+    # Caso base: se la lunghezza è 1, restituisci l'array invariato
+    if data.size <= 1:
+        return data
+    
+    # Dividi in sottosequenze pari e dispari
+    pari = data[0::2]
+    dispari = data[1::2]
+    
+    # Calcola ricorsivamente la FFT delle sottosequenze
+    E = fft_cooley_tukey(pari)    # FFT degli elementi pari
+    O = fft_cooley_tukey(dispari)  # FFT degli elementi dispari
+    
+    # Inizializza l'array risultato
+    N = data.size
+    X = np.zeros(N, dtype=np.complex128)
+    
+    # Combina i risultati usando i twiddle factors
+    for k in range(N // 2):
+        w = np.exp(-2j * np.pi * k / N)  # Twiddle factor
+        t = w * O[k]
+        X[k] = E[k] + t
+        X[k + N // 2] = E[k] - t
+    
+    return X
+
+def dft_direct(data):
+    N = data.size
+    X = np.zeros(N, dtype=np.complex128)
+    for k in range(N):
+        S = 0
+        for n in range(N):
+            w = np.exp(-2j * np.pi * k * n / N)
+            S += data[n] * w
+        X[k] = S
+    return X
+
+def ifft_cooley_tukey(data):
+    """
+    Calcola l'IFFT usando l'algoritmo di Cooley-Tukey.
+    La IFFT è simile alla FFT, ma con segno opposto nell'esponente e divisione per N.
+    """
+    # Caso base: se la lunghezza è 1, restituisci l'array invariato
+    if data.size <= 1:
+        return data
+    
+    # Dividi in sottosequenze pari e dispari
+    pari = data[0::2]
+    dispari = data[1::2]
+    
+    # Calcola ricorsivamente la IFFT delle sottosequenze
+    E = ifft_cooley_tukey(pari)    # IFFT degli elementi pari
+    O = ifft_cooley_tukey(dispari)  # IFFT degli elementi dispari
+    
+    # Inizializza l'array risultato
+    N = data.size
+    x = np.zeros(N, dtype=np.complex128)
+    
+    # Combina i risultati usando i twiddle factors con segno opposto rispetto alla FFT
+    for k in range(N // 2):
+        w = np.exp(2j * np.pi * k / N)  # Twiddle factor (nota il segno positivo)
+        t = w * O[k]
+        x[k] = E[k] + t
+        x[k + N // 2] = E[k] - t
+    
+    # Dividi per N per normalizzare
+    x /= 1  # La normalizzazione può essere fatta qui o nel metodo idft_direct
+    
+    return x
+
+def idft_direct(data):
+    """
+    Calcola la DFT inversa direttamente dalla definizione.
+    """
+    N = data.size
+    x = np.zeros(N, dtype=np.complex128)
+    for n in range(N):
+        S = 0
+        for k in range(N):
+            w = np.exp(2j * np.pi * k * n / N)  # Nota il segno positivo
+            S += data[k] * w
+        x[n] = S / N  # Normalizzazione per 1/N
+    return x

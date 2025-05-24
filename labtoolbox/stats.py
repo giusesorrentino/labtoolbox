@@ -1,16 +1,13 @@
 import math
-import emcee
-import corner
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as spstats
-import warnings as warn
+import warnings
 
 from scipy.optimize import curve_fit
 from matplotlib.ticker import MaxNLocator
-from statsmodels.stats.stattools import durbin_watson
 from ._uncertainty_class import uncert_prop
-from ._helper import format_BIC
+from ._helper import format_smart
 
 def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
     """
@@ -153,7 +150,7 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
     return mean, sigma, skewness, kurtosis, p_value
 
 def analyze_residuals(*args, **kwargs):
-    warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
+    warnings.warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
     return residuals(args, kwargs)
 
 def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False):
@@ -207,6 +204,14 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
         - Values > 2.5 suggest negative autocorrelation.
     """
 
+    try:
+        from statsmodels.stats.stattools import durbin_watson
+    except ImportError:
+        raise ImportError(
+            "The 'statsmodels' package is not installed. "
+            "Please install it by running 'pip install statsmodels'."
+        )
+
     x_data = np.linspace(1, len(data), len(data))
     data = data / 10**scale
     expected_data = expected_data / 10**scale
@@ -252,7 +257,7 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
         bar1 = np.repeat(1, len(x_data))
         bar2 = resid / data_err
         dash = np.repeat(confidence, len(x_data))
-    else :
+    else:
         bar1 = data_err
         bar2 = resid
         dash = confidence * data_err
@@ -267,9 +272,9 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
     # Aggiungi linee di riferimento
     axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
     axs[0].errorbar(x_data, bar2, bar1, ls='', color='gray', lw=1.)
-    axs[0].plot(x_data, bar2, color='k', drawstyle='steps-mid', lw=1.)
-    axs[0].plot(x_data, dash, ls='dashed', color='crimson', lw=1.)
-    axs[0].plot(x_data, -dash, ls='dashed', color='crimson', lw=1.)
+    axs[0].plot(x_data, bar2, color='k', drawstyle='steps-mid', lw=1.15)
+    axs[0].plot(x_data, dash, ls='dotted', color='crimson', lw=1.5)
+    axs[0].plot(x_data, -dash, ls='dotted', color='crimson', lw=1.5)
     axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
 
     # Configurazioni estetiche per il pannello dei residui
@@ -387,7 +392,7 @@ def samples(n, distribution='normal', **params):
     >>> samples(200, 'poisson', lam=3)
     array([...])
     """
-    warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
 
     dist = distribution.lower()
     rng = np.random.default_rng()
@@ -542,8 +547,8 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
     This function fits a given model `f` to the experimental data `(x, y)` with associated uncertainties `y_err` 
     by first performing a frequentist optimization (`curve_fit`) to obtain initial estimates, and then 
     running a Markov Chain Monte Carlo (MCMC) sampling using the `emcee` package to derive the full 
-    posterior distribution of the model parameters. It returns the optimized `lmfit` Parameters object 
-    and the flattened MCMC sample chain, and it visualizes a corner plot of the posterior.
+    posterior distribution of the model parameters. It returns the flattened MCMC sample chain representing the posterior samples, 
+    the maximum likelihood estimate (MLE) of the parameters, and it visualizes the posterior distribution via a corner plot.
 
     Parameters
     ----------
@@ -583,9 +588,9 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
 
     Returns
     -------
-    params : lmfit.Parameters
-        A Parameters object with parameter names and initial values taken from `p0`.
-        Note: this object is not updated with the MCMC results.
+    mle_params : ndarray, shape (M,)
+        The parameter vector corresponding to the sample with the highest log-probability (maximum
+        likelihood estimate) in the posterior chain
 
     flat_samples : ndarray, shape (n_samples, M)
         Flattened MCMC sample chain (after burn-in and thinning). Each row is a sample of the M parameters.
@@ -609,6 +614,23 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
     >>> y_err = 0.5 * np.ones_like(y)
     >>> posterior(x, y, y_err, model, [1, 1])
     """
+
+    missing = []
+    try:
+        import emcee
+    except ImportError:
+        missing.append("emcee")
+
+    try:
+        import corner
+    except ImportError:
+        missing.append("corner")
+    
+    if missing:
+        raise ImportError(
+            f"The following packages are missing: {', '.join(missing)}. "
+            "Please install them using pip."
+        )
 
     p0 = np.array(p0)
     ndim = len(p0)
@@ -683,7 +705,7 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, n
     for i, name in enumerate(names):
         print(f"{name} = {mle_params[i]:.5f}")
 
-    return flat_samples, mle_params
+    return mle_params, flat_samples
 
 def propagate(func, x_val, x_err, params = None, method='Delta', MC_sample_size = 10000):
     """
@@ -846,8 +868,8 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     Returns
     -------
     lnB12 : float
-        Estimated natural logarithm of the Bayes factor ln(B₁₂) = ln(p(D|M₁)/p(D|M₂)).
-        A positive value favors model M₁; a negative value favors model M₂.
+        Estimated natural logarithm of the Bayes factor ln(B12).
+        A positive value favors model M1; a negative value favors model M1.
     BIC1 : float
         Bayesian Information Criterion for the first model.
     BIC2 : float
@@ -857,7 +879,7 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     -----
     The Bayes factor is estimated using the approximation:
 
-        ln B12 ≈ -0.5 * (BIC1 - BIC2)
+        ln(B12) = -0.5 * (BIC1 - BIC2)
 
     which is valid under regularity conditions and large sample sizes.
 
@@ -873,6 +895,17 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
 
     The approximation assumes that the prior volume is not too informative and that the maximum a posteriori estimate is close to the maximum likelihood.
     """
+
+    try:
+        import emcee
+    except ImportError:
+        raise ImportError(
+            "The 'emcee' package is not installed. "
+            "Please install it by running 'pip install emcee'."
+        )
+
+    if len(x) <= 10 * len(p0_1) or len(x) <= 10 * len(p0_2):
+        warnings.warn("The BIC approximation is only valid for sample size much larger than the number of parameters in the model. Results may be inaccurate.", Warning)
 
     def fit_model(f, p0, prior_bounds):
         ndim = len(p0)
@@ -912,22 +945,45 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     BIC2, logL2 = fit_model(f2, p0_2, prior_bounds2)
 
     lnB12 = -0.5 * (BIC1 - BIC2)
+    label_width = 10
 
-    BIC1_s = format_BIC(BIC1, False)
-    BIC2_s = format_BIC(BIC2, False)
-    logL1_s = format_BIC(logL1, False)
-    logL2_s = format_BIC(logL2, False)
-    lnB12_s = format_BIC(lnB12, False)
-    # print("\nModel 1:")
-    # print(f"  BIC = {BIC1:.2f}\tlogL = {logL1:.2f}")
-    # print("Model 2:")
-    # print(f"  BIC = {BIC2:.2f}\tlogL = {logL2:.2f}")
-    # print(f"\nEstimated log(Bayes Factor) = {lnB12:.2f}")
+    # Definisci le stringhe e il risultato
+    if lnB12 >= 5:
+        result = "Strong evidence for model 1"
+    elif 2.5 <= lnB12 < 5:
+        result = "Moderate evidence for model 1"
+    elif 1 <= lnB12 < 2.5:
+        result = "Weak evidence for model 1"
+    elif -1 <= lnB12 < 1:
+        result = 'Inconclusive'
+    elif -2.5 <= lnB12 < -1:
+        result = 'Weak evidence for model 2'
+    elif -5 <= lnB12 < -2.5:
+        result = 'Moderate evidence for model 2'
+    else:
+        result = 'Strong evidence for model 2'
 
-    print("\nModel 1:")
-    print(f"  BIC {BIC1_s}\tlogL {logL1_s}")
-    print("Model 2:")
-    print(f"  BIC {BIC2_s}\tlogL {logL2_s}")
-    print(f"\nEstimated log(Bayes Factor) {lnB12_s}")
+    # Prepariamo le intestazioni e i dati
+    header = f"{'Model':<{label_width}} | {'BIC':>12} | {'logL':>12}"
+    model1_line = f"{'Model 1':<{label_width}} | {format_smart(BIC1, equalsign=False):>12} | {format_smart(logL1, equalsign=False):>12}"
+    model2_line = f"{'Model 2':<{label_width}} | {format_smart(BIC2, equalsign=False):>12} | {format_smart(logL2, equalsign=False):>12}"
+    divider = "-" * len(header)
+
+    # Stampa con layout elegante e dinamico
+    print()
+    print("=" * len(header))
+    print(header)
+    print(divider)
+    print(model1_line)
+    print(model2_line)
+    print(divider)
+    print(f"{'Result':<{label_width}} | {'log(BF)':>12} | {format_smart(lnB12, equalsign=False):>12}")
+    print("=" * len(header))
+    # Evidenzia il risultato con un messaggio elegante
+    result_box = f"*** {result} ***"
+    # Calcola la lunghezza dinamica per centrare il messaggio
+    box_width = max(len(header), len(result_box))
+    print(result_box.center(box_width))
+    print("=" * box_width)
 
     return lnB12, BIC1, BIC2

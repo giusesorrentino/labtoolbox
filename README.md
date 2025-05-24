@@ -18,7 +18,7 @@
 
 ## Installation
 
-You can install **labtoolbox** from PyPI using `pip`:
+You can install `labtoolbox` from PyPI using `pip`:
 
 ```bash
 pip install labtoolbox
@@ -57,27 +57,28 @@ The previous form with capitalization (`import LabToolbox`) is no longer support
 
 ## Dependencies
 
-Labtoolbox relies on a set of well-established scientific Python libraries. When installed via `pip`, these dependencies are automatically handled. However, for reference or manual setup, here is the list of core dependencies:
+LabToolbox relies on a set of well-established scientific Python libraries. When installed via `pip`, these dependencies are automatically handled. However, for reference or manual setup, here is the list of core dependencies:
 
 - **numpy** – fundamental package for numerical computing.
 - **scipy** – scientific and technical computing tools.
 - **matplotlib** – for plotting and data visualization.
-- **statsmodels** – statistical modeling and inference.
+<!-- - **statsmodels** – statistical modeling and inference.
 - **emcee** – affine-invariant ensemble sampler for MCMC.
 - **corner** – corner plots for visualizing multidimensional distributions.
 - **lmfit** – flexible curve-fitting with parameter constraints.
-- **astropy** – core astronomy library for Python.
+- **astropy** – core astronomy library for Python. -->
 
 > **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9.6. Starting from version 3.0.0, it has been tested only on Python 3.13.3. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.6.
 
 ## Library Structure
 
-The **labtoolbox** package is organized into multiple submodules, each dedicated to a specific aspect of experimental data analysis. Below is an overview of the submodules and their functionalities:
+The `labtoolbox` package is organized into multiple submodules, each dedicated to a specific aspect of experimental data analysis. Below is an overview of the submodules and their functionalities:
 
 | Subpackage              | Description                                                                 |
 |-------------------------|-----------------------------------------------------------------------------|
 | `fit`        | Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods. |
 | `linalg`     | Tools for linear algebra operations. |
+| `numerical`  | ... |
 | `optics`     | ... |
 | `signals`    | Signal analysis tools for laboratory experiments, featuring frequency domain analysis and post-processing of acquired data. |
 | `stats`      | Statistical tools for experimental data analysis, including generation of synthetic datasets, histogram construction, outlier removal, residual analysis, and likelihood/posterior computation for parametric models. |
@@ -100,8 +101,8 @@ Additionally, the Code of Conduct contains a section titled “Author’s Ethica
 
 ## Disclaimer
 
-Labtoolbox makes use of the **uncertainty_class** package, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within LabToolbox.
+Labtoolbox makes use of the `uncertainty_class` package, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within LabToolbox.
 
-Some utility functions — namely `my_cov`, `my_var`, `my_mean`, `my_line`, and `y_estrapolato` — are adapted from the [**my_lib_santanastasio**](https://baltig.infn.it/LabMeccanica/PythonJupyter) package, originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
+Some utility functions — namely `my_cov`, `my_var`, `my_mean`, `my_line`, and `y_estrapolato` — are adapted from the `my_lib_santanastasio` package, available at [this link](https://baltig.infn.it/LabMeccanica/PythonJupyter), originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
 
-Additionally, the `lin_fit` and `model_fit` functions provide the option to visualize fit residuals. This feature draws inspiration from the [**VoigtFit**](https://github.com/jkrogager/VoigtFit) library, with the relevant portions of code clearly annotated within the source.
+Additionally, the `lin_fit` and `model_fit` functions provide the option to visualize fit residuals. This feature draws inspiration from the `VoigtFit` ibrary, available on [GitHub](https://github.com/jkrogager/VoigtFit), with the relevant portions of code clearly annotated within the source.

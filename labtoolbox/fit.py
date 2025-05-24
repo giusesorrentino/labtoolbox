@@ -1,6 +1,5 @@
 import math
 import numpy as np
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from scipy.stats import chi2
 from scipy.optimize import curve_fit
@@ -81,6 +80,18 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     - If `m_scale = 0` (recommended when using `m_units`), then `m_units` will represent the suffix corresponding to 10^(yscale - xscale) [+ `y_units/x_units`].
     """
 
+    try:
+        import statsmodels.api as sm
+    except ImportError:
+        raise ImportError(
+            "The 'statsmodels' package is not installed. "
+            "Please install it by running 'pip install statsmodels'."
+        )
+
+    if log is not None:
+        if log not in ("x", "y", "xy"):
+            raise ValueError("The value of 'log' must be 'x', 'y' or 'xy'.")
+
     xscale = 10**xscale
     yscale = 10**yscale
     
@@ -101,6 +112,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
 
     if result:
         print(results.summary())
+        print("\n")
 
     # Parametri stimati
     m = float(results.params[1])
@@ -277,20 +289,23 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 
+    # dashed, lw = 1.
+    # steps-mid, lw = 1.
+
     if residuals:
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
         #axs = gs.subplots()
         # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
-        axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.)
-        axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.)
+        axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.15)
+        axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.15)
         if norm == True:
-            axs[0].plot(x1, dash, ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x1, -dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x1, dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x1, -dash, ls='dotted', color='crimson', lw=1.5)
         else:
-            axs[0].plot(x, dash, ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x, -dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.5)
         axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
 
         # Configurazioni estetiche per il pannello dei residui
@@ -340,7 +355,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
 
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
-def model_fit(x, y, y_err, f, p0, x_err = None, xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, 
+def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", ylabel="y [uy]", showlegend = True, legendloc = None, 
               bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True):
     """
     General-purpose fit of multi-parameter functions, with an option to display residuals.
@@ -351,14 +366,14 @@ def model_fit(x, y, y_err, f, p0, x_err = None, xlabel="x [ux]", ylabel="y [uy]"
             Measured values of the independent variable.
         y : array-like
             Measured values of the dependent variable.
-        y_err : array-like
-            Uncertainties associated with the dependent variable.
         f : function
             Function of one variable (first argument of `f`) with `N` free parameters.
-        p0 : list
-            Initial guess for the model parameters, in the form `[a, ..., z]`.
         x_err : array-like, optional
             Uncertainties associated with the independent variable. Default is `None`.
+        y_err : array-like, optional
+            Uncertainties associated with the dependent variable. Default is `None`.
+        p0 : list, optional
+            Initial guess for the model parameters, in the form `[a, ..., z]`. Default is `None`.
         xlabel : str, optional
             Label (and units) for the independent variable.
         ylabel : str, optional
@@ -581,14 +596,14 @@ def model_fit(x, y, y_err, f, p0, x_err = None, xlabel="x [ux]", ylabel="y [uy]"
         # axs = gs.subplots()
         # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
-        axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.)
-        axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.)
+        axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.15)
+        axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.15)
         if norm == True:
-            axs[0].plot(x1, dash, ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x1, -dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x1, dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x1, -dash, ls='dotted', color='crimson', lw=1.5)
         else:
-            axs[0].plot(x, dash, ls='dashed', color='crimson', lw=1.)
-            axs[0].plot(x, -dash, ls='dashed', color='crimson', lw=1.)
+            axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.5)
         axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
 
         # Configurazioni estetiche per il pannello dei residui
