@@ -1,5 +1,5 @@
-import numpy as np
-from inspect import signature
+import numpy as _np
+from inspect import signature as _signature
 
 def boole(f, a, b, n = None, varname = None, *, max_step = 0.1, **kwargs):
     """
@@ -14,7 +14,7 @@ def boole(f, a, b, n = None, varname = None, *, max_step = 0.1, **kwargs):
     b : float
         Upper limit of integration.
     n : int, optional
-        Number of Boole segments. Must be >=1. If not provided, an optimal value is estimated
+        Number of Boole segments. Must be equal or greater than 1. If not provided, an optimal value is estimated
         to ensure segment width ≤ max_step.
     varname : str, optional
         Name of the integration variable as expected by `f`. If not provided and `f` is a lambda
@@ -30,10 +30,17 @@ def boole(f, a, b, n = None, varname = None, *, max_step = 0.1, **kwargs):
         Approximation of the definite integral using Boole's Rule.
     """
 
+    if not _np.isscalar(a) and _np.isscalar(b):
+        raise ValueError("'a' must be a scalar.")
+    if not _np.isscalar(b) and _np.isscalar(a):
+        raise ValueError("'b' must be a scalar.")
+    if not _np.isscalar(b) and not _np.isscalar(a):
+        raise ValueError("'a' and 'b' must be a scalars.")
+
     # Infer variable name if not given
     if varname is None:
         try:
-            sig = signature(f)
+            sig = _signature(f)
             pos_params = [p.name for p in sig.parameters.values() if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)]
             if len(pos_params) == 1:
                 varname = pos_params[0]
@@ -45,25 +52,25 @@ def boole(f, a, b, n = None, varname = None, *, max_step = 0.1, **kwargs):
     # Determine number of segments
     if n is None:
         total_length = abs(b - a)
-        n = max(1, int(np.ceil(total_length / (4 * max_step))))
+        n = max(1, int(_np.ceil(total_length / (4 * max_step))))
     if n < 1 or n != int(n):
         raise ValueError("n must be a positive integer.")
     n = int(n)
 
     # Compute integration points
     h = (b - a) / (4 * n)
-    x = np.linspace(a, b, 4 * n + 1)
+    x = _np.linspace(a, b, 4 * n + 1)
 
     # Evaluate f at the integration points
-    y = np.array([f(**{varname: xi}, **kwargs) for xi in x])
+    y = _np.array([f(**{varname: xi}, **kwargs) for xi in x])
 
     # Apply Boole's weights in blocks of 5 points
     total = 0.0
     for i in range(n):
         j = 4 * i
-        weights = np.array([7, 32, 12, 32, 7])
+        weights = _np.array([7, 32, 12, 32, 7])
         segment = y[j:j+5]
-        total += np.dot(weights, segment)
+        total += _np.dot(weights, segment)
 
     return (2 * h / 45) * total
 
@@ -80,7 +87,7 @@ def romberg(f, a, b, *, varname=None, tol=1e-8, max_iter=10, **kwargs):
     b : float
         Upper limit of integration.
     varname : str, optional
-        Name of the integration variable. If None, it's inferred automatically (only if f has one arg).
+        Name of the integration variable. If None, it's inferred automatically (only if `f` has one arg).
     tol : float, optional
         Desired absolute tolerance. Default is 1e-8.
     max_iter : int, optional
@@ -94,10 +101,17 @@ def romberg(f, a, b, *, varname=None, tol=1e-8, max_iter=10, **kwargs):
         Approximation of the integral.
     """
 
+    if not _np.isscalar(a) and _np.isscalar(b):
+        raise ValueError("'a' must be a scalar.")
+    if not _np.isscalar(b) and _np.isscalar(a):
+        raise ValueError("'b' must be a scalar.")
+    if not _np.isscalar(b) and not _np.isscalar(a):
+        raise ValueError("'a' and 'b' must be a scalars.")
+
     # Infer varname if not provided
     if varname is None:
         try:
-            sig = signature(f)
+            sig = _signature(f)
             pos_args = [p.name for p in sig.parameters.values()
                         if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)]
             if len(pos_args) == 1:
@@ -111,7 +125,7 @@ def romberg(f, a, b, *, varname=None, tol=1e-8, max_iter=10, **kwargs):
         return f(**{varname: x}, **kwargs)
 
     # Romberg integration table
-    R = np.zeros((max_iter, max_iter))
+    R = _np.zeros((max_iter, max_iter))
     h = b - a
 
     # First row: trapezoid rule
@@ -148,7 +162,7 @@ def newton(f, x0, *, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, 
     fprime : callable, optional
         Derivative function. If None, numerical differentiation is used.
     varname : str, optional
-        Name of the variable with respect to which we take the root. Required if f has multiple arguments.
+        Name of the variable with respect to which we take the root. Required if `f` has multiple arguments.
     tol : float, optional
         Absolute tolerance for convergence. Default is 1e-10.
     maxiter : int, optional
@@ -156,7 +170,7 @@ def newton(f, x0, *, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, 
     dx : float, optional
         Step size for numerical differentiation. Default is 1e-6.
     **kwargs
-        Additional keyword arguments passed to f (and fprime if provided).
+        Additional keyword arguments passed to `f` (and fprime if provided).
 
     Returns
     -------
@@ -169,10 +183,13 @@ def newton(f, x0, *, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, 
         If the method fails to converge within `maxiter` iterations.
     """
 
+    if not _np.isscalar(x0):
+        raise ValueError("'x0' must be a scalar.")
+
     # Infer variable name if needed
     if varname is None:
         try:
-            sig = signature(f)
+            sig = _signature(f)
             pos_args = [p.name for p in sig.parameters.values()
                         if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)]
             if len(pos_args) == 1:

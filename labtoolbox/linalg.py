@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as _np
 
 def comm(A, B):
     """
@@ -6,14 +6,14 @@ def comm(A, B):
 
     Parameters
     ----------
-    A : np.ndarray
+    A : numpy.ndarray
         The first matrix.
-    B : np.ndarray
+    B : numpy.ndarray
         The second matrix.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         The matrix commutator AB - BA.
     """
     return A @ B - B @ A
@@ -24,14 +24,14 @@ def acomm(A, B):
 
     Parameters
     ----------
-    A : np.ndarray
+    A : numpy.ndarray
         The first matrix.
-    B : np.ndarray
+    B : numpy.ndarray
         The second matrix.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         The matrix anticommutator AB + BA.
     """
     return A @ B + B @ A
@@ -56,9 +56,9 @@ def fmatrix(f, A):
     numpy.ndarray
         The matrix obtained by applying the function `f` to the eigenvalues of `A`.
     """
-    eigvals, eigvecs = np.linalg.eig(A)
-    D = np.diag(f(eigvals))
-    return eigvecs @ D @ np.linalg.inv(eigvecs)
+    eigvals, eigvecs = _np.linalg.eig(A)
+    D = _np.diag(f(eigvals))
+    return eigvecs @ D @ _np.linalg.inv(eigvecs)
 
 def proj(u, v):
     """
@@ -80,13 +80,13 @@ def proj(u, v):
         The projection of vector `v` onto vector `u`.
     """
 
-    # u = np.asarray(u)
-    # v = np.asarray(v)
+    # u = _np.asarray(u)
+    # v = _np.asarray(v)
 
     if u.ndim != 1 or v.ndim != 1:
-        raise ValueError("Both inputs must be 1D numpy arrays representing vectors.")
+        raise ValueError("Both i_nputs must be 1D numpy arrays representing vectors.")
     
-    return np.vdot(v, u) * u / np.vdot(u, u)
+    return _np.vdot(v, u) * u / _np.vdot(u, u)
 
 def sign(A):
     """
@@ -96,7 +96,7 @@ def sign(A):
     Parameters
     ----------
     A : numpy.ndarray
-        The input square matrix.
+        The i_nput square matrix.
 
     Returns
     -------
@@ -108,16 +108,16 @@ def sign(A):
 
     Examples
     --------
-    >>> A = np.array([[1, 2], [2, 1]])
+    >>> A = _np.array([[1, 2], [2, 1]])
     >>> sign(A)
     (2, 0, 0)
 
     The matrix [[1, 2], [2, 1]] has two positive eigenvalues and no negative or zero eigenvalues.
     """
-    eigvals = np.linalg.eigvals(A)
-    n_positive = np.sum(eigvals > 0)
-    n_negative = np.sum(eigvals < 0)
-    n_zero = np.sum(np.isclose(eigvals, 0))
+    eigvals = _np.linalg.eigvals(A)
+    n_positive = _np.sum(eigvals > 0)
+    n_negative = _np.sum(eigvals < 0)
+    n_zero = _np.sum(_np.isclose(eigvals, 0))
     return (int(n_positive), int(n_negative), int(n_zero))
 
 def rotate(v, theta):
@@ -138,11 +138,11 @@ def rotate(v, theta):
 
     Example
     -------
-    >>> rotate(np.array([1, 0]), np.pi/2)
+    >>> rotate(_np.array([1, 0]), _np.pi/2)
     array([0., 1.])
     """
-    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
-                                [np.sin(theta), np.cos(theta)]])
+    rotation_matrix = _np.array([[_np.cos(theta), -_np.sin(theta)],
+                                [_np.sin(theta), _np.cos(theta)]])
     return rotation_matrix @ v
 
 # qui sotto al posto di axis va un vettore qualunque oppure una str.
@@ -167,23 +167,23 @@ def rotate3d(v, axis, theta):
 
     Example
     -------
-    >>> rotate3d(np.array([1, 0, 0]), 'z', np.pi/2)
+    >>> rotate3d(_np.array([1, 0, 0]), 'z', _np.pi/2)
     array([0., 1., 0.])
     """
     # Rotazione intorno all'asse x
     if axis == 'x':
-        rotation_matrix = np.array([[1, 0, 0],
-                                    [0, np.cos(theta), -np.sin(theta)],
-                                    [0, np.sin(theta), np.cos(theta)]])
+        rotation_matrix = _np.array([[1, 0, 0],
+                                    [0, _np.cos(theta), -_np.sin(theta)],
+                                    [0, _np.sin(theta), _np.cos(theta)]])
     # Rotazione intorno all'asse y
     elif axis == 'y':
-        rotation_matrix = np.array([[np.cos(theta), 0, np.sin(theta)],
+        rotation_matrix = _np.array([[_np.cos(theta), 0, _np.sin(theta)],
                                     [0, 1, 0],
-                                    [-np.sin(theta), 0, np.cos(theta)]])
+                                    [-_np.sin(theta), 0, _np.cos(theta)]])
     # Rotazione intorno all'asse z
     elif axis == 'z':
-        rotation_matrix = np.array([[np.cos(theta), -np.sin(theta), 0],
-                                    [np.sin(theta), np.cos(theta), 0],
+        rotation_matrix = _np.array([[_np.cos(theta), -_np.sin(theta), 0],
+                                    [_np.sin(theta), _np.cos(theta), 0],
                                     [0, 0, 1]])
     else:
         raise ValueError("Axis must be 'x', 'y', or 'z'")
@@ -197,7 +197,7 @@ def gramschmid(vect, first=0, norm=True):
     Parameters
     ----------
     vect : list of array-like
-        List of input vectors to be orthogonalized.
+        List of i_nput vectors to be orthogonalized.
     first : int, optional
         Index at which to begin orthogonalization (default is 0).
     norm : bool, optional
@@ -209,14 +209,14 @@ def gramschmid(vect, first=0, norm=True):
         Orthonormal (or orthogonal) list of vectors.
     """
 
-    vect = [np.asarray(v, dtype=float) for v in vect]
+    vect = [_np.asarray(v, dtype=float) for v in vect]
     u = vect.copy()
     for i in range(first, len(vect)):
         vec = vect[i].copy()
         for j in range(first, i):
             vec -= proj(u[j], vect[i])
         if norm:
-            vec = vec / np.linalg.norm(vec)
+            vec = vec / _np.linalg.norm(vec)
         u[i] = vec
     return u
 
@@ -231,15 +231,15 @@ def pauli(index):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         The corresponding Pauli matrix.
     """
     if index in [1, 'x']:
-        return np.array([[0, 1], [1, 0]], dtype=complex)
+        return _np.array([[0, 1], [1, 0]], dtype=complex)
     elif index in [2, 'y']:
-        return np.array([[0, -1j], [1j, 0]], dtype=complex)
+        return _np.array([[0, -1j], [1j, 0]], dtype=complex)
     elif index in [3, 'z']:
-        return np.array([[1, 0], [0, -1]], dtype=complex)
+        return _np.array([[1, 0], [0, -1]], dtype=complex)
     else:
         raise ValueError("Index must be 1, 2, 3 or 'x', 'y', 'z'.")
 
@@ -255,21 +255,21 @@ def dirac(index):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         The corresponding 4×4 Dirac matrix.
     """
-    zero = np.zeros((2, 2), dtype=complex)
-    identity = np.eye(2, dtype=complex)
+    zero = _np.zeros((2, 2), dtype=complex)
+    identity = _np.eye(2, dtype=complex)
     pauli_matrices = [pauli(i+1) for i in range(3)]
 
     if index == 0:
-        return np.block([
+        return _np.block([
             [identity, zero],
             [zero, -identity]
         ])
     elif index in [1, 2, 3]:
         sigma = pauli_matrices[index - 1]
-        return np.block([
+        return _np.block([
             [zero, sigma],
             [-sigma, zero]
         ])
@@ -297,15 +297,15 @@ def slash(v):
     Raises
     ------
     ValueError
-        If the input is not a 4-vector.
+        If the i_nput is not a 4-vector.
     """
     if len(v) != 4:
-        raise ValueError("Input must be a 4-vector (length 4).")
+        raise ValueError("I_nput must be a 4-vector (length 4).")
     return sum(v[i] * dirac(i) for i in range(4))
 
-class FourVector(np.ndarray):
-    def __new__(cls, input_array):
-        obj = np.asarray(input_array, dtype=complex).view(cls)
+class FourVector(_np.ndarray):
+    def __new__(cls, i_nput_array):
+        obj = _np.asarray(i_nput_array, dtype=complex).view(cls)
         if obj.shape != (4,):
             raise ValueError("FourVector must be of length 4.")
         return obj
@@ -333,13 +333,13 @@ def changebasis(v, Bnew, Bold = None, matrix = None):
     numpy.ndarray
         The vector expressed in the new basis.
     """
-    v = np.asarray(v).reshape(-1)
+    v = _np.asarray(v).reshape(-1)
     dim = v.shape[0]
 
     if matrix is None:
         if Bold is None:
-            Bold = [np.eye(dim)[:, i] for i in range(dim)]
-        matrix = np.linalg.inv(np.column_stack(Bold)) @ np.column_stack(Bnew)
+            Bold = [_np.eye(dim)[:, i] for i in range(dim)]
+        matrix = _np.linalg.inv(_np.column_stack(Bold)) @ _np.column_stack(Bnew)
 
     return matrix @ v
 
@@ -355,28 +355,28 @@ def orthspace(vect):
     Returns
     -------
     list of numpy.ndarray
-        A list of vectors that form the orthogonal complement of the subspace spanned by the input vectors.
+        A list of vectors that form the orthogonal complement of the subspace spanned by the i_nput vectors.
 
     Raises
     ------
     ValueError
-        If the input vectors are linearly dependent.
+        If the i_nput vectors are linearly dependent.
     """
     # Verifica se i vettori sono linearmente indipendenti
-    matrix = np.column_stack(vect)
-    if np.linalg.matrix_rank(matrix) != len(vect):
-        raise ValueError("The input vectors are linearly dependent.")
+    matrix = _np.column_stack(vect)
+    if _np.linalg.matrix_rank(matrix) != len(vect):
+        raise ValueError("The i_nput vectors are linearly dependent.")
     
-    # Costruisci la matrice che contiene i vettori di input
-    A = np.column_stack(vect)
+    # Costruisci la matrice che contiene i vettori di i_nput
+    A = _np.column_stack(vect)
 
     # Calcola la base ortogonale usando la decomposizione QR
     # L'ortogonale complementare è dato da una base della null space di A^T
-    _, _, vh = np.linalg.svd(A.T)
+    _, _, vh = _np.linalg.svd(A.T)
     
     # La base ortogonale è data dalle righe non nulle di vh (SVD di A^T)
     # Questi rappresentano il complementare ortogonale
-    rank = np.linalg.matrix_rank(A)
+    rank = _np.linalg.matrix_rank(A)
     null_space_basis = vh[rank:]
     
     # Restituisci i vettori come lista di numpy.ndarray
@@ -396,8 +396,8 @@ def areindependent(vect):
     bool
         True if the vectors are linearly independent, otherwise False.
     """
-    matrix = np.column_stack(vect)
-    if np.linalg.matrix_rank(matrix) == len(vect):
+    matrix = _np.column_stack(vect)
+    if _np.linalg.matrix_rank(matrix) == len(vect):
         return True
     else:
         return False
@@ -439,52 +439,52 @@ def ismatrix(matrix, type=None):
 
     Examples
     --------
-    >>> ismatrix(np.eye(3))
+    >>> ismatrix(_np.eye(3))
     ['sym', 'herm', 'defpos', 'orth', 'inv']
 
-    >>> ismatrix(np.eye(3), type="herm and inv")
+    >>> ismatrix(_np.eye(3), type="herm and inv")
     True
 
-    >>> ismatrix(np.array([[0, 1], [1, 0]]), type="sym and defpos")
+    >>> ismatrix(_np.array([[0, 1], [1, 0]]), type="sym and defpos")
     False
     """
 
     props = []
 
     n = matrix.shape[0]
-    identity = np.eye(n, dtype=matrix.dtype)
+    identity = _np.eye(n, dtype=matrix.dtype)
 
     # Proprietà algebriche
-    if np.allclose(matrix, matrix.T):
+    if _np.allclose(matrix, matrix.T):
         props.append("sym")
-    if np.allclose(matrix, matrix.conj().T):
+    if _np.allclose(matrix, matrix.conj().T):
         props.append("herm")
-    if np.allclose(matrix.conj().T, -matrix):
+    if _np.allclose(matrix.conj().T, -matrix):
         props.append("antiherm")
-    if matrix.shape[0] == matrix.shape[1] and np.allclose(matrix @ matrix.T, identity):
+    if matrix.shape[0] == matrix.shape[1] and _np.allclose(matrix @ matrix.T, identity):
         props.append("orth")
-    if matrix.shape[0] == matrix.shape[1] and np.allclose(matrix.conj().T @ matrix, identity):
+    if matrix.shape[0] == matrix.shape[1] and _np.allclose(matrix.conj().T @ matrix, identity):
         props.append("unit")
 
     # Autovalori
     try:
-        eigvals = np.linalg.eigvalsh(matrix)
-        if np.all(eigvals > 0):
+        eigvals = _np.linalg.eigvalsh(matrix)
+        if _np.all(eigvals > 0):
             props.append("defpos")
-        if np.all(eigvals >= 0):
+        if _np.all(eigvals >= 0):
             props.append("semidefpos")
-        if np.all(eigvals < 0):
+        if _np.all(eigvals < 0):
             props.append("defneg")
-        if np.all(eigvals <= 0):
+        if _np.all(eigvals <= 0):
             props.append("semidefneg")
-    except np.linalg.LinAlgError:
+    except _np.linalg.LinAlgError:
         pass
 
     # Invertibilità
     try:
-        np.linalg.inv(matrix)
+        _np.linalg.inv(matrix)
         props.append("inv")
-    except np.linalg.LinAlgError:
+    except _np.linalg.LinAlgError:
         pass
 
     if type is None:
@@ -511,9 +511,9 @@ def docommute(A, B):
 
     Parameters
     ----------
-    A : np.ndarray
+    A : numpy.ndarray
         The first operator.
-    B : np.ndarray
+    B : numpy.ndarray
         The second operator.
 
     Returns
@@ -521,4 +521,4 @@ def docommute(A, B):
     bool
         True if the operators commute, otherwise False.
     """
-    return np.allclose(comm(A,B), np.zeros_like(A))
+    return _np.allclose(comm(A,B), _np.zeros_like(A))

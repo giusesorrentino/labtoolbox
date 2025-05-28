@@ -1,5 +1,4 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/labtoolbox?label=PyPI)](https://pypi.org/project/labtoolbox/)
-![Python Versions](https://img.shields.io/pypi/pyversions/labtoolbox)
 [![PyPI Downloads](https://static.pepy.tech/badge/labtoolbox)](https://pepy.tech/projects/labtoolbox)
 [![License](https://img.shields.io/pypi/l/labtoolbox)](https://github.com/giusesorrentino/labtoolbox/blob/master/LICENSE.txt)
 [![GitHub Issues](https://img.shields.io/github/issues/giusesorrentino/labtoolbox)](https://github.com/giusesorrentino/labtoolbox/issues)

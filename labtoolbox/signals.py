@@ -1,33 +1,30 @@
-import warnings
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-from numpy.linalg import lstsq
-from scipy.integrate import quad, simpson
-import scipy.fft as four
-from scipy.signal import find_peaks
-from ._helper import ispow2, fft_cooley_tukey, dft_direct, idft_direct, ifft_cooley_tukey
+import warnings as _warnings
+import numpy as _np
+import matplotlib.pyplot as _plt
 
-def fft(data, t = None):
+def fft(data, t=None, dt=None):
     """
     Compute the Fast Fourier Transform (FFT) of a signal.
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data : array-like
         Input signal as a 1D NumPy array (real or complex).
-    t : numpy.ndarray, optional
+    t : array-like, optional
         Time samples corresponding to the signal. If provided, must be a 1D NumPy
         array of the same length as `data`, monotonically increasing, and uniformly
-        spaced. If None, only the FFT is returned.
+        spaced. If None, only the FFT is returned unless `dt` is provided.
+    dt : float, optional
+        Time interval between samples. If provided, it is used to calculate frequency bins.
+        Ignored if `t` is also provided.
 
     Returns
     -------
-    X : numpy.ndarray
+    X : numpy.array
         The FFT of the input signal, a 1D complex array of the same length as `data`.
-    f : numpy.ndarray, optional
+    f : numpy.array, optional
         The frequency bins (in Hz) corresponding to the FFT coefficients, returned
-        only if `t` is provided. Same length as `data`.
+        only if `t` or `dt` is provided. Same length as `data`.
 
     Raises
     ------
@@ -40,12 +37,17 @@ def fft(data, t = None):
     Notes
     -----
     - For lengths <= 16, a direct DFT is used.
-    - For non-power-of-2 lengths, the signal is zero-padded to the next power of 2.
     - The FFT is computed using the Cooley-Tukey algorithm for power-of-2 lengths.
     """
 
+    from ._helper import ispow2, fft_cooley_tukey, dft_direct
+
+    data = _np.asarray(data)
+    if t is not None:
+        t = _np.asarray(t)
+
     if data.size == 0:
-        return np.array([])
+        return _np.array([])
     if data.size <= 1:
         return data
     elif data.size <= 16:
@@ -53,42 +55,63 @@ def fft(data, t = None):
     elif ispow2(data.size):
         X = fft_cooley_tukey(data)
     else:
-        M = int(2 ** np.ceil(np.log2(data.size)))
-        padded = np.pad(data, (0, M - data.size), mode="constant")
+        M = int(2 ** _np.ceil(_np.log2(data.size)))
+        padded = _np.pad(data, (0, M - data.size), mode="constant")
         X = fft_cooley_tukey(padded)
         X = X[:data.size]
     
+    # Determina dt e gestisci errori
     if t is not None:
         if t.size != data.size:
             raise ValueError("t must have the same length as data")
-        if not np.all(np.diff(t) > 0):
+        if not _np.all(_np.diff(t) > 0):
             raise ValueError("t must be monotonically increasing")
-        if not np.allclose(np.diff(t), np.diff(t)[0], rtol=1e-5):
+        if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
             raise ValueError("t must be uniformly spaced (equispaced)")
+        dt_final = (t[-1] - t[0]) / (t.size - 1) if t.size > 1 else 1.0
+    elif dt is not None:
+        dt_final = dt
+    else:
+        return X  # Nessuna informazione temporale disponibile
 
-        dt = (t[-1] - t[0]) / (t.size - 1) if t.size > 1 else 1.0
-        f = np.fft.fftfreq(data.size, d=dt)
+    f = _np.fft.fftfreq(data.size, d=dt_final)
 
-        # Riordina le frequenze e i coefficienti FFT
-        order = np.argsort(f)
-        f_sorted = f[order]
-        X_sorted = X[order]
+    # Controllo aliasing
+    spectrum_magnitude = _np.abs(X)
+    threshold = _np.max(spectrum_magnitude) * 0.05  # 5% del massimo
+    freq_components = _np.abs(f[spectrum_magnitude > threshold])
+    if freq_components.size > 0:
+        f_max = _np.max(freq_components)
+        fs = 1 / dt_final
+        if f_max >= fs / 2:
+            _warnings.warn(
+                f"Potential aliasing detected: the signal contains frequency components up to {f_max:.2g}, "
+                f"which exceeds the Nyquist frequency ({fs/2:.2g}) based on the current sampling rate. "
+                "Please consider increasing the sampling frequency or applying an anti-aliasing filter prior to sampling. "
+                "Proceeding may lead to distorted spectral analysis results."
+            )
 
-        return X_sorted, f_sorted
-    return X
+    # Riordina le frequenze e i coefficienti FFT
+    order = _np.argsort(f)
+    f_sorted = f[order]
+    X_sorted = X[order]
 
-def ifft(data, freq=None):
+    return X_sorted, f_sorted
+
+def ifft(data, freq=None, df=None):
     """
     Compute the Inverse Fast Fourier Transform (IFFT) of a signal.
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data : array-like
         Input frequency domain signal as a 1D NumPy array (complex).
-    freq : numpy.ndarray, optional
-        Frequency samples corresponding to the signal. If provided, must be a 1D NumPy
-        array of the same length as `data`, monotonically increasing, and uniformly
-        spaced. If None, only the IFFT is returned.
+    freq : array-like, optional
+        Frequency samples corresponding to the signal. Must be a 1D NumPy array
+        of the same length as `data`, monotonically increasing, and uniformly spaced.
+    df : float, optional
+        Frequency spacing (in Hz) of the input data. Used if `freq` is not provided.
+        If both `freq` and `df` are None, time bins are not returned.
 
     Returns
     -------
@@ -96,7 +119,7 @@ def ifft(data, freq=None):
         The IFFT of the input signal, a 1D complex array of the same length as `data`.
     t : numpy.ndarray, optional
         The time bins (in seconds) corresponding to the IFFT coefficients, returned
-        only if `freq` is provided. Same length as `data`.
+        only if `freq` or `df` is provided. Same length as `data`.
 
     Raises
     ------
@@ -105,7 +128,7 @@ def ifft(data, freq=None):
         - Has a different length than `data`.
         - Is not monotonically increasing.
         - Is not uniformly spaced (equispaced).
-        
+
     Notes
     -----
     - For lengths <= 16, a direct IDFT is used.
@@ -113,8 +136,14 @@ def ifft(data, freq=None):
     - The IFFT is computed using the Cooley-Tukey algorithm for power-of-2 lengths.
     """
 
+    from ._helper import ispow2, idft_direct, ifft_cooley_tukey
+
+    data = _np.asarray(data)
+    if freq is not None:
+        freq = _np.asarray(freq)
+
     if data.size == 0:
-        return np.array([])
+        return _np.array([])
     if data.size <= 1:
         return data
     elif data.size <= 16:
@@ -122,43 +151,51 @@ def ifft(data, freq=None):
     elif ispow2(data.size):
         x = ifft_cooley_tukey(data)
     else:
-        M = int(2 ** np.ceil(np.log2(data.size)))
-        padded = np.pad(data, (0, M - data.size), mode="constant")
+        M = int(2 ** _np.ceil(_np.log2(data.size)))
+        padded = _np.pad(data, (0, M - data.size), mode="constant")
         x = ifft_cooley_tukey(padded)
         x = x[:data.size]
-    
-    if freq is not None:
-        if freq.size != data.size:
-            raise ValueError("freq must have the same length as data")
-        if not np.all(np.diff(freq) > 0):
-            raise ValueError("freq must be monotonically increasing")
-        if not np.allclose(np.diff(freq), np.diff(freq)[0], rtol=1e-5):
-            raise ValueError("freq must be uniformly spaced (equispaced)")
-        
-        # Calcola l'intervallo di campionamento nel dominio temporale
-        df = (freq[-1] - freq[0]) / (freq.size - 1) if freq.size > 1 else 1.0
-        fs = 1 / df  # Frequenza di campionamento
-        dt = 1 / (freq.size * df)  # Intervallo di tempo
-        t = np.arange(0, data.size) * dt  # Array dei tempi
+
+    if freq is not None or df is not None:
+        if freq is not None:
+            if freq.size != data.size:
+                raise ValueError("freq must have the same length as data")
+            if not _np.all(_np.diff(freq) > 0):
+                raise ValueError("freq must be monotonically increasing")
+            if not _np.allclose(_np.diff(freq), _np.diff(freq)[0], rtol=1e-5):
+                raise ValueError("freq must be uniformly spaced (equispaced)")
+            df_value = (freq[-1] - freq[0]) / (freq.size - 1) if freq.size > 1 else 1.0
+        else:
+            df_value = df
+
+        fs = 1 / df_value  # Frequenza di campionamento temporale
+        dt = 1 / (data.size * df_value)  # Intervallo di tempo (step)
+        t = _np.arange(0, data.size) * dt  # Array dei tempi
+
         return x, t
+
     return x
 
-def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel = "y [uy]", xscale = 0, yscale = 0):
+def dfs(t, data, order, plot=True, showpanel = True, apply_filter=True, xlabel = "x [ux]", ylabel = "y [uy]", xscale = 0, yscale = 0, xlim = [], ylim = []):
     """
     Computes the discrete Fourier series approximation of a sampled function.
 
     Parameters
     ----------
-    t : ndarray
-        Array of sample points (must be uniformly spaced).
-    data : ndarray
-        Array of function values sampled at points t.
+    t : array-like
+        1D array of sample points (must be uniformly spaced).
+    data : array-like
+        1D array of function values sampled at points t.
     order : int
         Order of the Fourier approximation (number of harmonics).
     plot : bool, optional
-        If True, plots the original function and its Fourier approximation.
+        If `True`, plots the original function and its Fourier approximation.
+    showpanel : bool, optional
+        If `True`, a top panel will display the superposition of sinusoidal basis functions
+        (harmonics) used in the Fourier series decomposition. This panel visualizes the
+        contributions of individual harmonics to the approximation of the input data.
     apply_filter : bool, optional
-        If True, applies a basic low-pass filter to reduce high-frequency noise.
+        If `True`, applies a basic low-pass filter to reduce high-frequency noise.
     xlabel : str, optional
         Label for the x-axis, including units in square brackets (e.g., "Time [s]").
     ylabel : str, optional
@@ -167,19 +204,27 @@ def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel 
         Scaling factor for the x-axis (e.g., `xscale = -3` corresponds to 1e-3, to convert seconds to milliseconds).
     yscale : int, optional
         Scaling factor for the y-axis.
+    xlim : tuple, optional
+        Limits for the x-axis, in the form (xmin, xmax). The values should
+        already be scaled with respect to `xscale`. If None or an empty tuple,
+        the default limits will be automatically determined from the data.
+    ylim : tuple, optional
+        Limits for the y-axis, in the form (ymin, ymax). The values should
+        already be scaled with respect to `yscale`. If None or an empty tuple,
+        the default limits will be automatically determined from the data.
 
     Returns
     -------
-    f_approx : ndarray
+    f_approx : numpy.array
         Array of the same shape as `t`, containing the values of the Fourier series approximation
         of the input function at each point in `t`.
     a0 : float
         Zeroth Fourier coefficient (mean value component of the function over the period). It 
         corresponds to the constant term of the Fourier series.
-    a_n : ndarray
+    a_n : numpy.array
         Array of cosine coefficients (Fourier coefficients of the even part of the function),
         corresponding to each harmonic up to the specified order (excluding a0).
-    b_n : ndarray
+    b_n : numpy.array
         Array of sine coefficients (Fourier coefficients of the odd part of the function),
         corresponding to each harmonic up to the specified order.
 
@@ -188,11 +233,23 @@ def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel 
     The values of `xscale` and `yscale` affect only the axis scaling in the plot. All outputs are estimated using the original input data as provided.
     """
 
+    from scipy.integrate import simpson
+
+    if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
+        raise ValueError("Input array 't' must be uniformly spaced.")
+
+    if order == 0:
+        raise ValueError("'order' must be equal or greater than 1.")
+    
+    if t.size != data.size:
+        raise ValueError("'t' must have the same length as 'data'")
+    
+    data = _np.asarray(data)
+    if t is not None:
+        t = _np.asarray(t)
+
     xscale = 10**xscale
     yscale = 10**yscale
-
-    if not np.allclose(np.diff(t), t[1] - t[0], rtol=1e-4):
-        raise ValueError("Input array t must be uniformly spaced.")
 
     N = len(t)
     dt = t[1] - t[0]
@@ -201,7 +258,7 @@ def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel 
     max_freq = order / (t[-1] - t[0])  # Maximum frequency in Fourier expansion
 
     if max_freq > f_nyquist:
-        warnings.warn(
+        _warnings.warn(
             f"Aliasing may occur: max Fourier frequency ({max_freq:.2f} Hz) "
             f"exceeds Nyquist frequency ({f_nyquist:.2f} Hz).", RuntimeWarning
         )
@@ -217,15 +274,15 @@ def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel 
     b_n = []
 
     for n in range(1, order):
-        cos_term = np.cos(2 * np.pi * n * t / T)
-        sin_term = np.sin(2 * np.pi * n * t / T)
+        cos_term = _np.cos(2 * _np.pi * n * t / T)
+        sin_term = _np.sin(2 * _np.pi * n * t / T)
 
         an = 2 * simpson(data * cos_term, t) / T
         bn = 2 * simpson(data * sin_term, t) / T
 
         if apply_filter:
             # Apply exponential decay to filter high-frequency components
-            decay = np.exp(- (n / order)**2)
+            decay = _np.exp(- (n / order)**2)
             an *= decay
             bn *= decay
 
@@ -233,20 +290,71 @@ def dfs(t, data, order, plot=True, apply_filter=True, xlabel = "x [ux]", ylabel 
         b_n.append(bn)
 
     # Construct approximation
-    f_approx = np.full_like(t, a0 / 2)
+    f_approx = _np.full_like(t, a0 / 2)
 
     for n in range(1, order):
         f_approx += (
-            a_n[n - 1] * np.cos(2 * np.pi * n * t / T) +
-            b_n[n - 1] * np.sin(2 * np.pi * n * t / T)
+            a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
+            b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T)
         )
 
     if plot:
-        plt.plot(t / xscale, data / yscale, label="Input data", lw=1, color = "blue")
-        plt.plot(t / xscale, f_approx / yscale, label=f"Fourier approx. (order = {order})", lw=1, color = "red")
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.legend()
+
+        fig = _plt.figure(figsize=(6.4, 4.8))
+
+        if showpanel:
+            gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
+            axs = gs.subplots(sharex=True)
+
+            # Pannello superiore: componenti armoniche
+            total_harmonic = _np.zeros_like(t, dtype=float)
+            for n in range(1, order):
+                harmonic = (a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
+                            b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T))
+                total_harmonic += harmonic
+                axs[0].plot(t / xscale, harmonic / yscale, lw=0.8)
+
+            # Calcola l'ampiezza massima della somma delle armoniche
+            max_harmonic_amplitude = _np.max(_np.abs(total_harmonic / yscale))
+            axs[0].set_ylim(-1.5 * max_harmonic_amplitude, 1.5 * max_harmonic_amplitude)
+            axs[0].tick_params(labelbottom=False)
+            axs[0].set_yticklabels('')
+            # axs[0].set_yticks([])
+        else:
+            gs = fig.add_gridspec(2, hspace=0, height_ratios=[0, 1])
+            axs = gs.subplots(sharex=True)
+            #axs = gs.subplots()
+            axs[0].remove()  # Rimuovi axs[0], axs[1] rimane valido
+
+        # Pannello inferiore: dati originali e approssimazione
+        # axs[1].plot(t / xscale, data / yscale, label="Input data", lw=1, color="blue")
+        # axs[1].plot(t / xscale, f_approx / yscale, label=f"Fourier approx. (order={order})", lw=1, color="red")
+        # axs[1].set_xlabel(xlabel)
+        # axs[1].set_ylabel(ylabel)
+        # axs[1].legend()
+
+        # Pannello inferiore: dati originali e approssimazione
+        axs[1].plot(
+            t / xscale, data / yscale, label= "Input data", lw=1,
+            color =  "mediumblue", marker=''
+        )
+
+        axs[1].plot(
+            t / xscale, f_approx / yscale, label=f"Partial Fourier series\nNo. of terms = {order}", lw=1,
+            color = "crimson", linestyle='-'
+        )
+
+        # Imposta limiti se forniti
+        if xlim and len(xlim) == 2:
+            if showpanel:
+                axs[0].set_xlim(xlim)
+            axs[1].set_xlim(xlim)
+        if ylim and len(ylim) == 2:
+            axs[1].set_ylim(ylim)
+
+        axs[1].set_xlabel(xlabel)
+        axs[1].set_ylabel(ylabel)
+        axs[1].legend()
 
     return f_approx, a0, a_n, b_n
 
@@ -267,25 +375,25 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
         
     Returns
     -------
-    x : ndarray
+    x : numpy.array
         Array of shape (N,), representing the uniformly spaced sample points over one period.
         These are the evaluation points at which both the original function and the Fourier
         approximation are computed.
-    f_original : ndarray
+    f_original : numpy.array
         Array of shape (N,), representing the values of the original input function evaluated at 
         the sample points `x`. This is the reference signal used for comparison with the Fourier 
         approximation.
-    f_approx : ndarray
+    f_approx : numpy.array
         Array of shape (N,), containing the values of the truncated Fourier series evaluated at 
         the same sample points `x`. This is the approximation of `f_original` using a finite number 
         of harmonics (up to the specified order).
     a0 : float
         Zeroth Fourier coefficient (mean value component of the function over the period). It 
         corresponds to the constant term of the Fourier series.
-    a_n : ndarray
+    a_n : numpy.array
         Array of cosine coefficients (Fourier coefficients of the even part of the function),
         corresponding to each harmonic up to the specified order (excluding a0).
-    b_n : ndarray
+    b_n : numpy.array
         Array of sine coefficients (Fourier coefficients of the odd part of the function),
         corresponding to each harmonic up to the specified order.
 
@@ -293,6 +401,8 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     ----------
     The values of `xscale` and `yscale` affect only the axis scaling in the plot. All parameters are estimated using the original input data as provided.
     """
+
+    from scipy.integrate import quad
 
     xscale = 10**xscale
     yscale = 10**yscale
@@ -302,7 +412,7 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     a, b = interval
     T = b - a  # Period
     L = T / 2
-    x = np.linspace(a, b, num_points)
+    x = _np.linspace(a, b, num_points)
     
     # Compute a0 separately
     a0, _ = quad(lambda x_: f(x_), a, b)
@@ -313,28 +423,28 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     b_n = []
 
     for n in range(1, order + 1):
-        an, _ = quad(lambda x_: f(x_) * np.cos(n * np.pi * (x_ - a) / L), a, b)
-        bn, _ = quad(lambda x_: f(x_) * np.sin(n * np.pi * (x_ - a) / L), a, b)
+        an, _ = quad(lambda x_: f(x_) * _np.cos(n * _np.pi * (x_ - a) / L), a, b)
+        bn, _ = quad(lambda x_: f(x_) * _np.sin(n * _np.pi * (x_ - a) / L), a, b)
         a_n.append(an / L)
         b_n.append(bn / L)
 
     # Build the Fourier approximation
-    f_approx = np.full_like(x, a0 / 2)
+    f_approx = _np.full_like(x, a0 / 2)
 
     for n in range(1, order + 1):
         f_approx += (
-            a_n[n - 1] * np.cos(n * np.pi * (x - a) / L) +
-            b_n[n - 1] * np.sin(n * np.pi * (x - a) / L)
+            a_n[n - 1] * _np.cos(n * _np.pi * (x - a) / L) +
+            b_n[n - 1] * _np.sin(n * _np.pi * (x - a) / L)
         )
 
     f_original = f(x)
 
     # Plot
-    plt.plot(x / xscale, f_original / yscale, label="Input function", lw=0.8, color = "blue")
-    plt.plot(x / xscale, f_approx / yscale, '--', label=f"Fourier approx. (order = {order})", lw=0.8, color = "red")
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.legend()
+    _plt.plot(x / xscale, f_original / yscale, label="Input function", lw=0.8, color = "blue")
+    _plt.plot(x / xscale, f_approx / yscale, '--', label=f"Fourier approx. (order = {order})", lw=0.8, color = "red")
+    _plt.xlabel(xlabel)
+    _plt.ylabel(ylabel)
+    _plt.legend()
 
     return f_original, f_approx, a0, a_n, b_n
 
@@ -392,21 +502,27 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
         If `log` is not one of 'x', 'y', 'xy', 'cs', or None.
     """
 
+    from matplotlib.colors import LogNorm
+
+    data = _np.asarray(data)
+    if t is not None:
+        t = _np.asarray(t)
+
     # --- Validazioni iniziali ---
     if log is not None and log not in ("x", "y", "xy", "cs"):
-        raise ValueError("log must be one of: 'x', 'y', 'xy', 'cs' or None.")
+        raise ValueError("'log' must be one of: 'x', 'y', 'xy', 'cs' or None.")
     
     if logcs and not spectrogram:
-        warnings.warn("logcs=True has no effect unless spectrogram=True.", RuntimeWarning)
+        _warnings.warn("'logcs = True' has no effect unless 'spectrogram = True'.", RuntimeWarning)
     
     if spectrogram and t is None:
-        raise ValueError("Parameter 't' must be provided if spectrogram=True.")
+        raise ValueError("Parameter 't' must be provided if 'spectrogram = True'.")
     
     if logcs and t is None:
-        warnings.warn("logcs=True requires 't' to be defined.", RuntimeWarning)
+        _warnings.warn("'logcs = True' requires 't' to be defined.", RuntimeWarning)
 
     if data.size == 0:
-        return np.array([]), np.array([])
+        return _np.array([]), _np.array([])
 
     if psd_unit == None or psd_unit == "":
         label_psd = f"Power Spectral Density"
@@ -417,7 +533,7 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
     X, freqs = fft(data, t)
     
     N = data.size
-    S = np.abs(X)**2
+    S = _np.abs(X)**2
     # S = S[:N//2 + 1]       # Frequenze positive
     # freqs = freqs[:N//2 + 1]
 
@@ -426,9 +542,9 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
     if t is not None:
         if t.size != N:
             raise ValueError("Array 't' must have the same length as 'data'.")
-        if not np.all(np.diff(t) > 0):
+        if not _np.all(_np.diff(t) > 0):
             raise ValueError("Array 't' must be strictly increasing.")
-        if not np.allclose(np.diff(t), np.diff(t)[0], rtol=1e-5):
+        if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
             raise ValueError("Array 't' must be uniformly spaced.")
         dt = (t[-1] - t[0]) / (N - 1)
         fs = 1.0 / dt
@@ -455,24 +571,24 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
                 X = fft(seg, t=None)
                 N = seg.size
                 fs_seg = 1.0 / (seg_t[1] - seg_t[0])
-                freqs_full = np.fft.fftfreq(N, d=1/fs_seg)
+                freqs_full = _np.fft.fftfreq(N, d=1/fs_seg)
                 pos_mask = freqs_full >= 0
                 freqs = freqs_full[pos_mask][:N//2 + 1]
-                S_seg = np.abs(X)[pos_mask][:N//2 + 1] ** 2
+                S_seg = _np.abs(X)[pos_mask][:N//2 + 1] ** 2
                 S_seg[1:] *= 2 / (fs_seg * N)
                 S_seg[0] /= (fs_seg * N)
                 S_list.append(S_seg)
-                t_spec.append(np.mean(seg_t))
+                t_spec.append(_np.mean(seg_t))
 
-            S_array = np.array(S_list).T
-            t_spec = np.array(t_spec)
+            S_array = _np.array(S_list).T
+            t_spec = _np.array(t_spec)
 
-            if not np.all(np.diff(t_spec) > 0):
+            if not _np.all(_np.diff(t_spec) > 0):
                 raise ValueError("t_spec is not monotonically increasing.")
-            if not np.all(np.diff(freqs) > 0):
+            if not _np.all(_np.diff(freqs) > 0):
                 raise ValueError("freqs is not monotonically increasing.")
 
-            fig, ax = plt.subplots()
+            fig, ax = _plt.subplots()
             if log in ("x", "xy"):
                 ax.set_xscale("log")
             if log in ("y", "xy"):
@@ -483,9 +599,9 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
             else:
                 norm = None
 
-            T, F = np.meshgrid(t_spec, freqs)
-            t_edges = np.concatenate([t_spec - np.diff(t_spec, append=t_spec[-1])/2, [t_spec[-1] + (t_spec[-1] - t_spec[-2])/2]])
-            f_edges = np.concatenate([freqs - np.diff(freqs, append=freqs[-1])/2, [freqs[-1] + (freqs[-1] - freqs[-2])/2]])
+            T, F = _np.meshgrid(t_spec, freqs)
+            t_edges = _np.concatenate([t_spec - _np.diff(t_spec, append=t_spec[-1])/2, [t_spec[-1] + (t_spec[-1] - t_spec[-2])/2]])
+            f_edges = _np.concatenate([freqs - _np.diff(freqs, append=freqs[-1])/2, [freqs[-1] + (freqs[-1] - freqs[-2])/2]])
             if logcs:
                 pcm = ax.pcolormesh(t_edges, f_edges, S_array, shading='auto', cmap='plasma', norm=norm)
             else:
@@ -523,79 +639,143 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
             S_plot = S[mask]
 
             if log in ("x", "xy"):
-                plt.xscale("log")
+                _plt.xscale("log")
 
             if log in ("y", "xy"):
-                plt.yscale("log")
+                _plt.yscale("log")
 
-            plt.plot(f_plot, S_plot, lw = 0.8, color = color)
+            _plt.plot(f_plot, S_plot, lw = 0.8, color = color)
 
             if f_plot.size > 0:
-                plt.xlim(f_plot[0], f_plot[-1])
-            plt.xlabel(f"Frequency [{freq_unit}]")
-            plt.ylabel(label_psd)
+                _plt.xlim(f_plot[0], f_plot[-1])
+            _plt.xlabel(f"Frequency [{freq_unit}]")
+            _plt.ylabel(label_psd)
 
     if t is not None:
         return S, freqs
     return S
 
-def harmonic(t, y, prominence=0.05, n_max=None):
+def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
     """
     Identifies the dominant harmonics present in a real-valued signal.
 
     This function computes the FFT of the input signal y(t), finds the peaks
     in its amplitude spectrum, and returns their frequencies, amplitudes, and phases.
-    It does *not* reconstruct the time‑domain components—only reports what
-    harmonics are strongest.
+    The phase of each harmonic is calculated relative to the phase of the first
+    (most prominent) harmonic. It does *not* reconstruct the time-domain components—only
+    reports what harmonics are strongest.
 
     Parameters
     ----------
-    t : array_like
+    t : array-like
         Time array.
-    y : array_like
+    y : array-like
         Signal samples corresponding to `t`.
     prominence : float, optional
         Minimum prominence of peaks in the power spectrum. Default is 0.05.
     n_max : int or None, optional
         If given, return at most `n_max` harmonics.
+    results : bool, optional
+        If `True`, prints a formatted table with the frequency, amplitude, and phase of the harmonics.
 
     Returns
     -------
     harmonics : list of dict
-        Each dict contains frequency (Hz), amplitude, and phase (rad) of a harmonic component.
+        Each dict contains frequency, amplitude, and phase (rad, relative to the first harmonic) of a harmonic component.
     """
-    t = np.asarray(t)
-    y = np.asarray(y)
+    from scipy.signal import find_peaks
+    import numpy as _np
+
+    if t.size != y.size:
+        raise ValueError("'t' must have the same length as 'y'")
+
+    t = _np.asarray(t)
+    y = _np.asarray(y)
     dt = t[1] - t[0]
     N = len(y)
 
-    yf = four.fft(y)
-    freqs = four.fftfreq(N, d=dt)
+    yf, freqs = fft(y, t) 
 
     pos_mask = freqs > 0
     freqs = freqs[pos_mask]
     yf = yf[pos_mask]
 
-    power = np.abs(yf)
-    phases = np.angle(yf)
+    power = _np.abs(yf)
+    phases = _np.angle(yf)
 
-    peaks, _ = find_peaks(power, prominence=prominence * np.max(power))
-    sorted_peaks = peaks[np.argsort(power[peaks])[::-1]]
+    peaks, _ = find_peaks(power, prominence=prominence * _np.max(power))
+    sorted_peaks = peaks[_np.argsort(power[peaks])[::-1]]
 
     if n_max is not None:
         sorted_peaks = sorted_peaks[:n_max]
 
     harmonics = []
+    if sorted_peaks.size > 0:
+        # Phase of the first (most prominent) harmonic
+        reference_phase = phases[sorted_peaks[0]]
+    else:
+        reference_phase = 0  # Fallback if no peaks are found
+
     for idx in sorted_peaks:
         harmonics.append({
             "frequency": freqs[idx],
             "amplitude": 2 * power[idx] / N,
-            "phase": phases[idx]
+            "phase": phases[idx] - reference_phase  # Phase relative to the first harmonic
         })
+
+    if results:
+        def format_dynamic_number(val):
+            if val == 0:
+                return "0"
+            abs_val = abs(val)
+            if abs_val >= 1e4 or abs_val <= 1e-3:
+                return f"{val:.3e}"  # Scientific format
+            elif abs_val >= 1:
+                return f"{val:.4f}".rstrip('0').rstrip('.')  # Decimal up to 4 places
+            else:
+                return f"{val:.4g}"  # Significant figures
+
+        headers = ["Harmonic", "Frequency", "Amplitude", "Phase"]
+
+        # Prepare rows with formatted values
+        rows = []
+        for i, h in enumerate(harmonics, 1):
+            row = [
+                f"H#{i}",
+                format_dynamic_number(h["frequency"]),
+                format_dynamic_number(h["amplitude"]),
+                format_dynamic_number(h["phase"])
+            ]
+            rows.append(row)
+
+        # Calculate maximum width for each column
+        col_widths = []
+        for col_idx, header in enumerate(headers):
+            max_data_width = max(len(row[col_idx]) for row in rows) if rows else len(header)
+            col_width = max(len(header), max_data_width)
+            col_widths.append(col_width)
+
+        # Build header line
+        header_line = f"{headers[0]:<{col_widths[0]}} | " + " | ".join(
+            f"{headers[i]:<{col_widths[i]}}" for i in range(1, len(headers))
+        )
+        divider = "-" * len(header_line)
+
+        # Pretty print
+        print()
+        print("=" * len(header_line))
+        print(header_line)
+        print(divider)
+        for row in rows:
+            line = f"{row[0]:<{col_widths[0]}} | " + " | ".join(
+                f"{row[i]:<{col_widths[i]}}" for i in range(1, len(row))
+            )
+            print(line)
+        print("=" * len(header_line))
 
     return harmonics
 
-def decompose(t, y, freqs):
+def decompose(t, y, freqs, results = True):
     """
     Reconstructs specified sinusoidal components from a real-valued signal.
 
@@ -606,27 +786,35 @@ def decompose(t, y, freqs):
 
     Parameters
     ----------
-    t : array_like
+    t : array-like
         Time array.
-    y : array_like
+    y : array-like
         Signal samples.
-    freqs : array_like
+    freqs : array like
         Frequencies (Hz) of the components to extract.
+    results : bool, optional
+        If `True`, prints a formatted table of the components.
 
     Returns
     -------
     components : list of dict
         Each dict contains frequency (Hz), amplitude, and phase (rad).
     """
-    t = np.asarray(t)
-    y = np.asarray(y)
-    freqs = np.asarray(freqs)
+
+    from numpy.linalg import lstsq
+
+    t = _np.asarray(t)
+    y = _np.asarray(y)
+    freqs = _np.asarray(freqs)
+
+    if t.size != y.size:
+        raise ValueError("'t' must have the same length as 'y'")
 
     A = []
     for f in freqs:
-        A.append(np.sin(2 * np.pi * f * t))
-        A.append(np.cos(2 * np.pi * f * t))
-    A = np.vstack(A).T
+        A.append(_np.sin(2 * _np.pi * f * t))
+        A.append(_np.cos(2 * _np.pi * f * t))
+    A = _np.vstack(A).T
 
     coeffs, _, _, _ = lstsq(A, y, rcond=None)
     components = []
@@ -634,17 +822,67 @@ def decompose(t, y, freqs):
     for i, f in enumerate(freqs):
         sin_coef = coeffs[2 * i]
         cos_coef = coeffs[2 * i + 1]
-        amplitude = np.hypot(sin_coef, cos_coef)
-        phase = np.arctan2(cos_coef, sin_coef)
+        amplitude = _np.hypot(sin_coef, cos_coef)
+        phase = _np.arctan2(cos_coef, sin_coef)
         components.append({
             "frequency": f,
             "amplitude": amplitude,
             "phase": phase
         })
 
+    if results:
+        def format_dynamic_number(val):
+            if val == 0:
+                return "0"
+            abs_val = abs(val)
+            if abs_val >= 1e4 or abs_val <= 1e-3:
+                return f"{val:.3e}"  # formato scientifico
+            elif abs_val >= 1:
+                return f"{val:.4f}".rstrip('0').rstrip('.')  # decimali fino a 4 cifre
+            else:
+                return f"{val:.4g}"  # cifre significative
+
+
+        headers = ["Frequency", "Amplitude", "Phase"]
+
+            # Prepara righe con valori formattati
+        rows = []
+        for i, h in enumerate(components, 1):
+            row = [
+                format_dynamic_number(h["frequency"]),
+                format_dynamic_number(h["amplitude"]),
+                format_dynamic_number(h["phase"])
+            ]
+            rows.append(row)
+
+        # Calcola larghezza massima per ogni colonna
+        col_widths = []
+        for col_idx, header in enumerate(headers):
+            max_data_width = max(len(row[col_idx]) for row in rows)
+            col_width = max(len(header), max_data_width)
+            col_widths.append(col_width)
+
+        # Costruisci la riga dell'intestazione
+        header_line = f"{headers[0]:<{col_widths[0]}} | " + " | ".join(
+            f"{headers[i]:<{col_widths[i]}}" for i in range(1, len(headers))
+        )
+        divider = "-" * len(header_line)
+
+        # Stampa elegante
+        print()
+        print("=" * len(header_line))
+        print(header_line)
+        print(divider)
+        for row in rows:
+            line = f"{row[0]:<{col_widths[0]}} | " + " | ".join(
+                f"{row[i]:<{col_widths[i]}}" for i in range(1, len(row))
+            )
+            print(line)
+        print("=" * len(header_line))
+
     return components
 
-def quality(t, signal, nev, responsivity = None):
+def quality(t, y, nev, responsivity = None):
     """
     Calculate the Signal-to-Noise Ratio (S/N) and Noise Equivalent Power (NEP).
 
@@ -652,7 +890,7 @@ def quality(t, signal, nev, responsivity = None):
     -----------
     t : array-like
         Array of time values (in seconds).
-    signal : array-like
+    y : array-like
         Array of signal amplitudes (e.g., in volts).
     nev : float
         Noise Equivalent Voltage (in volts).
@@ -668,37 +906,40 @@ def quality(t, signal, nev, responsivity = None):
     bandwidth : float
         Effective signal bandwidth (in Hz).
     """
+
+    if t.size != y.size:
+        raise ValueError("'t' must have the same length as 'y'")
     
     # Convert inputs to numpy arrays
-    t = np.array(t)
-    signal = np.array(signal)
+    t = _np.array(t)
+    signal = _np.array(y)
     
     # Calculate time step and sampling frequency
-    dt = np.mean(np.diff(t))
+    dt = _np.mean(_np.diff(t))
     fs = 1 / dt  # Sampling frequency
     
     # Calculate RMS of the signal
-    signal_rms = np.sqrt(np.mean(signal**2))
+    signal_rms = _np.sqrt(_np.mean(signal**2))
     
     # Calculate S/N
     snr = signal_rms / nev
     
     # Calculate bandwidth using FFT
     N = len(signal)
-    yf = fft(signal)
-    xf = four.fftfreq(N, dt)[:N//2]  # Positive frequencies
-    power_spectrum = np.abs(yf[:N//2])**2 / N  # Power spectrum
+    yf, xf = fft(signal, t)
+    xf = xf[:N//2]  # Positive frequencies
+    power_spectrum = _np.abs(yf[:N//2])**2 / N  # Power spectrum
     
     # Calculate effective (RMS) bandwidth
-    power_total = np.sum(power_spectrum)
-    freq_weighted = np.sum(xf * power_spectrum) / power_total
-    freq_squared_weighted = np.sum(xf**2 * power_spectrum) / power_total
-    bandwidth = np.sqrt(freq_squared_weighted - freq_weighted**2)
+    power_total = _np.sum(power_spectrum)
+    freq_weighted = _np.sum(xf * power_spectrum) / power_total
+    freq_squared_weighted = _np.sum(xf**2 * power_spectrum) / power_total
+    bandwidth = _np.sqrt(freq_squared_weighted - freq_weighted**2)
     
     # Calculate NEP
     nep = None
     if responsivity is not None:
-        nep = nev / responsivity / np.sqrt(bandwidth)
+        nep = nev / responsivity / _np.sqrt(bandwidth)
 
     print(f"S/N:\t\t{snr:.2f}")
     print(f"Bandwidth:\t{bandwidth:.2f} Hz")

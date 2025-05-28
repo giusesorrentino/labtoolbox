@@ -1,8 +1,6 @@
-import math
-import warnings
-import numpy as np
-from .stats import samples
-from ._helper import parse_unit
+import math as _math
+import warnings as _warnings 
+import numpy as _np
 
 # --------------------------------------------------------------------------------
 
@@ -13,13 +11,13 @@ def PrintResult(value, err, name = "", unit = ""):
 
     Parameters
     ----------
-    value : float
+    value : scalar or array-like
         Value of the variable.
-    err : float
+    err : scalar or array-like
         Uncertainty of the variable considered.
-    name : str, optional
+    name : str or list of str, optional
         Name of the variable to display before the value. Default is an empty string.
-    unit : str, optional
+    unit : str or list of str, optional
         Unit of measurement to display after the value in parentheses. Default is an empty string.
 
     Returns
@@ -28,43 +26,51 @@ def PrintResult(value, err, name = "", unit = ""):
         Prints the formatted string directly.
     """
 
-    # 1. Arrotonda sigma a due cifre significative
-    if err == 0:
-        raise ValueError("The uncertainty cannot be zero.")
-        
-    exponent = int(math.floor(math.log10(abs(err))))
-    factor = 10**(exponent - 1)
-    rounded_sigma = round(err / factor) * factor
+    if _np.isscalar(value) and _np.isscalar(err):
+        # 1. Arrotonda sigma a due cifre significative
+        if err == 0:
+            raise ValueError("The uncertainty cannot be zero.")
+            
+        exponent = int(_math.floor(_math.log10(abs(err))))
+        factor = 10**(exponent - 1)
+        rounded_sigma = round(err / factor) * factor
 
-    # 2. Arrotonda mean allo stesso ordine di grandezza di sigma
-    rounded_mean = round(value, -exponent + 1)
+        # 2. Arrotonda mean allo stesso ordine di grandezza di sigma
+        rounded_mean = round(value, -exponent + 1)
 
-    # 3. Converte in stringa mantenendo zeri finali
-    fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
-    mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
-    sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
+        # 3. Converte in stringa mantenendo zeri finali
+        fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
+        mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
+        sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
 
-    # 4. Crea la stringa risultante
-    result = ""
+        # 4. Crea la stringa risultante
+        result = ""
 
-    # Costruzione della parte numerica
-    if unit != "":
-        value_part = f"({mean_str} ± {sigma_str}) {unit}"
+        # Costruzione della parte numerica
+        if unit != "":
+            value_part = f"({mean_str} ± {sigma_str}) {unit}"
+        else:
+            value_part = f"{mean_str} ± {sigma_str}"
+
+        # Aggiunta della percentuale relativa se possibile
+        if rounded_mean != 0:
+            nu = rounded_sigma / rounded_mean
+            value_part += f" [{_np.abs(nu) * 100:.2f}%]"
+
+        # Aggiunta del nome della variabile, se fornito
+        if name != "":
+            result = f"{name} = {value_part}"
+        else:
+            result = value_part
+
+        print(result)
     else:
-        value_part = f"{mean_str} ± {sigma_str}"
-
-    # Aggiunta della percentuale relativa se possibile
-    if rounded_mean != 0:
-        nu = rounded_sigma / rounded_mean
-        value_part += f" [{np.abs(nu) * 100:.2f}%]"
-
-    # Aggiunta del nome della variabile, se fornito
-    if name != "":
-        result = f"{name} = {value_part}"
-    else:
-        result = value_part
-
-    print(result)
+        value = _np.asarray(value)
+        err = _np.asarray(err)
+        if not (len(value) == len(err) == len(name) == len(unit)):
+            raise ValueError("All arrays (value, err, name and unit) must have the same length.")
+        for i in range(len(value)):
+            PrintResult(value[i], err[i], name[i], unit[i])
 
 def format_str(data, err):
     """
@@ -83,8 +89,8 @@ def format_str(data, err):
         LaTeX strings like "$data \pm data_err$" with proper rounding.
     """
 
-    data = np.atleast_1d(data)
-    err = np.atleast_1d(err)
+    data = _np.atleast_1d(data)
+    err = _np.atleast_1d(err)
 
     if data.shape != err.shape:
         raise ValueError("Shapes of 'data' and 'err' must match.")
@@ -95,7 +101,7 @@ def format_str(data, err):
         if e == 0:
             result.append(f"${d}$")
         else:
-            exponent = int(np.floor(np.log10(np.abs(e))))
+            exponent = int(_np.floor(_np.log10(_np.abs(e))))
             factor = 10**(exponent - 1)
             rounded_sigma = round(e / factor) * factor
             rounded_mean = round(d, -exponent + 1)
@@ -113,7 +119,7 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
 
     Parameters
     ----------
-    data : list of lists
+    data : list of array-like
         The content of the table, organized as a list of columns (i.e., data[i][j] is value j of column i).
     header : list of str
         List of column names to appear in the header of the table.
@@ -185,7 +191,8 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
         f.write("\\end{table}\n")
     
 def noise(n, std):
-    warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    _warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    from .stats import samples
     return samples(n, 'norma', mu = 0, sigma = std)
 
 def convert(value, from_unit: str, to_unit: str):
@@ -198,7 +205,7 @@ def convert(value, from_unit: str, to_unit: str):
     value : float or int
         Numerical value to be converted.
     from_unit : str
-        Unit of the input quantity (e.g., 'erg', 'km/s', 'eV/Å^3').
+        Unit of the i_nput quantity (e.g., 'erg', 'km/s', 'eV/Å^3').
     to_unit : str
         Desired target unit (e.g., 'J', 'm/s', 'GeV/fm^3').
 
@@ -207,6 +214,8 @@ def convert(value, from_unit: str, to_unit: str):
     float
         The value converted to the target unit.
     """
+
+    from ._helper import parse_unit
 
     try:
         from astropy import units as u
@@ -222,7 +231,7 @@ def convert(value, from_unit: str, to_unit: str):
         parsed_to = parse_unit(to_unit)
         quantity = value * u.Unit(parsed_from)
         converted = quantity.to(parsed_to)
-        print(f"Input:  {value} [{from_unit}]")
+        print(f"I_nput:  {value} [{from_unit}]")
         print(f"Output: {converted.value} [{to_unit}]")
         return converted.value
     except UnitConversionError as e:

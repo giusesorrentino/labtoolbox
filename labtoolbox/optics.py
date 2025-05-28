@@ -1,5 +1,4 @@
-import numpy as np
-from ._helper import format_stokes
+import numpy as _np
 
 """
 Module for polarization optics calculations using Jones and Stokes/Mueller calculi.
@@ -37,17 +36,17 @@ def jvec(axis):
     if axis not in ["h", "v", "d", "a", "r", "l"]:
         raise ValueError("Invalid polarization type. Use 'h', 'v', 'd', 'a', 'r', or 'l'.")
     elif axis == "h":
-        return np.array([[1], [0]], dtype=complex)
+        return _np.array([[1], [0]], dtype=complex)
     elif axis == "v":
-        return np.array([[0], [1]], dtype=complex)
+        return _np.array([[0], [1]], dtype=complex)
     elif axis == "d":
-        return np.array([[1/np.sqrt(2)], [1/np.sqrt(2)]], dtype=complex)
+        return _np.array([[1/_np.sqrt(2)], [1/_np.sqrt(2)]], dtype=complex)
     elif axis == "a":
-        return np.array([[1/np.sqrt(2)], [-1/np.sqrt(2)]], dtype=complex)
+        return _np.array([[1/_np.sqrt(2)], [-1/_np.sqrt(2)]], dtype=complex)
     elif axis == "r":
-        return np.array([[1/np.sqrt(2)], [-1j/np.sqrt(2)]], dtype=complex)
+        return _np.array([[1/_np.sqrt(2)], [-1j/_np.sqrt(2)]], dtype=complex)
     else:
-        return np.array([[1/np.sqrt(2)], [1j/np.sqrt(2)]], dtype=complex)
+        return _np.array([[1/_np.sqrt(2)], [1j/_np.sqrt(2)]], dtype=complex)
 
 def linpol(axis = None, angle=None):
     """
@@ -79,21 +78,21 @@ def linpol(axis = None, angle=None):
     """
 
     if angle is not None:
-        c = np.cos(angle)
-        s = np.sin(angle)
-        return np.array([[c**2, c * s], [c * s, s**2]], dtype=complex)
+        c = _np.cos(angle)
+        s = _np.sin(angle)
+        return _np.array([[c**2, c * s], [c * s, s**2]], dtype=complex)
     
     if axis is None:
         raise ValueError("You must provide either 'type' or 'angle'.")
 
     if axis == "h":
-        return np.array([[1, 0], [0, 0]], dtype=complex)
+        return _np.array([[1, 0], [0, 0]], dtype=complex)
     elif axis == "v":
-        return np.array([[0, 0], [0, 1]], dtype=complex)
+        return _np.array([[0, 0], [0, 1]], dtype=complex)
     elif axis == "d":
-        return 0.5 * np.array([[1, 1], [1, 1]], dtype=complex)
+        return 0.5 * _np.array([[1, 1], [1, 1]], dtype=complex)
     elif axis == "a":
-        return 0.5 * np.array([[1, -1], [-1, 1]], dtype=complex)
+        return 0.5 * _np.array([[1, -1], [-1, 1]], dtype=complex)
     else:
         raise ValueError("Invalid 'axis'. Must be one of: 'h', 'v', 'd', 'a'.")
 
@@ -108,7 +107,7 @@ def circpol(axis):
 
     Returns
     -------
-        np.ndarray: 2x2 array representing the Jones matrix.
+        numpy.ndarray: 2x2 array representing the Jones matrix.
 
     Raises
     ------
@@ -117,9 +116,9 @@ def circpol(axis):
     if axis not in ["r", "l"]:
         raise ValueError("Invalid polarization type. Use 'r', or 'l'.")
     if axis == "r":
-        return 0.5 * np.array([[1, +1j], [-1j, 1]], dtype=complex)
+        return 0.5 * _np.array([[1, +1j], [-1j, 1]], dtype=complex)
     else:
-        return 0.5 * np.array([[1, -1j], [+1j, 1]], dtype=complex)
+        return 0.5 * _np.array([[1, -1j], [+1j, 1]], dtype=complex)
 
 def waveplate(kind='general', theta=0.0, eta=None, axis=None):
     """
@@ -151,32 +150,32 @@ def waveplate(kind='general', theta=0.0, eta=None, axis=None):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         2x2 complex Jones matrix representing the waveplate.
     """
     if axis is not None:
         if axis == 'h':
             theta = 0.0
         elif axis == 'v':
-            theta = np.pi / 2
+            theta = _np.pi / 2
         else:
             raise ValueError("Invalid axis value. Use 'h', 'v', or None.")
 
     if kind == 'quarter':
-        eta = np.pi / 2
+        eta = _np.pi / 2
     elif kind == 'half':
-        eta = np.pi
+        eta = _np.pi
     elif kind == 'general':
         if eta is None:
             raise ValueError("For 'general' waveplate, specify eta explicitly.")
     else:
         raise ValueError("Invalid kind. Use 'quarter', 'half', or 'general'.")
 
-    c = np.cos(theta)
-    s = np.sin(theta)
-    eieta = np.exp(1j * eta)
+    c = _np.cos(theta)
+    s = _np.sin(theta)
+    eieta = _np.exp(1j * eta)
 
-    return np.exp(-1j * eta / 2) * np.array([
+    return _np.exp(-1j * eta / 2) * _np.array([
         [c**2 + eieta * s**2, (1 - eieta) * c * s],
         [(1 - eieta) * c * s, s**2 + eieta * c**2]
     ], dtype=complex)
@@ -196,13 +195,13 @@ def ephase(eta, theta, phi):
 
     Returns
     -------
-        np.ndarray: 2x2 array representing the Jones matrix.
+        numpy.ndarray: 2x2 array representing the Jones matrix.
     """
-    c = np.cos(theta)
-    s = np.sin(theta)
-    return np.exp(-1j * eta / 2) * np.array([
-        [c**2 + np.exp(1j * eta) * s**2, (1 - np.exp(1j * eta)) * np.exp(-1j * phi) * c * s],
-        [(1 - np.exp(1j * eta)) * np.exp(1j * phi) * c * s, s**2 + np.exp(1j * eta) * c**2]
+    c = _np.cos(theta)
+    s = _np.sin(theta)
+    return _np.exp(-1j * eta / 2) * _np.array([
+        [c**2 + _np.exp(1j * eta) * s**2, (1 - _np.exp(1j * eta)) * _np.exp(-1j * phi) * c * s],
+        [(1 - _np.exp(1j * eta)) * _np.exp(1j * phi) * c * s, s**2 + _np.exp(1j * eta) * c**2]
     ], dtype=complex)
 
 def rmatrix(theta):
@@ -217,12 +216,12 @@ def rmatrix(theta):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         2x2 real-valued rotation matrix.
     """
-    c = np.cos(theta)
-    s = np.sin(theta)
-    return np.array([[c, s], [-s, c]], dtype=complex)
+    c = _np.cos(theta)
+    s = _np.sin(theta)
+    return _np.array([[c, s], [-s, c]], dtype=complex)
 
 def rotate(matrix, theta):
     """
@@ -230,7 +229,7 @@ def rotate(matrix, theta):
 
     Parameters
     ----------
-    matrix : np.ndarray
+    matrix : numpy.ndarray
         2x2 Jones matrix representing the optical element.
     theta : float
         Rotation angle in radians. Positive values correspond to 
@@ -239,7 +238,7 @@ def rotate(matrix, theta):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         2x2 Jones matrix representing the rotated optical element.
 
     Notes
@@ -258,16 +257,17 @@ def apply(jones_vector, jones_matrix):
 
     Parameters
     ----------
-    jones_vector : np.ndarray
+    jones_vector : array-like
         2-element complex array representing the input Jones vector.
-    jones_matrix : np.ndarray
+    jones_matrix : numpy.ndarray
         2x2 complex array representing the Jones matrix of the optical element.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         2-element complex array representing the output Jones vector.
     """
+    jones_vector = _np.asarray(jones_vector)
     return jones_matrix @ jones_vector
 
 def intensity(vector):
@@ -276,14 +276,14 @@ def intensity(vector):
 
     Parameters
     ----------
-        vector : np.ndarray
+        vector : numpy.ndarray
             2x1 Jones vector.
 
     Returns
     -------
         float: Intensity of the light.
     """
-    return np.abs(vector[0, 0])**2 + np.abs(vector[1, 0])**2
+    return _np.abs(vector[0, 0])**2 + _np.abs(vector[1, 0])**2
 
 # --- Stokes Vector Functions ---
 
@@ -299,24 +299,24 @@ def svec(axis):
 
     Returns
     -------
-        np.ndarray: 4x1 array representing the Stokes vector.
+        numpy.ndarray: 4x1 array representing the Stokes vector.
     """
     if axis not in ["h", "v", "d", "a", "r", "l", "un"]:
         raise ValueError("Invalid polarization type. Use 'h', 'v', 'd', 'a', 'r', or 'l'.")
     elif axis == "h":
-        return np.array([[1], [1], [0], [0]], dtype=float)
+        return _np.array([[1], [1], [0], [0]], dtype=float)
     elif axis == "v":
-        return np.array([[1], [-1], [0], [0]], dtype=float)
+        return _np.array([[1], [-1], [0], [0]], dtype=float)
     elif axis == "d":
-        return np.array([[1], [0], [1], [0]], dtype=float)
+        return _np.array([[1], [0], [1], [0]], dtype=float)
     elif axis == "a":
-        return np.array([[1], [0], [-1], [0]], dtype=float)
+        return _np.array([[1], [0], [-1], [0]], dtype=float)
     elif axis == "r":
-        return np.array([[1], [0], [0], [-1]], dtype=float)
+        return _np.array([[1], [0], [0], [-1]], dtype=float)
     elif axis == "l":
-        return np.array([[1], [0], [0], [1]], dtype=float)
+        return _np.array([[1], [0], [0], [1]], dtype=float)
     else:
-        return np.array([[1], [0], [0], [0]], dtype=float)
+        return _np.array([[1], [0], [0], [0]], dtype=float)
 
 def JtoS(jones_vector):
     """
@@ -324,19 +324,19 @@ def JtoS(jones_vector):
 
     Parameters
     ----------
-        jones_vector : np.ndarray
+        jones_vector : numpy.ndarray
             2x1 Jones vector representing the polarization state.
 
     Returns
     -------
-        np.ndarray: 4x1 Stokes vector [S0, S1, S2, S3].
+        numpy.ndarray: 4x1 Stokes vector [S0, S1, S2, S3].
     """
     Ex, Ey = jones_vector[0, 0], jones_vector[1, 0]
-    S0 = np.abs(Ex)**2 + np.abs(Ey)**2
-    S1 = np.abs(Ex)**2 - np.abs(Ey)**2
-    S2 = 2 * np.real(Ex * np.conj(Ey))
-    S3 = 2 * np.imag(Ex * np.conj(Ey))
-    return np.array([[S0], [S1], [S2], [S3]], dtype=float)
+    S0 = _np.abs(Ex)**2 + _np.abs(Ey)**2
+    S1 = _np.abs(Ex)**2 - _np.abs(Ey)**2
+    S2 = 2 * _np.real(Ex * _np.conj(Ey))
+    S3 = 2 * _np.imag(Ex * _np.conj(Ey))
+    return _np.array([[S0], [S1], [S2], [S3]], dtype=float)
 
 def poldeg(stokes_vector):
     """
@@ -344,18 +344,19 @@ def poldeg(stokes_vector):
 
     Parameters
     ----------
-        stokes_vector : np.ndarray
+        stokes_vector : array-like
             4x1 Stokes vector.
 
     Returns
     -------
         float: Degree of polarization (between 0 and 1).
     """
+    stokes_vector = _np.asarray(stokes_vector)
     S0 = stokes_vector[0, 0]
     if S0 == 0:
         return 0.0
     S1, S2, S3 = stokes_vector[1, 0], stokes_vector[2, 0], stokes_vector[3, 0]
-    polarized_intensity = np.sqrt(S1**2 + S2**2 + S3**2)
+    polarized_intensity = _np.sqrt(S1**2 + S2**2 + S3**2)
     return polarized_intensity / S0
 
 # --- Mueller Matrix Functions ---
@@ -384,7 +385,7 @@ def mpol(axis=None, angle=None):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         4×4 Mueller matrix of the polarizer.
 
     Raises
@@ -392,10 +393,10 @@ def mpol(axis=None, angle=None):
     ValueError
         If neither a valid axis nor an angle is specified.
     """
-    c2 = np.cos(2 * angle)
-    s2 = np.sin(2 * angle)
+    c2 = _np.cos(2 * angle)
+    s2 = _np.sin(2 * angle)
 
-    _mpol_angle = 0.5 * np.array([
+    _mpol_angle = 0.5 * _np.array([
         [1,     c2,      s2,     0],
         [c2,  c2**2,  c2 * s2,   0],
         [s2,  c2 * s2, s2**2,    0],
@@ -408,20 +409,20 @@ def mpol(axis=None, angle=None):
     if axis == "h":
         return _mpol_angle(0)
     elif axis == "v":
-        return _mpol_angle(np.pi / 2)
+        return _mpol_angle(_np.pi / 2)
     elif axis == "d":
-        return _mpol_angle(np.pi / 4)
+        return _mpol_angle(_np.pi / 4)
     elif axis == "a":
-        return _mpol_angle(-np.pi / 4)
+        return _mpol_angle(-_np.pi / 4)
     elif axis == "r":
-        return 0.5 * np.array([
+        return 0.5 * _np.array([
             [1,  0,  0, -1],
             [0,  0,  0,  0],
             [0,  0,  0,  0],
             [-1, 0,  0,  1]
         ], dtype=float)
     elif axis == "l":
-        return 0.5 * np.array([
+        return 0.5 * _np.array([
             [1,  0,  0, 1],
             [0,  0,  0, 0],
             [0,  0,  0, 0],
@@ -460,33 +461,33 @@ def mwaveplate(kind='general', theta=0.0, eta=None, axis=None):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         4×4 Mueller matrix representing the waveplate.
     """
     if axis is not None:
         if axis == 'h':
             theta = 0.0
         elif axis == 'v':
-            theta = np.pi / 2
+            theta = _np.pi / 2
         else:
             raise ValueError("Invalid axis. Use 'h', 'v', or None.")
 
     if kind == 'quarter':
-        eta = np.pi / 2
+        eta = _np.pi / 2
     elif kind == 'half':
-        eta = np.pi
+        eta = _np.pi
     elif kind == 'general':
         if eta is None:
             raise ValueError("For 'general' waveplate, you must specify eta.")
     else:
         raise ValueError("Invalid kind. Use 'quarter', 'half', or 'general'.")
 
-    c2 = np.cos(2 * theta)
-    s2 = np.sin(2 * theta)
-    ce = np.cos(eta)
-    se = np.sin(eta)
+    c2 = _np.cos(2 * theta)
+    s2 = _np.sin(2 * theta)
+    ce = _np.cos(eta)
+    se = _np.sin(eta)
 
-    return np.array([
+    return _np.array([
         [1, 0, 0, 0],
         [0, c2**2 + s2**2 * ce, c2 * s2 * (1 - ce), -s2 * se],
         [0, c2 * s2 * (1 - ce), s2**2 + c2**2 * ce,  c2 * se],
@@ -505,12 +506,12 @@ def mrmatrix(theta):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         4x4 real-valued Mueller rotation matrix.
     """
-    c2 = np.cos(2 * theta)
-    s2 = np.sin(2 * theta)
-    return np.array([
+    c2 = _np.cos(2 * theta)
+    s2 = _np.sin(2 * theta)
+    return _np.array([
         [1,  0,   0,  0],
         [0,  c2,  s2, 0],
         [0, -s2,  c2, 0],
@@ -524,7 +525,7 @@ def mrotate(matrix, theta):
 
     Parameters
     ----------
-    matrix : np.ndarray
+    matrix : numpy.ndarray
         4x4 real-valued Mueller matrix representing the optical element.
     theta : float
         Rotation angle in radians. Positive values correspond to 
@@ -533,7 +534,7 @@ def mrotate(matrix, theta):
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         4x4 real-valued Mueller matrix representing the rotated optical element.
 
     Notes
@@ -553,14 +554,14 @@ def mapply(stokes_vector, mueller_matrix):
 
     Parameters
     ----------
-    stokes_vector : np.ndarray
+    stokes_vector : numpy.ndarray
         4-element real array representing the input Stokes vector.
-    mueller_matrix : np.ndarray
+    mueller_matrix : numpy.ndarray
         4x4 real-valued Mueller matrix representing the optical element.
 
     Returns
     -------
-    np.ndarray
+    numpy.ndarray
         4-element real array representing the output Stokes vector.
     """
     return mueller_matrix @ stokes_vector
@@ -573,28 +574,28 @@ def JtoM(jones_matrix):
 
     Parameters
     ----------
-        jones_matrix : np.ndarray
+        jones_matrix : numpy.ndarray
             2x2 Jones matrix.
 
     Returns
     -------
-        np.ndarray: 4x4 Mueller matrix.
+        numpy.ndarray: 4x4 Mueller matrix.
     """
     # Pauli matrices
     sigma = [
-        np.array([[1, 0], [0, 1]], dtype=complex),  # sigma_0
-        np.array([[1, 0], [0, -1]], dtype=complex), # sigma_1
-        np.array([[0, 1], [1, 0]], dtype=complex),  # sigma_2
-        np.array([[0, -1j], [1j, 0]], dtype=complex)  # sigma_3
+        _np.array([[1, 0], [0, 1]], dtype=complex),  # sigma_0
+        _np.array([[1, 0], [0, -1]], dtype=complex), # sigma_1
+        _np.array([[0, 1], [1, 0]], dtype=complex),  # sigma_2
+        _np.array([[0, -1j], [1j, 0]], dtype=complex)  # sigma_3
     ]
     
-    mueller = np.zeros((4, 4), dtype=float)
+    mueller = _np.zeros((4, 4), dtype=float)
     for i in range(4):
         for j in range(4):
             # Compute the Kronecker product and trace
-            A = np.kron(jones_matrix, np.conj(jones_matrix))
-            B = np.kron(sigma[i], sigma[j])
-            mueller[i, j] = 0.5 * np.real(np.trace(A @ B))
+            A = _np.kron(jones_matrix, _np.conj(jones_matrix))
+            B = _np.kron(sigma[i], sigma[j])
+            mueller[i, j] = 0.5 * _np.real(_np.trace(A @ B))
     
     return mueller
 
@@ -624,7 +625,9 @@ def polstate(vector):
     V : float
         Circular polarization (S3/S0)
     """
-    vector = np.array(vector)
+    from ._helper import format_stokes
+
+    vector = _np.asarray(vector)
 
     # Calcola i parametri di Stokes
     if vector.size == 2:
@@ -632,10 +635,10 @@ def polstate(vector):
         Ex, Ey = vector[0], vector[1]
 
         # Compute Stokes parameters
-        S0 = np.abs(Ex)**2 + np.abs(Ey)**2
-        S1 = np.abs(Ex)**2 - np.abs(Ey)**2
-        S2 = 2 * np.real(Ex * np.conj(Ey))
-        S3 = -2 * np.imag(Ex * np.conj(Ey))
+        S0 = _np.abs(Ex)**2 + _np.abs(Ey)**2
+        S1 = _np.abs(Ex)**2 - _np.abs(Ey)**2
+        S2 = 2 * _np.real(Ex * _np.conj(Ey))
+        S3 = -2 * _np.imag(Ex * _np.conj(Ey))
     elif vector.size == 4:
         # Stokes vector
         S0, S1, S2, S3 = vector
@@ -650,29 +653,29 @@ def polstate(vector):
     s3 = S3 / S0
 
     # Calcola il grado di polarizzazione (P)
-    P = np.sqrt(S1**2 + S2**2 + S3**2)/S0
+    P = _np.sqrt(S1**2 + S2**2 + S3**2)/S0
     if P > 1.0:
         P = 1.0  # Normalizza se supera 1 (errore numerico)
 
     # Calcola gli angoli ψ (orientamento) e χ (ellitticità)
-    psi = 0.5 * np.arctan2(S2, S1)  # Angolo di orientamento in radianti
+    psi = 0.5 * _np.arctan2(S2, S1)  # Angolo di orientamento in radianti
 
-    denominator = np.sqrt(S1**2 + S2**2)
-    with np.errstate(divide='ignore', invalid='ignore'):
-        chi = 0.5 * np.arctan(np.divide(S3, denominator, where=denominator!=0))
-        chi = np.where(denominator == 0,
-                    0.5 * np.pi * np.sign(S3),  # Quando denominator è zero
+    denominator = _np.sqrt(S1**2 + S2**2)
+    with _np.errstate(divide='ignore', invalid='ignore'):
+        chi = 0.5 * _np.arctan(_np.divide(S3, denominator, where=denominator!=0))
+        chi = _np.where(denominator == 0,
+                    0.5 * _np.pi * _np.sign(S3),  # Quando denominator è zero
                     chi)
 
     tolerance = 1e-2
 
-    if np.isclose(P, 0.0, atol=tolerance):
+    if _np.isclose(P, 0.0, atol=tolerance):
         polarization_type = "Unpolarized"
         handedness = "None"
-    elif np.isclose(s3, 0.0, atol=tolerance):  # Linear
+    elif _np.isclose(s3, 0.0, atol=tolerance):  # Linear
         polarization_type = "Linear"
         handedness = "None"
-    elif np.isclose(abs(s3), 1.0, atol=tolerance):  # Circular
+    elif _np.isclose(abs(s3), 1.0, atol=tolerance):  # Circular
         polarization_type = "Circular"
         handedness = "Right-Handed (RH)" if s3 > 0 else "Left-Handed (LH)"
     else:  # Elliptical
@@ -685,8 +688,8 @@ def polstate(vector):
     U_str = format_stokes(s2, is_percentage=True)
     V_str = format_stokes(s3, is_percentage=True)
     P_str = format_stokes(P, is_percentage=True)
-    psi_str = format_stokes(np.degrees(psi), is_percentage=False)
-    chi_str = format_stokes(np.degrees(chi), is_percentage=False)
+    psi_str = format_stokes(_np.degrees(psi), is_percentage=False)
+    chi_str = format_stokes(_np.degrees(chi), is_percentage=False)
 
     # Prepara le stringhe dei risultati
     lines = [
