@@ -9,10 +9,7 @@ Submodules
 ----------
 ::
 
- fit           --- Curve fitting tools
- linalg        ---
  numerical     --- 
- optics        ---
  signals       --- Signal processing routines
  stats         --- Statistical and probabilistic analysis
  utils         --- Utility functions
@@ -23,12 +20,12 @@ Public API in the LabToolbox namespace
 
  PrintResult   --- Nicely formats numbers
  convert       --- Units converter
- mean          --- 
+ average       --- 
 """
 
 # Public API
 from .utils import PrintResult, convert
-from .stats import mean
+from .stats import average
 
 # Available submodules
 from . import signals
@@ -39,6 +36,7 @@ from . import uncertainty
 from . import linalg
 from . import optics
 from . import numerical
+from . import special
 
 # Public symbols
 __all__ = [
@@ -50,9 +48,10 @@ __all__ = [
     'linalg',
     'optics',
     'numerical',
+    'special',
     'PrintResult',
     'convert',
-    'mean',
+    'average',
 ]
 
 # --- Version checker ---

@@ -31,6 +31,8 @@ docs/code.py
 
 # Other
 labtoolbox/io.py
+labtoolbox/linalg.py
+labtoolbox/optics.py
 
 # Jupyter notebooks
 example.ipynb

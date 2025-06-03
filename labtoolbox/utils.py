@@ -28,8 +28,15 @@ def PrintResult(value, err, name = "", unit = ""):
 
     if _np.isscalar(value) and _np.isscalar(err):
         # 1. Arrotonda sigma a due cifre significative
+        if not isinstance(value, (int, float)):
+            raise TypeError("'value' must be a real number (int or float).")
+        if not isinstance(err, (int, float)):
+            raise TypeError("'err' must be a real number (int or float).")
+        
         if err == 0:
-            raise ValueError("The uncertainty cannot be zero.")
+            raise ValueError("'err' cannot be zero.")
+        if err < 0:
+            raise ValueError("'err' cannot be negative.")
             
         exponent = int(_math.floor(_math.log10(abs(err))))
         factor = 10**(exponent - 1)
@@ -67,8 +74,37 @@ def PrintResult(value, err, name = "", unit = ""):
     else:
         value = _np.asarray(value)
         err = _np.asarray(err)
+
+        if not all(isinstance(item, (int, float)) for item in value):
+            raise TypeError("All elements in 'value' must be real numbers (int or float).")
+        if not all(isinstance(item, (int, float)) for item in err):
+            raise TypeError("All elements in 'err' must be real numbers (int or float).")
+        
+        if not isinstance(name, list):
+            raise TypeError("'name' must be a list")
+        if not all(isinstance(item, str) for item in name):
+            raise TypeError("All elements in 'name' must be strings")
+        
+        if not isinstance(unit, list):
+            raise TypeError("'unit' must be a list")
+        if not all(isinstance(item, str) for item in unit):
+            raise TypeError("All elements in 'unit' must be strings")
+
         if not (len(value) == len(err) == len(name) == len(unit)):
-            raise ValueError("All arrays (value, err, name and unit) must have the same length.")
+            raise ValueError("'value', 'err', 'name' and 'unit' must have the same length.")
+
+        if value.size == 0 and err.size != 0:
+            raise ValueError("'value' is an empty array.")
+        if err.size == 0 and value.size != 0:
+            raise ValueError("'err' is an empty array.")
+        if value.size == 0 and err.size == 0:
+            raise ValueError("'value' and 'err' are empty arrays.")
+        
+        if not _np.all(_np.isfinite(value)):
+            raise ValueError("'value' contains non-finite values (NaN or inf).")
+        if not _np.all(_np.isfinite(err)):
+            raise ValueError("'err' contains non-finite values (NaN or inf).")
+
         for i in range(len(value)):
             PrintResult(value[i], err[i], name[i], unit[i])
 
@@ -92,8 +128,23 @@ def format_str(data, err):
     data = _np.atleast_1d(data)
     err = _np.atleast_1d(err)
 
+    if not all(isinstance(item, (int, float)) for item in data):
+        raise TypeError("All elements in 'data' must be real numbers (int or float).")
+    if not all(isinstance(item, (int, float)) for item in err):
+        raise TypeError("All elements in 'err' must be real numbers (int or float).")
+
     if data.shape != err.shape:
         raise ValueError("Shapes of 'data' and 'err' must match.")
+    
+    if data.size == 0:
+            raise ValueError("'data' is an empty array.")
+    if err.size == 0:
+        raise ValueError("'err' is an empty array.")
+    
+    if not _np.all(_np.isfinite(data)):
+        raise ValueError("'data' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(err)):
+        raise ValueError("'err' contains non-finite values (NaN or inf).")
 
     result = []
 
@@ -145,9 +196,43 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
     n_rows = len(data[0])
     n_cols = len(header)
 
-    for col in data:
-        if len(col) != n_rows:
-            raise ValueError("All columns in 'data' must have the same length.")
+    # Check that data is a list of NumPy arrays
+    if not isinstance(data, list):
+        raise TypeError("'data' must be a list of numpy.array.")
+    if not all(isinstance(col, _np.ndarray) for col in data):
+        raise TypeError("All elements in 'data' must be numpy.array.")
+    
+    if not isinstance(header, list):
+        raise TypeError("'header' must be a list of numpy.array.")
+    if not all(isinstance(col, str) for col in header):
+        raise TypeError("All elements in 'header' must be strings.")
+    
+    if not _np.isscalar(caption):
+        raise TypeError("'caption' must be a scalar.")
+    if not _np.isscalar(label):
+        raise TypeError("'label' must be a scalar.")
+    if not _np.isscalar(align):
+        raise TypeError("'align' must be a scalar.")
+    
+    if not isinstance(caption, str):
+        raise TypeError("'caption' must be a string.")
+    if not isinstance(label, str):
+        raise TypeError("'label' must be a string.")
+    if not isinstance(align, str):
+        raise TypeError("'align' must be a string.")
+
+    # Determine the length of each column
+    lengths = [len(col) for col in data]
+    max_length = max(lengths)
+
+    # If columns have different lengths, pad the shorter ones
+    if len(set(lengths)) != 1:
+        _warnings.warn("Columns in 'data' have different lengths. Padding shorter columns with empty values.")
+        for i, col in enumerate(data):
+            if len(col) < max_length:
+                pad_value = _np.nan if _np.issubdtype(col.dtype, _np.number) else None
+                padded_col = _np.concatenate([col, _np.full(max_length - len(col), pad_value, dtype=col.dtype)])
+                data[i] = padded_col
 
     # Gestione formato colonne
     if len(align) == 1:
@@ -193,7 +278,7 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
 def noise(n, std):
     _warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
     from .stats import samples
-    return samples(n, 'norma', mu = 0, sigma = std)
+    return samples(n, 'normal', mu = 0, sigma = std)
 
 def convert(value, from_unit: str, to_unit: str):
     """
@@ -202,16 +287,16 @@ def convert(value, from_unit: str, to_unit: str):
 
     Parameters
     ----------
-    value : float or int
+    value : float or int or numpy.array
         Numerical value to be converted.
-    from_unit : str
+    from_unit : str or list
         Unit of the i_nput quantity (e.g., 'erg', 'km/s', 'eV/Å^3').
-    to_unit : str
+    to_unit : str or list
         Desired target unit (e.g., 'J', 'm/s', 'GeV/fm^3').
 
     Returns
     -------
-    float
+    float or numpy.arrayf
         The value converted to the target unit.
     """
 
@@ -226,15 +311,55 @@ def convert(value, from_unit: str, to_unit: str):
             "Please install it by running 'pip install astropy'."
         )
 
-    try:
-        parsed_from = parse_unit(from_unit)
-        parsed_to = parse_unit(to_unit)
-        quantity = value * u.Unit(parsed_from)
-        converted = quantity.to(parsed_to)
-        print(f"I_nput:  {value} [{from_unit}]")
-        print(f"Output: {converted.value} [{to_unit}]")
-        return converted.value
-    except UnitConversionError as e:
-        raise UnitConversionError(f"Cannot convert from '{from_unit}' to '{to_unit}': {e}")
-    except ValueError as e:
-        raise ValueError(f"Invalid unit specified: {e}")
+    if _np.isscalar(value):
+        if not isinstance(value, (int, float)):
+            raise TypeError("'value' must be a real number (int or float).")
+        try:
+            parsed_from = parse_unit(from_unit)
+            parsed_to = parse_unit(to_unit)
+            quantity = value * u.Unit(parsed_from)
+            converted = quantity.to(parsed_to)
+            print(f"I_nput:  {value} [{from_unit}]")
+            print(f"Output: {converted.value} [{to_unit}]")
+            return converted.value
+        except UnitConversionError as e:
+            raise UnitConversionError(f"Cannot convert from '{from_unit}' to '{to_unit}': {e}")
+        except ValueError as e:
+            raise ValueError(f"Invalid unit specified: {e}")
+    else:
+        # Rigorous input validation
+        if not isinstance(value, _np.ndarray):
+            raise TypeError(f"'value' must be a numpy.ndarray, not {type(value).__name__}")
+        
+        if (not (_np.issubdtype(value.dtype, _np.floating) or _np.issubdtype(value.dtype, _np.integer))) or not _np.all(_np.isreal(value)):
+            raise TypeError("'value' must contain only real numbers (int or float)")
+
+        if not isinstance(from_unit, list) or not all(isinstance(u, str) for u in from_unit):
+            raise TypeError("'from_unit' must be a list of strings.")
+
+        if not isinstance(to_unit, list) or not all(isinstance(u, str) for u in to_unit):
+            raise TypeError("'to_unit' must be a list of strings.")
+
+        if not (len(value) == len(from_unit) == len(to_unit)):
+            raise ValueError("'value', 'from_unit' and 'to_unit' must have the same length.")
+
+        if not _np.all(_np.isfinite(value)):
+            raise ValueError("'value' contains non-finite values (NaN or inf).")
+
+        # Vectorized conversion
+        converted_values = []
+        for v, f_unit, t_unit in zip(value, from_unit, to_unit):
+            try:
+                parsed_f = parse_unit(f_unit)
+                parsed_t = parse_unit(t_unit)
+                q = v * u.Unit(parsed_f)
+                c = q.to(parsed_t)
+                print(f"I_nput:  {v} [{f_unit}]")
+                print(f"Output: {c.value} [{t_unit}]")
+                converted_values.append(c.value)
+            except UnitConversionError as e:
+                raise UnitConversionError(f"Cannot convert from '{f_unit}' to '{t_unit}': {e}")
+            except ValueError as e:
+                raise ValueError(f"Invalid unit specified for item: {e}")
+
+        return _np.array(converted_values)

@@ -64,12 +64,12 @@ def linpol(axis = None, angle=None):
             - 'd' : +45° (diagonal, transmits at +π/4 from x-axis),
             - 'a' : -45° (anti-diagonal, transmits at -π/4 from x-axis).
         If `angle` is specified, this parameter is ignored.
-    
+
     angle : float or None, optional
         Angle θ in radians specifying the transmission axis of the polarizer
         with respect to the horizontal (x-axis). A positive angle corresponds
         to a counterclockwise (anticlockwise) rotation from the x-axis.
-        If provided, `type` is ignored.
+        If provided, `axis` is ignored.
 
     Returns
     -------
@@ -153,6 +153,7 @@ def waveplate(kind='general', theta=0.0, eta=None, axis=None):
     numpy.ndarray
         2x2 complex Jones matrix representing the waveplate.
     """
+
     if axis is not None:
         if axis == 'h':
             theta = 0.0
@@ -693,16 +694,16 @@ def polstate(vector):
 
     # Prepara le stringhe dei risultati
     lines = [
-        f"I (Intensity)               {I_str}",
-        f"Q (Linear Polarization 0°)  {Q_str}",
-        f"U (Linear Polarization 45°) {U_str}",
-        f"V (Circular Polarization)   {V_str}",
+        f"I (Intensity)                {I_str}",
+        f"Q (Linear Polarization 0°)   {Q_str}",
+        f"U (Linear Polarization 45°)  {U_str}",
+        f"V (Circular Polarization)    {V_str}",
         "-"*0,  # placeholder per la linea divisoria
-        f"Degree of Polarization      {P_str}",
-        f"Orientation Angle (ψ)       {psi_str} degrees",
-        f"Ellipticity Angle (χ)       {chi_str} degrees",
-        f"Polarization Handedness     : {handedness}",
-        f"Polarization Type           : {polarization_type}"
+        f"Degree of Polarization       {P_str}",
+        f"Orientation Angle (ψ)        {psi_str} degrees",
+        f"Ellipticity Angle (χ)        {chi_str} degrees",
+        f"Polarization Handedness      : {handedness}",
+        f"Polarization Type            : {polarization_type}"
     ]
 
     # Calcola la lunghezza massima delle linee (ignorando il placeholder)

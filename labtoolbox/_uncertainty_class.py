@@ -13,7 +13,7 @@ class uncert_prop:
     Compute uncertainty of scalar function func(x). 
     
     Attributes:
-    --------
+    -----------
     func : callable
         - Should take a vector or real numbers x
         

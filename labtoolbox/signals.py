@@ -2,7 +2,7 @@ import warnings as _warnings
 import numpy as _np
 import matplotlib.pyplot as _plt
 
-def fft(data, t=None, dt=None):
+def fft(data, t = None, dt = None):
     """
     Compute the Fast Fourier Transform (FFT) of a signal.
 
@@ -43,12 +43,38 @@ def fft(data, t=None, dt=None):
     from ._helper import ispow2, fft_cooley_tukey, dft_direct
 
     data = _np.asarray(data)
+
+    if not (_np.issubdtype(data.dtype, _np.number)):
+        raise TypeError("'data' must contain only numeric types (int, float, or complex).")
+    
+    if not _np.all(_np.isfinite(data)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+
     if t is not None:
         t = _np.asarray(t)
+        if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
+            raise TypeError("'t' must contain only real numbers (int or float).")
+        
+        if t.size != data.size:
+            raise ValueError("'t' must have the same length as 'data'")
+        if not _np.all(_np.diff(t) > 0):
+            raise ValueError("'t' must be monotonically increasing")
+        if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
+            raise ValueError("'t' must be uniformly spaced (equispaced)")
+
+        if not _np.all(_np.isfinite(t)):
+                raise ValueError("'t' contains non-finite values (NaN or inf).")
+    else:
+        if not isinstance(dt, (int, float)):
+            raise TypeError("'dt' must be a real number (int or float).")
+        if dt <= 0:
+            raise ValueError("'dt' must be a positive scalar.")
 
     if data.size == 0:
+        _warnings.warn("'data' is an empty array. Returning and empty numpy.array.", UserWarning)
         return _np.array([])
-    if data.size <= 1:
+    if data.size == 1:
+        _warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
         return data
     elif data.size <= 16:
         X = dft_direct(data)
@@ -62,12 +88,6 @@ def fft(data, t=None, dt=None):
     
     # Determina dt e gestisci errori
     if t is not None:
-        if t.size != data.size:
-            raise ValueError("t must have the same length as data")
-        if not _np.all(_np.diff(t) > 0):
-            raise ValueError("t must be monotonically increasing")
-        if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
-            raise ValueError("t must be uniformly spaced (equispaced)")
         dt_final = (t[-1] - t[0]) / (t.size - 1) if t.size > 1 else 1.0
     elif dt is not None:
         dt_final = dt
@@ -139,12 +159,40 @@ def ifft(data, freq=None, df=None):
     from ._helper import ispow2, idft_direct, ifft_cooley_tukey
 
     data = _np.asarray(data)
+
+    if not (_np.issubdtype(data.dtype, _np.number)):
+        raise TypeError("'data' must contain only numeric types (int, float, or complex).")
+    
+    if not _np.all(_np.isfinite(data)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+
     if freq is not None:
         freq = _np.asarray(freq)
 
+        if (not (_np.issubdtype(freq.dtype, _np.floating) or _np.issubdtype(freq.dtype, _np.integer))) or not _np.all(_np.isreal(freq)):
+            raise TypeError("'freq' must contain only real numbers (int or float).")
+        
+        if freq.size != data.size:
+                raise ValueError("'freq' must have the same length as 'data'")
+        if not _np.all(_np.diff(freq) > 0):
+            raise ValueError("'freq' must be monotonically increasing")
+        if not _np.allclose(_np.diff(freq), _np.diff(freq)[0], rtol=1e-5):
+            raise ValueError("'freq' must be uniformly spaced (equispaced)")
+
+        if not _np.all(_np.isfinite(freq)):
+                raise ValueError("'freq' contains non-finite values (NaN or inf).")
+        
+    else:
+        if not isinstance(df, (int, float)):
+            raise TypeError("'df' must be a real number (int or float).")
+        if df <= 0:
+            raise ValueError("'df' must be a positive scalar.")
+
     if data.size == 0:
+        _warnings.warn("'data' is an empty array. Returning and empty numpy.array.", UserWarning)
         return _np.array([])
-    if data.size <= 1:
+    if data.size == 1:
+        _warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
         return data
     elif data.size <= 16:
         x = idft_direct(data)
@@ -158,17 +206,11 @@ def ifft(data, freq=None, df=None):
 
     if freq is not None or df is not None:
         if freq is not None:
-            if freq.size != data.size:
-                raise ValueError("freq must have the same length as data")
-            if not _np.all(_np.diff(freq) > 0):
-                raise ValueError("freq must be monotonically increasing")
-            if not _np.allclose(_np.diff(freq), _np.diff(freq)[0], rtol=1e-5):
-                raise ValueError("freq must be uniformly spaced (equispaced)")
             df_value = (freq[-1] - freq[0]) / (freq.size - 1) if freq.size > 1 else 1.0
         else:
             df_value = df
 
-        fs = 1 / df_value  # Frequenza di campionamento temporale
+        # fs = 1 / df_value  # Frequenza di campionamento temporale
         dt = 1 / (data.size * df_value)  # Intervallo di tempo (step)
         t = _np.arange(0, data.size) * dt  # Array dei tempi
 
@@ -176,7 +218,7 @@ def ifft(data, freq=None, df=None):
 
     return x
 
-def dfs(t, data, order, plot=True, showpanel = True, apply_filter=True, xlabel = "x [ux]", ylabel = "y [uy]", xscale = 0, yscale = 0, xlim = [], ylim = []):
+def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel = "", ylabel = "", xscale = 0, yscale = 0, xlim = [], ylim = []):
     """
     Computes the discrete Fourier series approximation of a sampled function.
 
@@ -235,19 +277,57 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter=True, xlabel =
 
     from scipy.integrate import simpson
 
-    if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
-        raise ValueError("Input array 't' must be uniformly spaced.")
+    data = _np.asarray(data)
+    t = _np.asarray(t)
 
-    if order == 0:
+    if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
+        raise ValueError("'t' must be uniformly spaced.")
+
+    if not isinstance(order, (int)):
+        raise TypeError("'order' must be an integer.")
+    if order <= 0:
         raise ValueError("'order' must be equal or greater than 1.")
     
     if t.size != data.size:
         raise ValueError("'t' must have the same length as 'data'")
     
-    data = _np.asarray(data)
-    if t is not None:
-        t = _np.asarray(t)
+    if not (_np.issubdtype(data.dtype, _np.number)):
+        raise TypeError("'data' must contain only numeric types (int, float, or complex).")
+    
+    if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
+        raise TypeError("'t' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(data)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(t)):
+            raise ValueError("'t' contains non-finite values (NaN or inf).")
 
+    if not isinstance(xscale, (int, float)):
+        raise TypeError("'xscale' must be a real number (int or float).")
+    if not isinstance(yscale, (int, float)):
+        raise TypeError("'yscale' must be a real number (int or float).")
+
+    if not isinstance(xlim, list):
+        raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
+    if len(xlim) != 0:
+        if len(xlim) != 2:
+            raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
+        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+            raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
+        
+    if not isinstance(ylim, list):
+        raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
+    if len(ylim) != 0:
+        if len(ylim) != 2:
+            raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
+        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+            raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
+        
+    if not isinstance(xlabel, (str)):
+        raise TypeError("'xlabel' must be a string.")
+    if not isinstance(ylabel, (str)):
+        raise TypeError("'ylabel' must be a string.")
+    
     xscale = 10**xscale
     yscale = 10**yscale
 
@@ -259,8 +339,10 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter=True, xlabel =
 
     if max_freq > f_nyquist:
         _warnings.warn(
-            f"Aliasing may occur: max Fourier frequency ({max_freq:.2f} Hz) "
-            f"exceeds Nyquist frequency ({f_nyquist:.2f} Hz).", RuntimeWarning
+            f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
+            f"which exceeds the Nyquist frequency ({f_nyquist:.2g}) based on the current sampling rate. "
+            "Please consider increasing the sampling frequency or applying an anti-aliasing filter prior to sampling. "
+            "Proceeding may lead to distorted spectral analysis results."
         )
 
     a = t[0]
@@ -345,11 +427,11 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter=True, xlabel =
         )
 
         # Imposta limiti se forniti
-        if xlim and len(xlim) == 2:
+        if xlim:
             if showpanel:
                 axs[0].set_xlim(xlim)
             axs[1].set_xlim(xlim)
-        if ylim and len(ylim) == 2:
+        if ylim:
             axs[1].set_ylim(ylim)
 
         axs[1].set_xlabel(xlabel)
@@ -366,7 +448,7 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     ----------
     f : callable
         Function to approximate.
-    interval : tuple of float
+    interval : list of float
         The interval (a, b) over which to compute the Fourier series.
     order : int
         Number of Fourier modes (n) to use in the approximation.
@@ -404,12 +486,52 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
 
     from scipy.integrate import quad
 
+    if not callable(f):
+        raise TypeError("'f' must be a callable function.")
+    
+    if not isinstance(interval, list):
+        raise TypeError("'interval' must be a list.")
+    if len(interval) != 2:
+        raise ValueError("'interval' must have exactly two elements.")
+    
+    a, b = interval
+    
+    if not (_np.isscalar(a) and _np.isscalar(b)):
+        raise TypeError("'interval' elements must be scalars.")
+    
+    if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
+        raise TypeError("'interval' elements must be real numbers (int or float).")
+
+    if b < a:
+        a, b = b, a
+        _warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+
+    if a == b:
+        raise ValueError("'a' must be not equal to 'b'.")
+
+    if not isinstance(order, (int)):
+        raise TypeError("'order' must be an integer.")
+    if order <= 0:
+        raise ValueError("'order' must be equal or greater than 1.")
+    
+    if not isinstance(xlabel, (str)):
+        raise TypeError("'xlabel' must be a string.")
+    if not isinstance(ylabel, (str)):
+        raise TypeError("'ylabel' must be a string.")
+    
+    if num_points <= 0:
+        raise ValueError("'num_points' must be equal or greater than 1.")
+    
+    if not isinstance(xscale, (int, float)):
+        raise TypeError("'xscale' must be a real number (int or float).")
+    if not isinstance(yscale, (int, float)):
+        raise TypeError("'yscale' must be a real number (int or float).")
+
     xscale = 10**xscale
     yscale = 10**yscale
 
     # aggiungere nota che la yscale è solo a livello grafico
 
-    a, b = interval
     T = b - a  # Period
     L = T / 2
     x = _np.linspace(a, b, num_points)
@@ -454,9 +576,9 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
 
     Parameters
     ----------
-    data : numpy.ndarray
+    data : numpy.array
         Input signal as a 1D NumPy array (real or complex).
-    t : numpy.ndarray, optional
+    t : numpy.array, optional
         Time samples corresponding to the signal. If provided, must be a 1D NumPy
         array of the same length as `data`, monotonically increasing, and uniformly
         spaced. Units are specified by `time_unit`. If None, only the PSD is returned
@@ -541,11 +663,11 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
     fs = 1.0
     if t is not None:
         if t.size != N:
-            raise ValueError("Array 't' must have the same length as 'data'.")
+            raise ValueError("'t' must have the same length as 'data'.")
         if not _np.all(_np.diff(t) > 0):
-            raise ValueError("Array 't' must be strictly increasing.")
+            raise ValueError("'t' must be strictly increasing.")
         if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
-            raise ValueError("Array 't' must be uniformly spaced.")
+            raise ValueError("'t' must be uniformly spaced.")
         dt = (t[-1] - t[0]) / (N - 1)
         fs = 1.0 / dt
 
@@ -584,9 +706,9 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
             t_spec = _np.array(t_spec)
 
             if not _np.all(_np.diff(t_spec) > 0):
-                raise ValueError("t_spec is not monotonically increasing.")
+                raise ValueError("'t_spec' is not monotonically increasing.")
             if not _np.all(_np.diff(freqs) > 0):
-                raise ValueError("freqs is not monotonically increasing.")
+                raise ValueError("'freqs' is not monotonically increasing.")
 
             fig, ax = _plt.subplots()
             if log in ("x", "xy"):
@@ -655,7 +777,7 @@ def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = Fa
         return S, freqs
     return S
 
-def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
+def harmonic(t, y, prominence = 0.05, n_max = None, verbose = True):
     """
     Identifies the dominant harmonics present in a real-valued signal.
 
@@ -675,7 +797,7 @@ def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
         Minimum prominence of peaks in the power spectrum. Default is 0.05.
     n_max : int or None, optional
         If given, return at most `n_max` harmonics.
-    results : bool, optional
+    verbose : bool, optional
         If `True`, prints a formatted table with the frequency, amplitude, and phase of the harmonics.
 
     Returns
@@ -684,14 +806,27 @@ def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
         Each dict contains frequency, amplitude, and phase (rad, relative to the first harmonic) of a harmonic component.
     """
     from scipy.signal import find_peaks
-    import numpy as _np
+
+    t = _np.asarray(t)
+    y = _np.asarray(y)
 
     if t.size != y.size:
         raise ValueError("'t' must have the same length as 'y'")
 
-    t = _np.asarray(t)
-    y = _np.asarray(y)
-    dt = t[1] - t[0]
+    if not (_np.issubdtype(y.dtype, _np.number)):
+        raise TypeError("'y' must contain only numeric types (int, float, or complex).")
+    
+    if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
+        raise TypeError("'t' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(y)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(t)):
+            raise ValueError("'t' contains non-finite values (NaN or inf).")
+    
+    if not isinstance(prominence, (int, float)):
+        raise TypeError("'prominence' must be a real number (int or float).")
+
     N = len(y)
 
     yf, freqs = fft(y, t) 
@@ -707,6 +842,8 @@ def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
     sorted_peaks = peaks[_np.argsort(power[peaks])[::-1]]
 
     if n_max is not None:
+        if not isinstance(prominence, (int)):
+            raise TypeError("'prominence' must be an integer.")
         sorted_peaks = sorted_peaks[:n_max]
 
     harmonics = []
@@ -723,7 +860,7 @@ def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
             "phase": phases[idx] - reference_phase  # Phase relative to the first harmonic
         })
 
-    if results:
+    if verbose:
         def format_dynamic_number(val):
             if val == 0:
                 return "0"
@@ -775,7 +912,7 @@ def harmonic(t, y, prominence = 0.05, n_max = None, results = True):
 
     return harmonics
 
-def decompose(t, y, freqs, results = True):
+def decompose(t, y, freqs, verbose = True):
     """
     Reconstructs specified sinusoidal components from a real-valued signal.
 
@@ -792,7 +929,7 @@ def decompose(t, y, freqs, results = True):
         Signal samples.
     freqs : array like
         Frequencies (Hz) of the components to extract.
-    results : bool, optional
+    verbose : bool, optional
         If `True`, prints a formatted table of the components.
 
     Returns
@@ -809,6 +946,20 @@ def decompose(t, y, freqs, results = True):
 
     if t.size != y.size:
         raise ValueError("'t' must have the same length as 'y'")
+    
+    if not (_np.issubdtype(y.dtype, _np.number)):
+        raise TypeError("'y' must contain only numeric types (int, float, or complex).")
+    
+    if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
+        raise TypeError("'t' must contain only real numbers (int or float).")
+    
+    if (not (_np.issubdtype(freqs.dtype, _np.floating) or _np.issubdtype(freqs.dtype, _np.integer))) or not _np.all(_np.isreal(freqs)):
+        raise TypeError("'freqs' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(y)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(t)):
+            raise ValueError("'t' contains non-finite values (NaN or inf).")
 
     A = []
     for f in freqs:
@@ -830,7 +981,7 @@ def decompose(t, y, freqs, results = True):
             "phase": phase
         })
 
-    if results:
+    if verbose:
         def format_dynamic_number(val):
             if val == 0:
                 return "0"
@@ -882,70 +1033,160 @@ def decompose(t, y, freqs, results = True):
 
     return components
 
-def quality(t, y, nev, responsivity = None):
+def convolve(a, v, mode='full', use_fft=True, axis=-1):
     """
-    Calculate the Signal-to-Noise Ratio (S/N) and Noise Equivalent Power (NEP).
+    Compute the discrete, linear convolution of two input arrays with optional FFT acceleration.
 
-    Parameters:
-    -----------
-    t : array-like
-        Array of time values (in seconds).
-    y : array-like
-        Array of signal amplitudes (e.g., in volts).
-    nev : float
-        Noise Equivalent Voltage (in volts).
-    responsivity : float, optional
-        System responsivity (in V/W). If None, NEP is not calculated.
+    Parameters
+    ----------
+    a : array-like
+        First input array.
+    v : array-like
+        Second input array (the filter or kernel).
+    mode : {'full', 'valid', 'same'}, optional
+        Indicates the size of the output:
+        - 'full': (default) return the full convolution.
+        - 'same': return output of the same size as `a`.
+        - 'valid': return only those parts where `v` fully overlaps `a`.
+    use_fft : bool, optional
+        If True, use FFT-based convolution when it is more efficient.
+        For small arrays, direct method is used.
+    axis : int, optional
+        Axis along which to perform the convolution.
 
-    Returns:
-    --------
-    snr : float
-        Signal-to-Noise Ratio (dimensionless).
-    nep : float or None
-        Noise Equivalent Power (in W/sqrt(Hz)) or None if responsivity is not provided.
-    bandwidth : float
-        Effective signal bandwidth (in Hz).
+    Returns
+    -------
+    output : ndarray
+        Convolution of `a` with `v`, along the specified axis.
+
+    Raises
+    ------
+    ValueError
+        If `mode` is invalid or inputs are not broadcastable.
+
+    Notes
+    -----
+    This function extends `np.convolve` by supporting n-dimensional input along a specific axis,
+    automatic dispatch between FFT and direct convolution, and better handling of numeric types.
     """
+    from scipy.signal import fftconvolve
 
-    if t.size != y.size:
-        raise ValueError("'t' must have the same length as 'y'")
-    
-    # Convert inputs to numpy arrays
-    t = _np.array(t)
-    signal = _np.array(y)
-    
-    # Calculate time step and sampling frequency
-    dt = _np.mean(_np.diff(t))
-    fs = 1 / dt  # Sampling frequency
-    
-    # Calculate RMS of the signal
-    signal_rms = _np.sqrt(_np.mean(signal**2))
-    
-    # Calculate S/N
-    snr = signal_rms / nev
-    
-    # Calculate bandwidth using FFT
-    N = len(signal)
-    yf, xf = fft(signal, t)
-    xf = xf[:N//2]  # Positive frequencies
-    power_spectrum = _np.abs(yf[:N//2])**2 / N  # Power spectrum
-    
-    # Calculate effective (RMS) bandwidth
-    power_total = _np.sum(power_spectrum)
-    freq_weighted = _np.sum(xf * power_spectrum) / power_total
-    freq_squared_weighted = _np.sum(xf**2 * power_spectrum) / power_total
-    bandwidth = _np.sqrt(freq_squared_weighted - freq_weighted**2)
-    
-    # Calculate NEP
-    nep = None
-    if responsivity is not None:
-        nep = nev / responsivity / _np.sqrt(bandwidth)
+    a = _np.asarray(a)
+    v = _np.asarray(v)
 
-    print(f"S/N:\t\t{snr:.2f}")
-    print(f"Bandwidth:\t{bandwidth:.2f} Hz")
-    if nep is not None:
-        print(f"NEP:\t\t{nep:.2e} W/sqrt(Hz)")
+    if not (_np.issubdtype(a.dtype, _np.number)):
+        raise TypeError("'a' must contain only numeric types (int, float, or complex).")
+
+    if not (_np.issubdtype(b.dtype, _np.number)):
+        raise TypeError("'b' must contain only numeric types (int, float, or complex).")
+    
+    if not _np.all(_np.isfinite(a)):
+        raise ValueError("'a' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(b)):
+        raise ValueError("'b' contains non-finite values (NaN or inf).")
+
+    if mode not in ('full', 'same', 'valid'):
+        raise ValueError("`mode` must be one of {'full', 'same', 'valid'}.")
+
+    if a.ndim == 1 and v.ndim == 1:
+        if use_fft and (a.size + v.size > 500):  # empirical threshold
+            return fftconvolve(a, v, mode=mode)
+        else:
+            return _np.convolve(a, v, mode=mode)
+
+    # If axis is not last, move it to the end
+    a = _np.moveaxis(a, axis, -1)
+    result_shape = list(a.shape)
+    result_shape[-1] = {
+        'full': a.shape[-1] + v.shape[-1] - 1,
+        'same': a.shape[-1],
+        'valid': max(a.shape[-1] - v.shape[-1] + 1, 0)
+    }[mode]
+
+    output = _np.empty(result_shape, dtype=_np.result_type(a, v))
+    it = _np.nditer(a[..., 0], flags=['multi_index'])
+
+    for _ in it:
+        idx = it.multi_index
+        slice_a = a[idx + (slice(None),)]
+        if use_fft and (slice_a.size + v.size > 500):
+            output[idx + (slice(None),)] = fftconvolve(slice_a, v, mode=mode)
+        else:
+            output[idx + (slice(None),)] = _np.convolve(slice_a, v, mode=mode)
+
+    return np.moveaxis(output, -1, axis)
+
+def envelope(signal, method='hilbert', mode='upper', filter_size=31, fs=1.0):
+    """
+    Compute the envelope of a 1D real-valued signal.
+
+    Parameters
+    ----------
+    signal : array_like
+        The input real-valued signal.
+    method : {'hilbert', 'abs_filt'}, optional
+        The method to compute the envelope:
+        - 'hilbert': uses the analytic signal via the Hilbert transform.
+        - 'abs_filt': uses |signal| filtered with a moving average or median.
+    mode : {'upper', 'lower', 'both'}, optional
+        Select which envelope to return:
+        - 'upper': the upper envelope (default).
+        - 'lower': the lower envelope.
+        - 'both' : returns a tuple (upper, lower).
+    filter_size : int, optional
+        Size of the smoothing filter (only used for 'abs_filt' method). Must be odd.
+    fs : float, optional
+        Sampling frequency (only relevant for some future extensions or plotting).
+
+    Returns
+    -------
+    envelope : ndarray or tuple of ndarrays
+        The computed envelope(s), depending on `mode`.
+
+    Notes
+    -----
+    - The Hilbert method provides a mathematically correct envelope for bandpass signals.
+    - The abs_filt method is more robust to noise and useful when the signal is not analytic.
+    - The 'lower' envelope is the negative of the envelope of -signal.
+
+    References
+    ----------
+    - Oppenheim, A. V., & Schafer, R. W. (2010). Discrete-Time Signal Processing.
+    - Boashash, B. (1992). Estimating and interpreting the instantaneous frequency of a signal.
+    """
+    from scipy.signal import hilbert, medfilt
+
+    signal = _np.asarray(signal)
+
+    if signal.ndim != 1:
+        raise ValueError("Input signal must be one-dimensional.")
+    if filter_size % 2 == 0:
+        raise ValueError("filter_size must be an odd integer.")
+
+    if (not (_np.issubdtype(signal.dtype, _np.floating) or _np.issubdtype(signal.dtype, _np.integer))) or not _np.all(_np.isreal(signal)):
+        raise TypeError("'signal' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(signal)):
+            raise ValueError("'signal' contains non-finite values (NaN or inf).")
+
+    if method == 'hilbert':
+        analytic = hilbert(signal)
+        env = _np.abs(analytic)
+
+    elif method == 'abs_filt':
+        abs_sig = _np.abs(signal)
+        env = medfilt(abs_sig, kernel_size=filter_size)
+
     else:
-        print("NEP not calculated: provide responsivity.")
-    
-    return snr, nep, bandwidth
+        raise ValueError("Invalid method. Choose 'hilbert' or 'abs_filt'.")
+
+    if mode == 'upper':
+        return env
+    elif mode == 'lower':
+        return -envelope(-signal, method=method, mode='upper', filter_size=filter_size, fs=fs)
+    elif mode == 'both':
+        upper = env
+        lower = -envelope(-signal, method=method, mode='upper', filter_size=filter_size, fs=fs)
+        return upper, lower
+    else:
+        raise ValueError("Invalid mode. Choose 'upper', 'lower', or 'both'.")

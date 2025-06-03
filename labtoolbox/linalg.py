@@ -410,8 +410,9 @@ def ismatrix(matrix, type=None):
     ----------
     matrix : numpy.ndarray
         The matrix to check.
+
     type : str or None, optional
-        A logical expression combining properties using "and", "or", "not", 
+        A logical expression combining properties using "and", "or", "not",
         e.g., "herm and defpos", "unit or orth", or "herm and not defneg".
         If None, returns the list of satisfied properties.
 
@@ -419,9 +420,9 @@ def ismatrix(matrix, type=None):
     -------
     list of str or bool
         If `type` is None, returns a list of satisfied properties among:
-        ["sym", "herm", "antiherm", "orth", "unit", 
+        ["sym", "herm", "antiherm", "orth", "unit",
          "defpos", "semidefpos", "defneg", "semidefneg", "inv"].
-        If `type` is specified, returns a boolean indicating whether 
+        If `type` is specified, returns a boolean indicating whether
         the logical condition is satisfied.
 
     Notes

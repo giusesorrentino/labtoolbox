@@ -3,7 +3,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 import warnings as _warnings
 
-def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
+def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = "", verbose = True):
     """
     Plots the histogram of a dataset and assess its Gaussianity using statistical indicators and a Shapiro-Wilk test.
 
@@ -26,6 +26,8 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
         Label for the x-axis, typically the name of the variable.
     unit : str, optional
         Unit of measurement for the x-axis variable (e.g., "cm"). If provided, it will be displayed in the axis label and summary output.
+    verbose : bool, optional
+        If `True`, prints a formatted table of ... Default is `True`.
 
     Returns
     -------
@@ -36,7 +38,7 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
     skewness : float
         Skewness of the distribution.
     kurtosis : float
-        Kurtosis (excess) of the distribution.
+        Kurtosis of the distribution.
     p_value : float
         p-value from the Shapiro-Wilk test for normality.
 
@@ -57,13 +59,42 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
 
     data = _np.asarray(data)
 
+    if (not (_np.issubdtype(data.dtype, _np.floating) or _np.issubdtype(data.dtype, _np.integer))) or not _np.all(_np.isreal(data)):
+            raise TypeError("'data' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(data)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+    
+    if not isinstance(scale, (int, float)):
+        raise TypeError("'scale' must be a real number (int or float).")
+    
+    if not isinstance(bins, (int, float, str)):
+        raise TypeError("'bins' must be a real number (int or float) or a string ('auto').")
+    if isinstance(bins, str) and bins != "auto":
+        raise ValueError("'bins' must be 'auto'.")
+    
+    if not isinstance(label, str):
+        raise TypeError("'label' must be a string.")
+    if not isinstance(unit, str):
+        raise TypeError("'unit' must be a string.")
+
     data = data / 10**scale
 
     if data_err is not None:
+
         if _np.isscalar(data_err):
+            if not isinstance(data_err, (int, float)):
+                raise TypeError("'data_err' must be a real number (int or float).")
             data_err = _np.repeat(data_err, len(data))
+        else:
+            if (not (_np.issubdtype(data_err.dtype, _np.floating) or _np.issubdtype(data_err.dtype, _np.integer))) or not _np.all(_np.isreal(data_err)):
+                raise TypeError("'data_err' must contain only real numbers (int or float).")
+            if not _np.all(_np.isfinite(data)):
+                    raise ValueError("'data_err' contains non-finite values (NaN or inf).")
+
         data_err = data_err / 10**scale
         sigma = _np.sqrt(data.std()**2 + _np.sum(data_err**2)/len(data))
+
     else:
         sigma = data.std()
     mean = data.mean()
@@ -95,9 +126,9 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
     # ----------------------------
 
     # Prepara l'unità di misura, se presente
-    ux_str = f" [$\\_mathrm{{{unit}}}$]" if unit else ""
+    ux_str = f" [$\\mathrm{{{unit}}}$]" if unit else ""
 
-    label1 = f"$\\_mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
+    label1 = f"$\\mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
     label2 = label+ux_str
 
     # histogram of the data
@@ -120,7 +151,7 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
 
     _, p_value = shapiro(data)
 
-    if p_value >= 0.10:
+    if 0.10 <= p_value <= 1:
         pval_str = f"{p_value*100:.0f}%"
     elif 0.005 < p_value < 0.10:
         pval_str = f"{p_value * 100:.2f}%"
@@ -128,42 +159,44 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = ""):
         pval_str = f"{p_value * 100:.3f}%"
     else:
         pval_str = f"< 0.05%"
+    
+    if verbose:
 
-    # Prepara l'unità di misura, se presente
-    ux_str = f" {unit}" if unit else ""
+        # Prepara l'unità di misura, se presente
+        ux_str = f" {unit}" if unit else ""
 
-    # Determina la larghezza massima delle etichette e dei valori
-    entries = [
-        ("Mean value", f"{rounded_mean:.{max(0, -exponent + 1)}f}{ux_str}"),
-        ("Std dev", f"{rounded_sigma:.{max(0, -exponent + 1)}f}{ux_str}"),
-        ("Skewness", f"{skewness:.2f}"),
-        ("Kurtosis", f"{kurtosis:.2f}"),
-        ("p-value", pval_str)
-    ]
-    label_width = max(len(label) for label, _ in entries) + 2
-    value_width = max(len(str(value)) for _, value in entries) + 2
+        # Determina la larghezza massima delle etichette e dei valori
+        entries = [
+            ("Mean value", f"{rounded_mean:.{max(0, -exponent + 1)}f}{ux_str}"),
+            ("Std dev", f"{rounded_sigma:.{max(0, -exponent + 1)}f}{ux_str}"),
+            ("Skewness", f"{skewness:.2f}"),
+            ("Kurtosis", f"{kurtosis:.2f}"),
+            ("p-value", pval_str)
+        ]
+        label_width = max(len(label) for label, _ in entries) + 2
+        value_width = max(len(str(value)) for _, value in entries) + 2
 
-    # Costruisci il separatore dinamico
-    title = " Normality Analysis "
-    total_width = label_width + value_width + 3
-    separator = "=" * total_width
-    title_line = title.center(total_width, "*")
+        # Costruisci il separatore dinamico
+        title = " Normality Analysis "
+        total_width = label_width + value_width + 3
+        separator = "=" * total_width
+        title_line = title.center(total_width, "*")
 
-    # Crea il blocco di testo
-    stamp = f"{separator}\n{title_line}\n{separator}\n"
-    for label, value in entries:
-        stamp += f"{label.ljust(label_width)}: {value.rjust(value_width)}\n"
-    stamp += f"{separator}\n"
+        # Crea il blocco di testo
+        stamp = f"{separator}\n{title_line}\n{separator}\n"
+        for label, value in entries:
+            stamp += f"{label.ljust(label_width)}: {value.rjust(value_width)}\n"
+        stamp += f"{separator}\n"
 
-    # Aggiungi il risultato finale
-    if p_value >= 0.05:
-        result = "The data are consistent with a normal distribution."
-    else:
-        result = "The data deviate significantly from a normal distribution."
-    stamp += f"\n{result}\n"
+        # Aggiungi il risultato finale
+        if p_value >= 0.05:
+            result = "The data are consistent with a normal distribution."
+        else:
+            result = "The data deviate significantly from a normal distribution."
+        stamp += f"\n{result}\n"
 
-    # Stampa
-    print(stamp)
+        # Stampa
+        print(stamp)
 
     return mean, sigma, skewness, kurtosis, p_value
 
@@ -171,7 +204,7 @@ def analyze_residuals(*args, **kwargs):
     _warnings.warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
     return residuals(args, kwargs)
 
-def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False):
+def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False, verbose = True):
     """
     Analyzes and visualizes the residuals of the quantity of interes, including histogram, Gaussianity test, and autocorrelation test (Durbin-Watson statistic).
 
@@ -193,6 +226,8 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
         Confidence factor for visualizing bounds (e.g., `confidence = 2` draws ±2σ bounds). Default is `2`.
     norm : bool, optionale
         If `True`, residuals will be normalized. Default is `False`.
+    verbose : bool, optional
+        If `True`, prints a formatted table of ... Default is `True`.
 
     Returns
     -------
@@ -237,8 +272,40 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
     expected_data = _np.asarray(expected_data)
     data_err = _np.asarray(data_err)
 
+    if (not (_np.issubdtype(data.dtype, _np.floating) or _np.issubdtype(data.dtype, _np.integer))) or not _np.all(_np.isreal(data)):
+            raise TypeError("'data' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(data)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
+    
+    if (not (_np.issubdtype(data_err.dtype, _np.floating) or _np.issubdtype(data_err.dtype, _np.integer))) or not _np.all(_np.isreal(data_err)):
+            raise TypeError("'data_err' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(data_err)):
+            raise ValueError("'data_err' contains non-finite values (NaN or inf).")
+    
+    if (not (_np.issubdtype(expected_data.dtype, _np.floating) or _np.issubdtype(expected_data.dtype, _np.integer))) or not _np.all(_np.isreal(expected_data)):
+            raise TypeError("'expected_data' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(expected_data)):
+            raise ValueError("'expected_data' contains non-finite values (NaN or inf).")
+    
+    if not isinstance(scale, (int, float)):
+        raise TypeError("'scale' must be a real number (int or float).")
+    
+    if not isinstance(confidence, (int, float)):
+            raise TypeError("'confidence' must be a real number (int or float).")
+    
+    if not isinstance(bins, (int, float, str)):
+        raise TypeError("'bins' must be a real number (int or float) or a string ('auto').")
+    if isinstance(bins, str) and bins != "auto":
+        raise ValueError("'bins' must be 'auto'.")
+    
+    if not isinstance(unit, str):
+        raise TypeError("'unit' must be a string.")
+
     if not (len(data) == len(expected_data) == len(data_err)):
-        raise ValueError("All arrays (data, expected_data and data_err) must have the same length.")
+        raise ValueError("'data', 'expected_data' and 'data_err' must have the same length.")
 
     x_data = _np.linspace(1, len(data), len(data))
     data = data / 10**scale
@@ -301,8 +368,8 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
     axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
     axs[0].errorbar(x_data, bar2, bar1, ls='', color='gray', lw=1.)
     axs[0].plot(x_data, bar2, color='k', drawstyle='steps-mid', lw=1.15)
-    axs[0].plot(x_data, dash, ls='dotted', color='crimson', lw=1.5)
-    axs[0].plot(x_data, -dash, ls='dotted', color='crimson', lw=1.5)
+    axs[0].plot(x_data, dash, ls='dotted', color='crimson', lw=1.6)
+    axs[0].plot(x_data, -dash, ls='dotted', color='crimson', lw=1.6)
     axs[0].set_ylim(-_np.nanmean(3 * dash / 2), _np.nanmean(3 * dash / 2))
 
     # Configurazioni estetiche per il pannello dei residui
@@ -312,12 +379,12 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
 
     if norm == False:
     # Prepara l'unità di misura, se presente
-        uy_str = f" [$\\_mathrm{{{unit}}}$]" if unit else ""
+        uy_str = f" [$\\mathrm{{{unit}}}$]" if unit else ""
         label1 = f"Residuals value{uy_str}"
     else:
         label1 = "Normalized residuals value"
 
-    label = f"$\\_mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
+    label = f"$\\mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
     # label1 = f"$\\text{{Residual}} = y_\\text{{data}} - y_\\text{{expected}}${uy_str}"
 
     # histogram of the data
@@ -341,65 +408,66 @@ def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto"
     kurtosis = _np.sum((resid - mean)**4) / (len(resid) * sigma**4) - 3
 
     _, p_value = shapiro(resid)
-
-    if p_value >= 0.10:
-        pval_str = f"{p_value*100:.0f}%"
-    elif 0.005 < p_value < 0.10:
-        pval_str = f"{p_value * 100:.2f}%"
-    elif 0.0005 < p_value <= 0.005:
-        pval_str = f"{p_value * 100:.3f}%"
-    else:
-        pval_str = f"< 0.05%"
-
     dw = durbin_watson(resid)
 
-    # Prepara l'unità di misura, se presente
-    uy_str = f" {unit}" if unit else ""
+    if verbose:
 
-    # Prepara le voci da stampare
-    entries = [
-        ("Mean value", f"{rounded_mean:.{max(0, -exponent + 1)}f}{uy_str}"),
-        ("Standard deviation", f"{rounded_sigma:.{max(0, -exponent + 1)}f}{uy_str}"),
-        ("Skewness", f"{skewness:.2f}"),
-        ("Kurtosis", f"{kurtosis:.2f}"),
-        ("p-value", pval_str),
-        ("Durbin-Watson", f"{dw:.3f}")
-    ]
+        if 0.10 <= p_value <= 1:
+            pval_str = f"{p_value*100:.0f}%"
+        elif 0.005 < p_value < 0.10:
+            pval_str = f"{p_value * 100:.2f}%"
+        elif 0.0005 < p_value <= 0.005:
+            pval_str = f"{p_value * 100:.3f}%"
+        else:
+            pval_str = f"< 0.05%"
 
-    # Calcola le larghezze dinamiche
-    label_width = max(len(label) for label, _ in entries) + 2
-    value_width = max(len(str(value)) for _, value in entries) + 2
-    total_width = label_width + value_width + 3
+        # Prepara l'unità di misura, se presente
+        uy_str = f" {unit}" if unit else ""
 
-    # Costruisci il separatore dinamico e il titolo centrato
-    title = " Residuals Analysis "
-    separator = "=" * total_width
-    title_line = title.center(total_width, "*")
+        # Prepara le voci da stampare
+        entries = [
+            ("Mean value", f"{rounded_mean:.{max(0, -exponent + 1)}f}{uy_str}"),
+            ("Standard deviation", f"{rounded_sigma:.{max(0, -exponent + 1)}f}{uy_str}"),
+            ("Skewness", f"{skewness:.2f}"),
+            ("Kurtosis", f"{kurtosis:.2f}"),
+            ("p-value", pval_str),
+            ("Durbin-Watson", f"{dw:.3f}")
+        ]
 
-    # Costruisci il blocco di testo
-    stamp = f"{separator}\n{title_line}\n{separator}\n"
-    for label, value in entries:
-        stamp += f"{label.ljust(label_width)}: {value.rjust(value_width)}\n"
-    stamp += f"{separator}\n"
+        # Calcola le larghezze dinamiche
+        label_width = max(len(label) for label, _ in entries) + 2
+        value_width = max(len(str(value)) for _, value in entries) + 2
+        total_width = label_width + value_width + 3
 
-    # Aggiungi le interpretazioni finali
-    if p_value >= 0.05:
-        result_norm = "Residuals are consistent with a normal distribution."
-    else:
-        result_norm = "Residuals deviate significantly from a normal distribution."
+        # Costruisci il separatore dinamico e il titolo centrato
+        title = " Residuals Analysis "
+        separator = "=" * total_width
+        title_line = title.center(total_width, "*")
 
-    if dw < 1.5:
-        result_dw = "Residuals show evidence of positive autocorrelation."
-    elif dw > 2.5:
-        result_dw = "Residuals show evidence of negative autocorrelation."
-    else:
-        result_dw = "Residuals do not show significant autocorrelation."
+        # Costruisci il blocco di testo
+        stamp = f"{separator}\n{title_line}\n{separator}\n"
+        for label, value in entries:
+            stamp += f"{label.ljust(label_width)}: {value.rjust(value_width)}\n"
+        stamp += f"{separator}\n"
 
-    # Aggiungi le interpretazioni al testo finale
-    stamp += f"\n{result_norm}\n{result_dw}\n"
+        # Aggiungi le interpretazioni finali
+        if p_value >= 0.05:
+            result_norm = "Residuals are consistent with a normal distribution."
+        else:
+            result_norm = "Residuals deviate significantly from a normal distribution."
 
-    # Stampa
-    print(stamp)
+        if dw < 1.5:
+            result_dw = "Residuals show evidence of positive autocorrelation."
+        elif dw > 2.5:
+            result_dw = "Residuals show evidence of negative autocorrelation."
+        else:
+            result_dw = "Residuals do not show significant autocorrelation."
+
+        # Aggiungi le interpretazioni al testo finale
+        stamp += f"\n{result_norm}\n{result_dw}\n"
+
+        # Stampa
+        print(stamp)
 
     return mean, sigma, skewness, kurtosis, p_value, dw
 
@@ -589,7 +657,7 @@ def remove_outliers(data, data_err=None, expected=None, method="zscore", thresho
 
     return data[mask]
 
-def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, 
+def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, verbose = True,
               names=None, prior_bounds=None, plot_dataset = False, plot_density = True, color = 'k', **kwargs):
     """
     Performs a Bayesian parameter estimation using MCMC for a user-defined model function.
@@ -624,6 +692,8 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000,
         Subsampling factor to reduce autocorrelation between samples. Only every `thin`-th sample is retained. Default is 10.
     maxfev : int, optional
         Maximum number of function evaluations for the `curve_fit` routine. If exceeded, the fit will fail. Default is 5000.
+    verbose : bool, optional
+        If `True`, prints a formatted table of ... Default is `True`.
     names : list of str, optional
         Parameter names to be used in the `corner` plot and output. If `None`, defaults to ['p0', 'p1', ..., 'pN'].
     prior_bounds : list of tuple, optional
@@ -683,6 +753,9 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000,
             f"The following packages are missing: {', '.join(missing)}. "
             "Please install them using pip."
         )
+
+    if not callable(f):
+        raise TypeError("'f' must be a callable function.")
     
     x = _np.asarray(x)
     y = _np.asarray(y)
@@ -691,7 +764,48 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000,
     if not (len(x) == len(y) == len(y_err)):
         raise ValueError("'x', 'y' and 'y_err' must have the same length.")
 
+    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+            raise TypeError("'x' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(x)):
+            raise ValueError("'x' contains non-finite values (NaN or inf).")
+
+    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
+            raise TypeError("'y' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(y)):
+            raise ValueError("'y' contains non-finite values (NaN or inf).")
+
+    if (not (_np.issubdtype(y_err.dtype, _np.floating) or _np.issubdtype(y_err.dtype, _np.integer))) or not _np.all(_np.isreal(y_err)):
+            raise TypeError("'y_err' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(y_err)):
+            raise ValueError("'y_err' contains non-finite values (NaN or inf).")
+    
+    if not isinstance(burn, (int)):
+        raise TypeError("'burn' must be an integer.")
+    if burn <= 0:
+        raise ValueError("'burn' must be equal or greater than 1.")
+    
+    if not isinstance(steps, (int)):
+        raise TypeError("'steps' must be an integer.")
+    if steps <= 0:
+        raise ValueError("'steps' must be equal or greater than 1.")
+    
+    if not isinstance(thin, (int)):
+        raise TypeError("'thin' must be an integer.")
+    if thin <= 0:
+        raise ValueError("'thin' must be equal or greater than 1.")
+    
+    if not isinstance(maxfev, (int)):
+        raise TypeError("'maxfev' must be an integer.")
+    if maxfev <= 0:
+        raise ValueError("'maxfev' must be equal or greater than 1.")
+
     p0 = _np.array(p0)
+
+    if (not (_np.issubdtype(p0.dtype, _np.floating) or _np.issubdtype(p0.dtype, _np.integer))) or not _np.all(_np.isreal(p0)):
+            raise TypeError("'p0' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(p0)):
+            raise ValueError("'p0' contains non-finite values (NaN or inf).")
+
     ndim = len(p0)
     nwalkers = 2 * ndim
 
@@ -764,55 +878,56 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000,
         param_name = f"Parameter {i+1}"
         posterior_results.append((param_name, rounded_median, rounded_plus, rounded_minus, rounded_mle, decimal_places))
 
-    # Determina le larghezze massime per ciascuna colonna
-    col_headers = ["Parameter", "Median", "+1σ", "-1σ", "MLE"]
-    columns = [ [r[0] for r in posterior_results],      # Parametri
-                [f"{r[1]:.{r[5]}f}" for r in posterior_results],  # Mediana
-                [f"{r[2]:.{r[5]}f}" for r in posterior_results],  # +1σ
-                [f"{r[3]:.{r[5]}f}" for r in posterior_results],  # -1σ
-                [f"{r[4]:.{r[5]}f}" for r in posterior_results] ] # MLE
+    if verbose: 
+        # Determina le larghezze massime per ciascuna colonna
+        col_headers = ["Parameter", "Median", "+1σ", "-1σ", "MLE"]
+        columns = [ [r[0] for r in posterior_results],      # Parametri
+                    [f"{r[1]:.{r[5]}f}" for r in posterior_results],  # Mediana
+                    [f"{r[2]:.{r[5]}f}" for r in posterior_results],  # +1σ
+                    [f"{r[3]:.{r[5]}f}" for r in posterior_results],  # -1σ
+                    [f"{r[4]:.{r[5]}f}" for r in posterior_results] ] # MLE
 
-    # Calcola le larghezze dinamiche (massimo tra intestazione e valori)
-    col_widths = []
-    for header, col_data in zip(col_headers, columns):
-        max_width = max(len(header), max(len(str(val)) for val in col_data))
-        col_widths.append(max_width)
+        # Calcola le larghezze dinamiche (massimo tra intestazione e valori)
+        col_widths = []
+        for header, col_data in zip(col_headers, columns):
+            max_width = max(len(header), max(len(str(val)) for val in col_data))
+            col_widths.append(max_width)
 
-    # Calcola larghezza totale della tabella
-    total_width = sum(col_widths) + 3 * len(col_widths) + 1  # +1 per '|', +3 per spazi e separatori
+        # Calcola larghezza totale della tabella
+        total_width = sum(col_widths) + 3 * len(col_widths) + 1  # +1 per '|', +3 per spazi e separatori
 
-    # Costruisci il titolo centrato
-    title = "Summary Report"
-    padding = (total_width - len(title)) // 2
-    header_line = "=" * total_width
-    title_line = " " * padding + title + " " * padding
-    if len(title_line) < total_width:
-        title_line += " "
+        # Costruisci il titolo centrato
+        title = "Summary Report"
+        padding = (total_width - len(title)) // 2
+        header_line = "=" * total_width
+        title_line = " " * padding + title + " " * padding
+        if len(title_line) < total_width:
+            title_line += " "
 
-    # Stampa la tabella
-    print(header_line)
-    print(title_line)
-    print(header_line)
+        # Stampa la tabella
+        print(header_line)
+        print(title_line)
+        print(header_line)
 
-    # Intestazione
-    header = "|"
-    for header_text, width in zip(col_headers, col_widths):
-        header += f" {header_text.center(width)} |"
-    print(header)
-    print("-" * total_width)
+        # Intestazione
+        header = "|"
+        for header_text, width in zip(col_headers, col_widths):
+            header += f" {header_text.center(width)} |"
+        print(header)
+        print("-" * total_width)
 
-    # Righe con allineamento centrato
-    for row in posterior_results:
-        param, median, plus, minus, mle, dec = row
-        row_str = "|"
-        row_str += f" {param.center(col_widths[0])} |"
-        row_str += f" {f'{median:.{dec}f}'.center(col_widths[1])} |"
-        row_str += f" {f'{plus:.{dec}f}'.center(col_widths[2])} |"
-        row_str += f" {f'{minus:.{dec}f}'.center(col_widths[3])} |"
-        row_str += f" {f'{mle:.{dec}f}'.center(col_widths[4])} |"
-        print(row_str)
+        # Righe con allineamento centrato
+        for row in posterior_results:
+            param, median, plus, minus, mle, dec = row
+            row_str = "|"
+            row_str += f" {param.center(col_widths[0])} |"
+            row_str += f" {f'{median:.{dec}f}'.center(col_widths[1])} |"
+            row_str += f" {f'{plus:.{dec}f}'.center(col_widths[2])} |"
+            row_str += f" {f'{minus:.{dec}f}'.center(col_widths[3])} |"
+            row_str += f" {f'{mle:.{dec}f}'.center(col_widths[4])} |"
+            print(row_str)
 
-    print(header_line)
+        print(header_line)
 
     # Plot corner
     # Rimuovi eventuali duplicati nel kwargs
@@ -885,11 +1000,77 @@ def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample
 
     from ._uncertainty_class import uncert_prop
 
-    # # Verifica che tutti gli array di i_nput abbiano la stessa lunghezza
-    # n_points = len(x_val[0])
-    # for i, x in enumerate(x_val[1:], 1):
-    #     if len(x) != n_points:
-    #         raise ValueError(f"I_nput array x{i+1} has a different length than the others.")
+    # --- Controllo func ---
+    if not callable(func):
+        raise TypeError("'func' must be a callable function.")
+
+    # --- Controllo x_val ---
+    if not isinstance(x_val, list):
+        raise TypeError("'x_val' must be a list of numpy.array or real numbers (int or float).")
+    if len(x_val) == 0:
+        raise ValueError("'x_val' cannot be empty.")
+
+    array_lengths = []
+    for i, xi in enumerate(x_val):
+        if _np.isscalar(xi):
+            if not isinstance(xi, (int, float)):
+                raise TypeError(f"'x_val[{i}]' scalar must be a real number (int or float).")
+        elif isinstance(xi, _np.ndarray):
+            if not (_np.issubdtype(xi.dtype, _np.floating) or _np.issubdtype(xi.dtype, _np.integer)):
+                raise TypeError(f"'x_val[{i}]' must contain real numbers (int or float).")
+            if not _np.all(_np.isfinite(xi)):
+                raise ValueError(f"'x_val[{i}]' contains non-finite values (NaN or inf)..")
+            array_lengths.append(len(xi))
+        else:
+            raise TypeError(f"'x_val[{i}]' must be a scalar or numpy.ndarray.")
+
+    if array_lengths:
+        if len(set(array_lengths)) != 1:
+            raise ValueError("All 'x_val[i]' arrays must all have the same length.")
+
+    # --- Controllo x_err ---
+    if isinstance(x_err, list):
+        if len(x_err) != len(x_val):
+            raise ValueError("'x_err' list must have the same length as 'x_val'.")
+        for i, err_i in enumerate(x_err):
+            if not (_np.isscalar(err_i) or isinstance(err_i, _np.ndarray)):
+                raise TypeError(f"'x_err[{i}]' must be a scalar or numpy.ndarray.")
+            if _np.isscalar(err_i):
+                if not isinstance(err_i, (int, float)):
+                    raise TypeError(f"'x_err[{i}]' scalar must be a real number (int or float).")
+            if isinstance(err_i, _np.ndarray):
+                if not (_np.issubdtype(err_i.dtype, _np.floating) or _np.issubdtype(err_i.dtype, _np.integer)):
+                    raise TypeError(f"'x_err[{i}]' must contain real numbers (int or float).")
+                if not _np.all(_np.isfinite(err_i)):
+                    raise ValueError(f"'x_err[{i}]' contains non-finite values (NaN or inf).")
+                if array_lengths and len(err_i) != array_lengths[0]:
+                    raise ValueError(f"'x_err[{i}]' must have the same length as 'x_val' arrays.")
+    elif isinstance(x_err, _np.ndarray):
+        if x_err.ndim != 2 or x_err.shape[0] != x_err.shape[1]:
+            raise ValueError("'x_err' numpy.ndarray covariance matrix must be 2D square.")
+        expected_size = len(x_val)
+        if x_err.shape[0] != expected_size:
+            raise ValueError(f"'x_err' covariance matrix must be of size {expected_size}x{expected_size}.")
+        if not (_np.issubdtype(x_err.dtype, _np.floating) or _np.issubdtype(x_err.dtype, _np.integer)):
+            raise TypeError("'x_err' covariance matrix must contain real numbers (int or float).")
+        if not _np.all(_np.isfinite(x_err)):
+            raise ValueError("'x_err' covariance matrix contains non-finite values (NaN or inf).")
+    else:
+        raise TypeError("'x_err' must be a list or numpy.ndarray.")
+
+    # --- Controllo params ---
+    if params is not None:
+        if not (isinstance(params, list) or isinstance(params, _np.ndarray)):
+            raise TypeError("'params' must be a list or numpy.ndarray.")
+        else:
+            # Se vuoi, puoi aggiungere controlli sul contenuto di params qui
+            pass
+
+    # --- Controllo MC_sample_size ---
+    if not isinstance(MC_sample_size, int):
+        raise TypeError("'MC_sample_size' must be an integer.")
+    if MC_sample_size <= 0:
+        raise ValueError("'MC_sample_size' must be equal or greater than 1.")
 
     # Normalizza x_val in lista di array
     x_val = [_np.atleast_1d(xi) for xi in x_val]
@@ -902,20 +1083,6 @@ def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample
         n_points = lengths[0]
     else:
         raise ValueError("All input arrays (or scalars) must have the same length.")
-
-    # Normalizza x_err se è una lista di scalari
-    if isinstance(x_err, list):
-        if all(isinstance(u, (int, float)) for u in x_err):
-            x_err = [_np.full(n_points, u) for u in x_err]
-        elif all(isinstance(u, _np.ndarray) for u in x_err):
-            x_err = [_np.atleast_1d(u) for u in x_err]
-        else:
-            raise ValueError("x_err must be a list of scalars or a list of numpy arrays.")
-    elif isinstance(x_err, _np.ndarray):
-        if x_err.shape != (len(x_val), len(x_val)):
-            raise ValueError("Covariance matrix must be square with dimension equal to number of variables.")
-    else:
-        raise TypeError("x_err must be a list or a covariance matrix.")
     
     # Inizializza gli array di output
     f_values = _np.zeros(n_points)
@@ -970,7 +1137,7 @@ def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample
     
     return f_values, f_err, (confidence_bands_lower, confidence_bands_upper)
 
-def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10, maxfev=5000, prior_bounds1=None, prior_bounds2=None):
+def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10, maxfev=5000, prior_bounds1=None, prior_bounds2=None, verbose = True):
     """
     Estimate the Bayes factor between two models using the Bayesian Information Criterion (BIC).
 
@@ -1003,6 +1170,8 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
         If None, unbounded uniform priors are assumed.
     prior_bounds2 : list of tuples, optional
         Bounds for the uniform priors of the second model.
+    verbose : bool, optional
+        If `True`, prints a formatted table of ... Default is `True`.
 
     Returns
     -------
@@ -1018,7 +1187,7 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     -----
     The Bayes factor is estimated using the approximation:
 
-        ln(B12) = -0.5 * (BIC1 - BIC2)
+        ln(B12) = -0.5 x (BIC1 - BIC2)
 
     which is valid under regularity conditions and large sample sizes.
 
@@ -1036,6 +1205,7 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     """
 
     from ._helper import format_smart
+    from scipy.optimize import curve_fit
 
     try:
         import emcee
@@ -1044,18 +1214,103 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
             "The 'emcee' package is not installed. "
             "Please install it by running 'pip install emcee'."
         )
-    
-    x = _np.asarray(x)
-    y = _np.asarray(y)
-    y_err = _np.asarray(y_err)
+
+    # --- Controllo x ---
+    if not hasattr(x, '__iter__'):
+        raise TypeError("'x' must be array-like.")
+    x_arr = _np.asarray(x)
+    if not (_np.issubdtype(x_arr.dtype, _np.floating) or _np.issubdtype(x_arr.dtype, _np.integer)):
+        raise TypeError("'x' must contain real numbers (int or float).")
+    if not _np.all(_np.isfinite(x_arr)):
+        raise ValueError("'x' contains non-finite values (NaN or inf).")
+
+    # --- Controllo y ---
+    if not hasattr(y, '__iter__'):
+        raise TypeError("'y' must be array-like.")
+    y_arr = _np.asarray(y)
+    if not (_np.issubdtype(y_arr.dtype, _np.floating) or _np.issubdtype(y_arr.dtype, _np.integer)):
+        raise TypeError("'y' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(y_arr)):
+        raise ValueError("'y' contains non-finite values (NaN or inf).")
+
+    # --- Controllo y_err ---
+    if not hasattr(y_err, '__iter__'):
+        raise TypeError("'y_err' must be array-like.")
+    y_err_arr = _np.asarray(y_err)
+    if not (_np.issubdtype(y_err_arr.dtype, _np.floating) or _np.issubdtype(y_err_arr.dtype, _np.integer)):
+        raise TypeError("'y_err' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(y_err_arr)):
+        raise ValueError("'y_err' contains non-finite values (NaN or inf).")
+
+    # --- Controllo lunghezze coerenti ---
+    if not (len(x_arr) == len(y_arr) == len(y_err_arr)):
+        raise ValueError("'x', 'y' and 'y_err' must have the same length.")
+
+    # --- Controllo f1 ---
+    if not callable(f1):
+        raise TypeError("'f1' must be callable.")
+
+    # --- Controllo p0_1 ---
+    p0_1 = _np.array(p0_1)
+
+    if (not (_np.issubdtype(p0_1.dtype, _np.floating) or _np.issubdtype(p0_1.dtype, _np.integer))) or not _np.all(_np.isreal(p0_1)):
+            raise TypeError("'p0_1' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(p0_1)):
+            raise ValueError("'p0_1' contains non-finite values (NaN or inf).")
+
+    # --- Controllo f2 ---
+    if not callable(f2):
+        raise TypeError("'f2' must be callable.")
+
+    # --- Controllo p0_2 ---
+    p0_2 = _np.array(p0_2)
+
+    if (not (_np.issubdtype(p0_2.dtype, _np.floating) or _np.issubdtype(p0_2.dtype, _np.integer))) or not _np.all(_np.isreal(p0_2)):
+            raise TypeError("'p0_2' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(p0_2)):
+            raise ValueError("'p0_2' contains non-finite values (NaN or inf).")
+
+    # --- Controllo burn ---
+    if not (isinstance(burn, int) and burn >= 0):
+        raise ValueError("'burn' must be a non-negative integer.")
+
+    # --- Controllo steps ---
+    if not (isinstance(steps, int) and steps > 0):
+        raise ValueError("'steps' must be a positive integer.")
+
+    # --- Controllo thin ---
+    if not (isinstance(thin, int) and thin > 0):
+        raise ValueError("'thin' must be a positive integer.")
+
+    # --- Controllo maxfev ---
+    if not (isinstance(maxfev, int) and maxfev > 0):
+        raise ValueError("'maxfev' must be a positive integer.")
+
+    # --- Controllo prior_bounds1 ---
+    if prior_bounds1 is not None:
+        if not isinstance(prior_bounds1, list):
+            raise TypeError("'prior_bounds1' must be a list of (min, max) tuples or None.")
+        for i, bound in enumerate(prior_bounds1):
+            if not (isinstance(bound, tuple) and len(bound) == 2):
+                raise TypeError(f"'prior_bounds1[{i}]' must be a tuple of length 2.")
+            if not all(isinstance(v, (int, float)) for v in bound):
+                raise TypeError(f"Elements of 'prior_bounds1[{i}]' must be a real numbers (int or float).")
+
+    # --- Controllo prior_bounds2 ---
+    if prior_bounds2 is not None:
+        if not isinstance(prior_bounds2, list):
+            raise TypeError("'prior_bounds2' must be a list of (min, max) tuples or None.")
+        for i, bound in enumerate(prior_bounds2):
+            if not (isinstance(bound, tuple) and len(bound) == 2):
+                raise TypeError(f"'prior_bounds2[{i}]' must be a tuple of length 2.")
+            if not all(isinstance(v, (int, float)) for v in bound):
+                raise TypeError(f"Elements of 'prior_bounds2[{i}]' must be a real numbers (int or float).")
 
     if len(x) <= 10 * len(p0_1) or len(x) <= 10 * len(p0_2):
         _warnings.warn("The BIC approximation is only valid for sample size much larger than the number of parameters in the model. Results may be inaccurate.", Warning)
 
     if not (len(x) == len(y) == len(y_err)):
         raise ValueError("'x', 'y' and 'y_err' must have the same length.")
-    
-    from scipy.optimize import curve_fit
 
     def fit_model(f, p0, prior_bounds):
         ndim = len(p0)
@@ -1095,50 +1350,53 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     BIC2, logL2 = fit_model(f2, p0_2, prior_bounds2)
 
     lnB12 = -0.5 * (BIC1 - BIC2)
-    label_width = 10
 
-    # Definisci le stringhe e il risultato
-    if lnB12 >= 5:
-        result = "Strong evidence for model 1"
-    elif 2.5 <= lnB12 < 5:
-        result = "Moderate evidence for model 1"
-    elif 1 <= lnB12 < 2.5:
-        result = "Weak evidence for model 1"
-    elif -1 <= lnB12 < 1:
-        result = 'Inconclusive'
-    elif -2.5 <= lnB12 < -1:
-        result = 'Weak evidence for model 2'
-    elif -5 <= lnB12 < -2.5:
-        result = 'Moderate evidence for model 2'
-    else:
-        result = 'Strong evidence for model 2'
+    if verbose:
 
-    # Prepariamo le intestazioni e i dati
-    header = f"{'Model':<{label_width}} | {'BIC':>12} | {'logL':>12}"
-    model1_line = f"{'Model 1':<{label_width}} | {format_smart(BIC1, equalsign=False):>12} | {format_smart(logL1, equalsign=False):>12}"
-    model2_line = f"{'Model 2':<{label_width}} | {format_smart(BIC2, equalsign=False):>12} | {format_smart(logL2, equalsign=False):>12}"
-    divider = "-" * len(header)
+        label_width = 10
 
-    # Stampa con layout elegante e dinamico
-    print()
-    print("=" * len(header))
-    print(header)
-    print(divider)
-    print(model1_line)
-    print(model2_line)
-    print(divider)
-    print(f"{'Result':<{label_width}} | {'log(BF)':>12} | {format_smart(lnB12, equalsign=False):>12}")
-    print("=" * len(header))
-    # Evidenzia il risultato con un messaggio elegante
-    result_box = f"*** {result} ***"
-    # Calcola la lunghezza dinamica per centrare il messaggio
-    box_width = max(len(header), len(result_box))
-    print(result_box.center(box_width))
-    print("=" * box_width)
+        # Definisci le stringhe e il risultato
+        if lnB12 >= 5:
+            result = "Strong evidence for model 1"
+        elif 2.5 <= lnB12 < 5:
+            result = "Moderate evidence for model 1"
+        elif 1 <= lnB12 < 2.5:
+            result = "Weak evidence for model 1"
+        elif -1 <= lnB12 < 1:
+            result = 'Inconclusive'
+        elif -2.5 <= lnB12 < -1:
+            result = 'Weak evidence for model 2'
+        elif -5 <= lnB12 < -2.5:
+            result = 'Moderate evidence for model 2'
+        else:
+            result = 'Strong evidence for model 2'
+
+        # Prepariamo le intestazioni e i dati
+        header = f"{'Model':<{label_width}} | {'BIC':>12} | {'logL':>12}"
+        model1_line = f"{'Model 1':<{label_width}} | {format_smart(BIC1, equalsign=False):>12} | {format_smart(logL1, equalsign=False):>12}"
+        model2_line = f"{'Model 2':<{label_width}} | {format_smart(BIC2, equalsign=False):>12} | {format_smart(logL2, equalsign=False):>12}"
+        divider = "-" * len(header)
+
+        # Stampa con layout elegante e dinamico
+        print()
+        print("=" * len(header))
+        print(header)
+        print(divider)
+        print(model1_line)
+        print(model2_line)
+        print(divider)
+        print(f"{'Result':<{label_width}} | {'log(BF)':>12} | {format_smart(lnB12, equalsign=False):>12}")
+        print("=" * len(header))
+        # Evidenzia il risultato con un messaggio elegante
+        result_box = f"*** {result} ***"
+        # Calcola la lunghezza dinamica per centrare il messaggio
+        box_width = max(len(header), len(result_box))
+        print(result_box.center(box_width))
+        print("=" * box_width)
 
     return lnB12, BIC1, BIC2
 
-def mean(x, kind='arithmetic'):
+def average(x, kind='arithmetic'):
     """
     Compute the mean of an i_nput scalar or numpy array, with the specified type of mean.
 
@@ -1183,7 +1441,14 @@ def mean(x, kind='arithmetic'):
     
     # Handle scalar case
     if _np.isscalar(x):
+        if not isinstance(x, (int, float)):
+            raise TypeError("'x' must be a real number (int or float).")
         return x
+    else:
+        if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+            raise TypeError("'x' must contain only real numbers (int or float).")
+        if not _np.all(_np.isfinite(x)):
+                raise ValueError("'x' contains non-finite values (NaN or inf).")
     
     if kind == 'arithmetic':
         return _np.mean(x)
@@ -1224,7 +1489,7 @@ def mean(x, kind='arithmetic'):
         raise ValueError(f"Unsupported mean type '{kind}'.")
     
 def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [uy]", xlim = [], ylim = [], showlegend = True, legendloc = None, log = None,
-            xscale = 0, yscale = 0, mscale = 0, cscale = 0, m_units = "", c_units = "", confidence = 2, confidencerange = True, residuals=True, norm = True, result = False):
+            xscale = 0, yscale = 0, mscale = 0, cscale = 0, m_units = "", c_units = "", confidence = 2, confidencerange = True, residuals=True, norm = True, verbose = False, summary = True):
     """
     Performs a linear fit (Weighted Least Squares or Ordinary Least Squares) and displays experimental data along with the regression line and uncertainty band.
 
@@ -1278,8 +1543,10 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
             If `True`, adds an upper panel showing fit residuals.
         norm : bool, optional
             If `True`, residuals in the upper panel will be normalized.
-        result : bool, optional
+        verbose : bool, optional
             If `True`, prints the output of `wls_fit` (or `ols_fit`) to the screen. Default is `False`.
+        summary : bool, optional
+            ...
 
     Returns
     ----------
@@ -1304,12 +1571,6 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     - If `m_scale = 0` (recommended when using `m_units`), then `m_units` will represent the suffix corresponding to 10^(yscale - xscale) [+ `y_units/x_units`].
     """
 
-    x = _np.asarray(x)
-    y = _np.asarray(y)
-    y_err = _np.asarray(y_err)
-    if x_err is not None:
-        x_err = _np.asarray(x_err)
-
     from scipy.stats import chi2
     from ._helper import my_cov, my_mean, my_var, my_line, y_estrapolato
 
@@ -1320,6 +1581,64 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
             "The 'statsmodels' package is not installed. "
             "Please install it by running 'pip install statsmodels'."
         )
+    
+    x = _np.asarray(x)
+    y = _np.asarray(y)
+    y_err = _np.asarray(y_err)
+
+    if x_err is not None:
+        x_err = _np.asarray(x_err)
+        if not (len(x) == len(y) == len(y_err) == len(x_err)):
+                raise ValueError("'x', 'y', 'x_err' and 'y_err' must have the same length.")
+        if (not (_np.issubdtype(x_err.dtype, _np.floating) or _np.issubdtype(x_err.dtype, _np.integer))) or not _np.all(_np.isreal(x_err)):
+            raise TypeError("'y_err' must contain only real numbers (int or float).")
+        if not _np.all(_np.isfinite(x_err)):
+            raise ValueError("'x_err' contains non-finite values (NaN or inf).")
+    else:
+        if not (len(x) == len(y) == len(y_err)):
+                raise ValueError("'x', 'y' and 'y_err' must have the same length.")
+    
+    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+        raise TypeError("'x' must contain only real numbers (int or float).")
+    
+    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
+        raise TypeError("'y' must contain only real numbers (int or float).")
+    
+    if (not (_np.issubdtype(y_err.dtype, _np.floating) or _np.issubdtype(y_err.dtype, _np.integer))) or not _np.all(_np.isreal(y_err)):
+        raise TypeError("'y_err' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(x)):
+            raise ValueError("'x' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(y)):
+            raise ValueError("'y' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(y_err)):
+            raise ValueError("'y_err' contains non-finite values (NaN or inf).")
+    
+    if not isinstance(xscale, (int, float)):
+        raise TypeError("'xscale' must be a real number (int or float).")
+    if not isinstance(yscale, (int, float)):
+        raise TypeError("'yscale' must be a real number (int or float).")
+
+    if not isinstance(xlim, list):
+        raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
+    if len(xlim) != 0:
+        if len(xlim) != 2:
+            raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
+        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+            raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
+        
+    if not isinstance(ylim, list):
+        raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
+    if len(ylim) != 0:
+        if len(ylim) != 2:
+            raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
+        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+            raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
+        
+    if not isinstance(xlabel, (str)):
+        raise TypeError("'xlabel' must be a string.")
+    if not isinstance(ylabel, (str)):
+        raise TypeError("'ylabel' must be a string.")
 
     if log is not None:
         if log not in ("x", "y", "xy"):
@@ -1343,7 +1662,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
         raise ValueError('Invalid model. Only "wls" or "ols" allowed.')
     results = model.fit()
 
-    if result:
+    if verbose:
         print(results.summary())
         print("\n")
 
@@ -1396,7 +1715,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
 
     # Costruzione stringa LaTeX ottimizzata
-    unit_str = f" \\, \\_mathrm{{{m_units}}}" if m_units else ""
+    unit_str = f" \\, \\mathrm{{{m_units}}}" if m_units else ""
     scale_str = f" \\times 10^{{{mscale}}}" if mscale != 0 else ""
 
     if unit_str or scale_str:
@@ -1423,7 +1742,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
 
     # Costruzione stringa LaTeX ottimizzata
-    unit_str = f" \\, \\_mathrm{{{c_units}}}" if c_units else ""
+    unit_str = f" \\, \\mathrm{{{c_units}}}" if c_units else ""
     scale_str = f" \\times 10^{{{cscale}}}" if cscale != 0 else ""
 
     if unit_str or scale_str:
@@ -1441,14 +1760,6 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
 
     n = k / len(resid_norm)
 
-    # if n >= 0.10:
-    #     print(f"{n*100:.0f}% of the residuals lie within ±2σ of zero.")
-    # elif 0.005 < n < 0.10:
-    #     print(f"{n*100:.2f}% of the residuals lie within ±2σ of zero.")
-    # else:
-    #     print("Virtually no residuals lie within ±2σ of zero.")
-
-    ## Definizione etichette e valori
     labels = ["Reduced χ² (χ²/dof)", "p-value", "Residuals within ±2σ"]
     values = []
 
@@ -1462,7 +1773,6 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     else:
         values.append("< 0.01")
 
-    # p-value dinamico
     if p_value >= 0.10:
         values.append(f"{p_value * 100:.0f}%")
     elif 0.005 < p_value < 0.10:
@@ -1474,43 +1784,38 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
 
     # Residui dinamici
     if n >= 0.10:
-        res_str = f"{n*100:.0f}%"
+        values.append(f"{n*100:.0f}%")
     elif 0.005 < n < 0.10:
-        res_str = f"{n*100:.2f}%"
+        values.append(f"{n*100:.2f}%")
     else:
-        res_str = "Virtually no one"
-    values.append(res_str)
+        values.append("Virtually no one")
 
-    # Calcolo larghezze massime
-    max_label_len = max(len(label) for label in labels)
-    max_value_len = max(len(value) for value in values)
-    total_width = max_label_len + max_value_len + 5  # spazio extra per " : "
+    if summary:
+        max_label_len = max(len(label) for label in labels)
+        max_value_len = max(len(value) for value in values)
+        total_width = max_label_len + max_value_len + 5
 
-    # Costruzione righe
-    report_lines = []
-    title = "Summary Report"
-    title_line = title.center(total_width)
-    separator = "=" * total_width
+        # Costruzione righe
+        report_lines = []
+        title = "Summary Report"
+        title_line = title.center(total_width)
+        separator = "=" * total_width
 
-    report_lines.append(separator)
-    report_lines.append(title_line)
-    report_lines.append(separator)
+        report_lines.append(separator)
+        report_lines.append(title_line)
+        report_lines.append(separator)
 
-    for label, value in zip(labels, values):
-        line = f"{label:<{max_label_len}}  :  {value:>{max_value_len}}"
-        report_lines.append(line)
+        for label, value in zip(labels, values):
+            line = f"{label:<{max_label_len}}  :  {value:>{max_value_len}}"
+            report_lines.append(line)
 
-    report_lines.append(separator)
+        report_lines.append(separator)
 
-    # Unione e stampa
-    report = "\n".join(report_lines)
-    print(report)
-
-    # costruisco dei punti x su cui valutare la retta del fit              
-    xmin = float(_np.min(x)) 
-    xmax = float(_np.max(x))
-    xmin_plot = xmin-.12*(xmax-xmin)
-    xmax_plot = xmax+.12*(xmax-xmin)
+        report = "\n".join(report_lines)
+        print(report)
+        
+    xmin_plot = x.min() - .12 * (x.max() - x.min())
+    xmax_plot = x.max() + .12 * (x.max() - x.min())
     x1 = _np.linspace(xmin_plot, xmax_plot, 500)
     y1 = my_line(x1, m, c) / yscale
 
@@ -1561,11 +1866,11 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
         axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.15)
         axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.15)
         if norm == True:
-            axs[0].plot(x1, dash, ls='dotted', color='crimson', lw=1.5)
-            axs[0].plot(x1, -dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x1, dash, ls='dotted', color='crimson', lw=1.6)
+            axs[0].plot(x1, -dash, ls='dotted', color='crimson', lw=1.6)
         else:
-            axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.5)
-            axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.6)
+            axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.6)
         axs[0].set_ylim(-_np.nanmean(3 * dash / 2), _np.nanmean(3 * dash / 2))
 
         # Configurazioni estetiche per il pannello dei residui
@@ -1626,7 +1931,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
 def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", ylabel="y [uy]", xlim = [], ylim = [], showlegend = True, legendloc = None, 
-              bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True):
+              bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True, verbose = True):
     """
     General-purpose fit of multi-parameter functions, with an option to display residuals.
 
@@ -1678,6 +1983,8 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
             If `True`, adds an upper panel showing fit residuals.
         norm : bool, optional
             If `True`, residuals in the upper panel will be normalized.
+        verbose : bool, optional
+            If ...
 
     Returns
     ----------
@@ -1696,14 +2003,80 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
     All model parameters are estimated using the original i_nput data as provided.
     """
 
+    from scipy.optimize import curve_fit
+
     x = _np.asarray(x)
     y = _np.asarray(y)
+
     if y_err is not None:
         y_err = _np.asarray(y_err)
+        if (not (_np.issubdtype(y_err.dtype, _np.floating) or _np.issubdtype(y_err.dtype, _np.integer))) or not _np.all(_np.isreal(y_err)):
+            raise TypeError("'y_err' must contain only real numbers (int or float).")
+        if not _np.all(_np.isfinite(y_err)):
+            raise ValueError("'y_err' contains non-finite values (NaN or inf).")
     if x_err is not None:
         x_err = _np.asarray(x_err)
+        if (not (_np.issubdtype(x_err.dtype, _np.floating) or _np.issubdtype(x_err.dtype, _np.integer))) or not _np.all(_np.isreal(x_err)):
+            raise TypeError("'x_err' must contain only real numbers (int or float).")
+        if not _np.all(_np.isfinite(x_err)):
+            raise ValueError("'x_err' contains non-finite values (NaN or inf).")
+        
+    if x_err is not None and y_err is not None:
+        if not (len(x) == len(y) == len(y_err) == len(x_err)):
+                raise ValueError("'x', 'y', 'x_err' and 'y_err' must have the same length.")
+    elif x_err is not None and y_err is None:
+        if not (len(x) == len(y) == len(x_err)):
+                raise ValueError("'x', 'y' and 'x_err' must have the same length.")
+    elif x_err is None and y_err is not None:
+        if not (len(x) == len(y) == len(y_err)):
+                raise ValueError("'x', 'y' and 'y_err' must have the same length.")
+    else:
+        if not (len(x) == len(y)):
+                raise ValueError("'x' and 'y' must have the same length.")
 
-    from scipy.optimize import curve_fit
+    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+        raise TypeError("'x' must contain only real numbers (int or float).")
+    
+    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
+        raise TypeError("'y' must contain only real numbers (int or float).")
+    
+    if not _np.all(_np.isfinite(x)):
+            raise ValueError("'x' contains non-finite values (NaN or inf).")
+    if not _np.all(_np.isfinite(y)):
+            raise ValueError("'y' contains non-finite values (NaN or inf).")
+    
+    if not isinstance(xscale, (int, float)):
+        raise TypeError("'xscale' must be a real number (int or float).")
+    if not isinstance(yscale, (int, float)):
+        raise TypeError("'yscale' must be a real number (int or float).")
+
+    if not isinstance(xlim, list):
+        raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
+    if len(xlim) != 0:
+        if len(xlim) != 2:
+            raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
+        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+            raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
+        
+    if not isinstance(ylim, list):
+        raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
+    if len(ylim) != 0:
+        if len(ylim) != 2:
+            raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
+        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+            raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
+        
+    if not isinstance(xlabel, (str)):
+        raise TypeError("'xlabel' must be a string.")
+    if not isinstance(ylabel, (str)):
+        raise TypeError("'ylabel' must be a string.")
+    
+    p0 = _np.array(p0)
+
+    if (not (_np.issubdtype(p0.dtype, _np.floating) or _np.issubdtype(p0.dtype, _np.integer))) or not _np.all(_np.isreal(p0)):
+            raise TypeError("'p0' must contain only real numbers (int or float).")
+    if not _np.all(_np.isfinite(p0)):
+            raise ValueError("'p0' contains non-finite values (NaN or inf).")
 
     if log is not None:
         if log not in ("x", "y", "xy"):
@@ -1771,22 +2144,17 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
 
         chi2_value = _np.sum((resid_norm) ** 2)
 
-        # Gradi di libertà (DOF)
         dof = len(x) - len(popt)
 
-        # Chi-quadrato ridotto
         chi2_red = chi2_value / dof
 
-        # p-value
         p_value = chi2.sf(chi2_value, dof)
     
         n = _np.sum((-1 <= resid_norm) & (resid_norm <= 1)) / len(resid_norm)
 
-        ## Definizione etichette e valori
         labels = ["Reduced χ² (χ²/dof)", "p-value", "Residuals within ±2σ"]
         values = []
 
-        # χ²/dof dinamico
         if chi2_red > 100:
             values.append("> 100")
             _chi2_str = f"> 100"
@@ -1800,7 +2168,6 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
             values.append("< 0.01")
             _chi2_str = f"< 0.01"
 
-        # p-value dinamico
         if p_value >= 0.10:
             values.append(f"{p_value * 100:.0f}%")
             pval_str = f"p-value = {p_value*100:.0f}%"
@@ -1814,52 +2181,47 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
             values.append("< 0.05%")
             pval_str = f"p-value < 0.05%"
 
-        # Residui dinamici
         if n >= 0.10:
-            res_str = f"{n*100:.0f}%"
+            values.append(f"{n*100:.0f}%")
         elif 0.005 < n < 0.10:
-            res_str = f"{n*100:.2f}%"
+            values.append(f"{n*100:.2f}%")
         else:
-            res_str = "Virtually no one"
-        values.append(res_str)
+            values.append("Virtually no one")
 
-        # Calcolo larghezze massime
-        max_label_len = max(len(label) for label in labels)
-        max_value_len = max(len(value) for value in values)
-        total_width = max_label_len + max_value_len + 5  # spazio extra per " : "
+        if verbose:
+            max_label_len = max(len(label) for label in labels)
+            max_value_len = max(len(value) for value in values)
+            total_width = max_label_len + max_value_len + 5 
 
-        # Costruzione righe
-        report_lines = []
-        title = "Summary Report"
-        title_line = title.center(total_width)
-        separator = "=" * total_width
+            # Costruzione righe
+            report_lines = []
+            title = "Summary Report"
+            title_line = title.center(total_width)
+            separator = "=" * total_width
 
-        report_lines.append(separator)
-        report_lines.append(title_line)
-        report_lines.append(separator)
+            report_lines.append(separator)
+            report_lines.append(title_line)
+            report_lines.append(separator)
 
-        for label, value in zip(labels, values):
-            line = f"{label:<{max_label_len}}  :  {value:>{max_value_len}}"
-            report_lines.append(line)
+            for label, value in zip(labels, values):
+                line = f"{label:<{max_label_len}}  :  {value:>{max_value_len}}"
+                report_lines.append(line)
 
-        report_lines.append(separator)
+            report_lines.append(separator)
 
-        # Unione e stampa
-        report = "\n".join(report_lines)
-        print(report)
-
-    # costruisco dei punti x su cui valutare la retta del fit              
-    xmin = float(_np.min(x)) 
-    xmax = float(_np.max(x))
-    xmin_plot = xmin-.12*(xmax-xmin)
-    xmax_plot = xmax+.12*(xmax-xmin)
+            # Unione e stampa
+            report = "\n".join(report_lines)
+            print(report)
+             
+    xmin_plot = x.min() - .12 * (x.max() - x.min())
+    xmax_plot = x.max() + .12 * (x.max() - x.min())
 
     x1 = _np.linspace(xmin_plot, xmax_plot, 500)
     y_fit_cont = f(x1, *popt)
 
     if y_err is not None:
 
-        if norm == True:
+        if norm is True:
             bar1 = _np.repeat(1, len(x))
             bar2 = resid_norm
             dash = _np.repeat(confidence, len(x1))
@@ -1901,32 +2263,26 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 
-    if residuals == True and y_err is not None:
+    if residuals is True and y_err is not None:
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
         axs = gs.subplots(sharex=True)
-        # axs = gs.subplots()
-        # Aggiungi linee di riferimento
         axs[0].axhline(0., ls='--', color='0.7', lw=0.8)
         axs[0].errorbar(x, bar2, bar1, ls='', color='gray', lw=1.15)
         axs[0].plot(x, bar2, color='k', drawstyle='steps-mid', lw=1.15)
         if norm == True:
-            axs[0].plot(x1, dash, ls='dotted', color='crimson', lw=1.5)
-            axs[0].plot(x1, -dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x1, dash, ls='dotted', color='crimson', lw=1.6)
+            axs[0].plot(x1, -dash, ls='dotted', color='crimson', lw=1.6)
         else:
-            axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.5)
-            axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.5)
+            axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.6)
+            axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.6)
         axs[0].set_ylim(-_np.nanmean(3 * dash / 2), _np.nanmean(3 * dash / 2))
 
-        # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
-                # Imposta limiti se forniti
-        #axs[0].set_xlim(x.min(), x.max())
     else: 
         gs = fig.add_gridspec(2, hspace=0, height_ratios=[0, 1])
         axs = gs.subplots(sharex=True)
-        #axs = gs.subplots()
-        axs[0].remove()  # Rimuovi axs[0], axs[1] rimane valido
+        axs[0].remove()
 
     if showlegend and y_err is not None:
         label = f"Best fit\n$\\chi^2/\\text{{dof}}{_chi2_str}$\n{pval_str}"
@@ -1935,7 +2291,7 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
 
     axs[1].plot(x1, y_fit_cont, color="blue", ls="-", linewidth=0.8, label = label)
 
-    if confidencerange == True and y_err is not None:
+    if confidencerange is True and y_err is not None:
         axs[1].fill_between(x1, y1_plus_1sigma, y1_minus_1sigma,  
                             where=(y1_plus_1sigma > y1_minus_1sigma), color='blue', alpha=0.3, edgecolor='none', label="Confidence interval")
 
@@ -1965,12 +2321,11 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
     if ylim and len(ylim) == 2:
         axs[1].set_ylim(ylim)
 
-    if legendloc == None:
+    if legendloc is None:
         axs[1].legend()
     else:
         axs[1].legend(loc = legendloc)
     
-    # Gestione delle scale logaritmiche
     if log == "x":
         axs[1].set_xscale("log")
         if residuals:

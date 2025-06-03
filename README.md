@@ -75,14 +75,14 @@ The `labtoolbox` package is organized into multiple submodules, each dedicated t
 
 | Subpackage              | Description                                                                 |
 |-------------------------|-----------------------------------------------------------------------------|
-| `fit`        | Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods. |
 | `linalg`     | Tools for linear algebra operations. |
 | `numerical`  | ... |
 | `optics`     | ... |
 | `signals`    | Signal analysis tools for laboratory experiments, featuring frequency domain analysis and post-processing of acquired data. |
-| `stats`      | Statistical tools for experimental data analysis, including generation of synthetic datasets, histogram construction, outlier removal, residual analysis, and likelihood/posterior computation for parametric models. |
-| `uncertainty`| Methods for estimating and propagating uncertainties in experimental contexts, allowing quantification of how input errors affect model outputs. |
+| `stats`      | Statistical tools for linear and non-linear curve fittin, experimental data analysis, including histogram construction, residual analysis, and likelihood/posterior computation for parametric models. |
 | `utils`      | A collection of helper functions for tasks like data formatting and general-purpose utilities used throughout the package. |
+<!-- | `fit`        | Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods. | -->
+<!-- | `uncertainty`| Methods for estimating and propagating uncertainties in experimental contexts, allowing quantification of how input errors affect model outputs. | -->
 
 ## Documentation
 
