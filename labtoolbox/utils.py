@@ -1,6 +1,7 @@
 import math as _math
 import warnings as _warnings 
 import numpy as _np
+from typing import Callable
 
 # --------------------------------------------------------------------------------
 
@@ -227,7 +228,7 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
 
     # If columns have different lengths, pad the shorter ones
     if len(set(lengths)) != 1:
-        _warnings.warn("Columns in 'data' have different lengths. Padding shorter columns with empty values.")
+        warn("Columns in 'data' have different lengths. Padding shorter columns with empty values.")
         for i, col in enumerate(data):
             if len(col) < max_length:
                 pad_value = _np.nan if _np.issubdtype(col.dtype, _np.number) else None
@@ -276,7 +277,7 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
         f.write("\\end{table}\n")
     
 def noise(n, std):
-    _warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
     from .stats import samples
     return samples(n, 'normal', mu = 0, sigma = std)
 
@@ -363,3 +364,105 @@ def convert(value, from_unit: str, to_unit: str):
                 raise ValueError(f"Invalid unit specified for item: {e}")
 
         return _np.array(converted_values)
+
+def genspace(start: float, stop: float, num: int, f: Callable[[float], float], 
+             endpoint: bool = True) -> _np.ndarray:
+    """
+    Generate an array of points with spacing determined by a callable function.
+
+    Similar to numpy.linspace, but the spacing between points is defined by the function f(x),
+    which specifies the density of points.
+
+    Parameters
+    ----------
+        start : float
+            The starting value of the sequence.
+        stop : float
+            The end value of the sequence.
+        num : int
+            Number of points to generate. Must be positive.
+        f : callable
+            A function f(x) that defines the density of points. Must take a float and return a
+            positive float. Higher values of f(x) result in denser points around x.
+        endpoint : bool, optional
+            If True, stop is the last point. Otherwise, it is excluded. Defaults to True.
+
+    Returns
+    -------
+        numpy.ndarray
+            A 1D array of num points from start to stop, spaced according to func.
+
+    Examples
+    --------
+    >>> from special import genspace
+    >>> import numpy as np
+    >>> # Linear spacing (equivalent to np.linspace)
+    >>> x = genspace(0, 1, 5, lambda x: 1.0)
+    >>> print(x)  # [0.   0.25 0.5  0.75 1.  ]
+    >>> # Denser points near x=0 with f(x) = 1/x
+    >>> x = genspace(0.1, 1, 5, lambda x: 1/x)
+    >>> print(x)  # Points closer together near 0.1
+    """
+
+    from scipy.optimize import newton
+    from scipy.integrate import quad
+
+    # Validate inputs
+    if not isinstance(start, (int, float)) or not _np.isfinite(start):
+        raise TypeError("start must be a finite float.")
+    if not isinstance(stop, (int, float)) or not _np.isfinite(stop):
+        raise TypeError("stop must be a finite float.")
+    if not isinstance(num, int):
+        raise TypeError("num must be an integer.")
+    if num < 1:
+        raise ValueError("num must be at least 1.")
+    if not callable(f):
+        raise TypeError("f must be a callable function.")
+    if not isinstance(endpoint, bool):
+        raise TypeError("endpoint must be a boolean.")
+    if start == stop:
+        raise ValueError("start and stop cannot be equal.")
+
+    try:
+        # Normalize func to create cumulative distribution
+        def integrand(x: float) -> float:
+            val = f(x)
+            if not _np.isfinite(val) or val <= 0:
+                raise ValueError("'f' must return positive finite values.")
+            return val
+        
+        # Compute total integral for normalization
+        total_integral, _ = quad(integrand, start, stop)
+        if not _np.isfinite(total_integral) or total_integral <= 0:
+            raise ValueError("Integral of 'f' over [start, stop] must be positive and finite.")
+        
+        # Cumulative distribution F(x) = ∫_start^x f(t) dt / total_integral
+        def F(x: float) -> float:
+            integral, _ = quad(integrand, start, x)
+            return integral / total_integral
+        
+        # Generate uniform points in [0, 1]
+        if endpoint:
+            u = _np.linspace(0, 1, num)
+        else:
+            u = _np.linspace(0, 1 - 1/num, num)
+        
+        # Invert F to find points
+        points = _np.zeros(num)
+        points[0] = start
+        if num > 1:
+            for i in range(1, num):
+                # Use Newton-Raphson to solve F(x) = u[i]
+                def objective(x: float) -> float:
+                    return F(x) - u[i]
+                
+                # Initial guess: linear interpolation
+                x_guess = start + (stop - start) * u[i]
+                points[i] = newton(objective, x_guess, tol=1e-10, maxiter=100)
+        
+        if not _np.all(_np.isfinite(points)):
+            raise ValueError("Generated points contain non-finite values.")
+        return points
+    
+    except Exception as e:
+        raise ValueError(f"Error generating points: {str(e)}")

@@ -1,7 +1,7 @@
 import math as _math
 import numpy as _np
 import matplotlib.pyplot as _plt
-import warnings as _warnings
+from warnings import warn
 
 def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = "", verbose = True):
     """
@@ -201,7 +201,7 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = "", verbos
     return mean, sigma, skewness, kurtosis, p_value
 
 def analyze_residuals(*args, **kwargs):
-    _warnings.warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
+    warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
     return residuals(args, kwargs)
 
 def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False, verbose = True):
@@ -509,7 +509,7 @@ def samples(n, distribution='normal', **params):
     >>> samples(200, 'poisson', lam=3)
     array([...])
     """
-    _warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
 
     dist = distribution.lower()
     rng = _np.random.default_rng()
@@ -998,7 +998,15 @@ def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample
             Lower and upper confidence bands for each point `j`.
     """
 
-    from ._uncertainty_class import uncert_prop
+    try:
+        import seaborn as sns
+    except ImportError:
+        raise ImportError(
+            "The 'seaborn' package is not installed. "
+            "Please install it by running 'pip install seaborn'."
+        )
+
+    from ._helper import uncert_prop
 
     # --- Controllo func ---
     if not callable(func):
@@ -1307,7 +1315,7 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
                 raise TypeError(f"Elements of 'prior_bounds2[{i}]' must be a real numbers (int or float).")
 
     if len(x) <= 10 * len(p0_1) or len(x) <= 10 * len(p0_2):
-        _warnings.warn("The BIC approximation is only valid for sample size much larger than the number of parameters in the model. Results may be inaccurate.", Warning)
+        warn("The BIC approximation is only valid for sample size much larger than the number of parameters in the model. Results may be inaccurate.", Warning)
 
     if not (len(x) == len(y) == len(y_err)):
         raise ValueError("'x', 'y' and 'y_err' must have the same length.")
@@ -1396,7 +1404,7 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
 
     return lnB12, BIC1, BIC2
 
-def average(x, kind='arithmetic'):
+def mean(x, kind='arithmetic'):
     """
     Compute the mean of an i_nput scalar or numpy array, with the specified type of mean.
 
@@ -1422,14 +1430,9 @@ def average(x, kind='arithmetic'):
     result : float
         The computed mean of x, according to the specified type.
 
-    Raises
-    ------
-    ValueError
-        If x contains negative values when computing geometric, harmonic, or agm mean.
-        If kind is not a recognized string or float.
-
     Examples
     --------
+    >>> from labtoolbox.stats import mean
     >>> mean([1, 2, 3, 4], 'arithmetic')
     2.5
     >>> mean([1, 2, 3, 4], 'rms')

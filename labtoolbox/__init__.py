@@ -9,8 +9,9 @@ Submodules
 ----------
 ::
 
- numerical     --- 
+ numerical     --- Numerical analysis routines
  signals       --- Signal processing routines
+ special       --- Special mathematical functions
  stats         --- Statistical and probabilistic analysis
  utils         --- Utility functions
 
@@ -18,14 +19,15 @@ Public API in the LabToolbox namespace
 --------------------------------------
 ::
 
- PrintResult   --- Nicely formats numbers
+ PrintResult   --- Pretty-print numerical results with uncertainties
  convert       --- Units converter
- average       --- 
+ mean          --- Generalised means
+ genspace      --- Generalized linspace generator
 """
 
 # Public API
-from .utils import PrintResult, convert
-from .stats import average
+from .utils import PrintResult, convert, genspace
+from .stats import mean
 
 # Available submodules
 from . import signals
@@ -51,7 +53,8 @@ __all__ = [
     'special',
     'PrintResult',
     'convert',
-    'average',
+    'mean',
+    'genspace',
 ]
 
 # --- Version checker ---

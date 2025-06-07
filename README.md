@@ -61,6 +61,7 @@ LabToolbox relies on a set of well-established scientific Python libraries. When
 - **numpy** – fundamental package for numerical computing.
 - **scipy** – scientific and technical computing tools.
 - **matplotlib** – for plotting and data visualization.
+- **seaborn** – ???
 <!-- - **statsmodels** – statistical modeling and inference.
 - **emcee** – affine-invariant ensemble sampler for MCMC.
 - **corner** – corner plots for visualizing multidimensional distributions.
@@ -79,6 +80,7 @@ The `labtoolbox` package is organized into multiple submodules, each dedicated t
 | `numerical`  | ... |
 | `optics`     | ... |
 | `signals`    | Signal analysis tools for laboratory experiments, featuring frequency domain analysis and post-processing of acquired data. |
+| `special`    | ... |
 | `stats`      | Statistical tools for linear and non-linear curve fittin, experimental data analysis, including histogram construction, residual analysis, and likelihood/posterior computation for parametric models. |
 | `utils`      | A collection of helper functions for tasks like data formatting and general-purpose utilities used throughout the package. |
 <!-- | `fit`        | Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods. | -->

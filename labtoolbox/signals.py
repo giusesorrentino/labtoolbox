@@ -1,222 +1,534 @@
-import warnings as _warnings
 import numpy as _np
 import matplotlib.pyplot as _plt
+from warnings import warn
+from typing import Union, Tuple, Optional
 
-def fft(data, t = None, dt = None):
+def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]] = None,
+        dt: Optional[Union[float, Tuple[float, float]]] = None, oversample: int = 2
+        ) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray], Tuple[_np.ndarray, _np.ndarray, _np.ndarray]]:
     """
     Compute the Fast Fourier Transform (FFT) of a signal.
 
+    For 1D signals, supports both uniformly and non-uniformly sampled data using FFT or
+    Non-Uniform FFT (NUFFT). For 2D signals, supports only uniformly sampled data using
+    2D FFT applied along rows and columns.
+
     Parameters
     ----------
-    data : array-like
-        Input signal as a 1D NumPy array (real or complex).
-    t : array-like, optional
-        Time samples corresponding to the signal. If provided, must be a 1D NumPy
-        array of the same length as `data`, monotonically increasing, and uniformly
-        spaced. If None, only the FFT is returned unless `dt` is provided.
-    dt : float, optional
-        Time interval between samples. If provided, it is used to calculate frequency bins.
-        Ignored if `t` is also provided.
+    data : ndarray
+        Input signal as a 1D or 2D NumPy array (real or complex). For 1D, shape `(N,)`.
+        For 2D, shape `(N, M)`.
+    t : ndarray or tuple of ndarray, optional
+        Time samples:
+        - For 1D: 1D array of shape `(N,)`, monotonically increasing.
+        - For 2D: Tuple `(t1, t2)` where `t1` (shape `(N,)`) and `t2` (shape `(M,)`) are
+          1D arrays, monotonically increasing.
+        If `None`, only `X` is returned unless `dt` is provided. Defaults to `None`.
+    dt : float or tuple of float, optional
+        Time interval(s) for uniform sampling:
+        - For 1D: Single float `dt_interval`.
+        - For 2D: Tuple `(dt1, dt2)` for intervals along axes.
+        Ignored if `t` is provided. Used to calculate frequency bins if `t` is `None`.
+        Defaults to `None`.
+    oversample : int, optional
+        Oversampling factor for NUFFT interpolation in non-uniform 1D case. Must be >= 1.
+        Defaults to 2. Ignored for 2D data.
 
     Returns
     -------
-    X : numpy.array
-        The FFT of the input signal, a 1D complex array of the same length as `data`.
-    f : numpy.array, optional
-        The frequency bins (in Hz) corresponding to the FFT coefficients, returned
-        only if `t` or `dt` is provided. Same length as `data`.
-
-    Raises
-    ------
-    ValueError
-        If `t` is provided and:
-        - Has a different length than `data`.
-        - Is not monotonically increasing.
-        - Is not uniformly spaced (equispaced).
+    X : ndarray
+        The FFT or NUFFT of the input signal. For 1D, shape `(N,)`. For 2D, shape `(N, M)`.
+        Complex-valued.
+    f : ndarray, optional
+        For 1D: Frequency bins, shape `(N,)`. Returned only if `t` or `dt` is provided.
+    f1, f2 : ndarray, optional
+        For 2D: Frequency bins along axes 0 and 1, shapes `(N,)` and `(M,)`, respectively.
+        Returned only if `t` or `dt` is provided.
 
     Notes
     -----
-    - For lengths <= 16, a direct DFT is used.
-    - The FFT is computed using the Cooley-Tukey algorithm for power-of-2 lengths.
+    - For 1D uniform sampling with N <= 16, a direct DFT is used. For power-of-2 lengths,
+      the Cooley-Tukey FFT algorithm is used.
+    - For 1D non-uniform sampling, a NUFFT algorithm with Gaussian interpolation is used,
+      with O(N log N + M) complexity.
+    - For 2D signals, applies 1D FFTs along rows and columns for uniform sampling.
     """
-
     from ._helper import ispow2, fft_cooley_tukey, dft_direct
+    import scipy.fft as spf
 
-    data = _np.asarray(data)
-
-    if not (_np.issubdtype(data.dtype, _np.number)):
-        raise TypeError("'data' must contain only numeric types (int, float, or complex).")
-    
+    # Validate inputs
+    data = _np.asarray(data, dtype=complex)
+    if data.ndim not in (1, 2):
+        raise ValueError("'data' must be a 1D or 2D array.")
     if not _np.all(_np.isfinite(data)):
-            raise ValueError("'data' contains non-finite values (NaN or inf).")
+        raise ValueError("'data' contains non-finite values (NaN or inf).")
 
-    if t is not None:
-        t = _np.asarray(t)
-        if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
-            raise TypeError("'t' must contain only real numbers (int or float).")
-        
-        if t.size != data.size:
-            raise ValueError("'t' must have the same length as 'data'")
-        if not _np.all(_np.diff(t) > 0):
-            raise ValueError("'t' must be monotonically increasing")
-        if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
-            raise ValueError("'t' must be uniformly spaced (equispaced)")
+    if not isinstance(oversample, int) or oversample < 1:
+        raise TypeError("'oversample' must be a positive integer.")
 
-        if not _np.all(_np.isfinite(t)):
+    if data.ndim == 1:
+        N = len(data)
+        if N == 0:
+            warn("'data' is empty. Returning empty array.", UserWarning)
+            return _np.array([])
+        if N == 1:
+            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            return data, _np.array([0.0]) if (t is not None or dt is not None) else data
+
+        # Validate t for 1D
+        is_uniform = True
+        if t is not None:
+            t = _np.asarray(t, dtype=float)
+            if t.ndim != 1 or t.size != N:
+                raise ValueError("'t' must be a 1D array of length 'N' for 1D data.")
+            if not _np.all(_np.isreal(t)):
+                raise TypeError("'t' must contain only real numbers.")
+            if not _np.all(_np.isfinite(t)):
                 raise ValueError("'t' contains non-finite values (NaN or inf).")
-    else:
-        if not isinstance(dt, (int, float)):
-            raise TypeError("'dt' must be a real number (int or float).")
-        if dt <= 0:
-            raise ValueError("'dt' must be a positive scalar.")
+            if not _np.all(_np.diff(t) > 0):
+                raise ValueError("'t' must be monotonically increasing.")
+            # Check uniformity
+            if t.size > 1 and not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
+                warn("Non-uniform sampling detected. Using NUFFT algorithm.", UserWarning)
+                is_uniform = False
 
-    if data.size == 0:
-        _warnings.warn("'data' is an empty array. Returning and empty numpy.array.", UserWarning)
-        return _np.array([])
-    if data.size == 1:
-        _warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
-        return data
-    elif data.size <= 16:
-        X = dft_direct(data)
-    elif ispow2(data.size):
-        X = fft_cooley_tukey(data)
-    else:
-        M = int(2 ** _np.ceil(_np.log2(data.size)))
-        padded = _np.pad(data, (0, M - data.size), mode="constant")
-        X = fft_cooley_tukey(padded)
-        X = X[:data.size]
-    
-    # Determina dt e gestisci errori
-    if t is not None:
-        dt_final = (t[-1] - t[0]) / (t.size - 1) if t.size > 1 else 1.0
-    elif dt is not None:
-        dt_final = dt
-    else:
-        return X  # Nessuna informazione temporale disponibile
+        # Validate dt for 1D
+        if dt is not None:
+            if not isinstance(dt, (int, float)):
+                raise TypeError("'dt' must be a real number for 1D data.")
+            if not _np.isfinite(dt) or dt <= 0:
+                raise ValueError("'dt' must be a positive finite value.")
 
-    f = _np.fft.fftfreq(data.size, d=dt_final)
+        # 1D Uniform sampling
+        if is_uniform:
+            if N <= 16:
+                X = dft_direct(data)
+            elif ispow2(N):
+                X = fft_cooley_tukey(data)
+            else:
+                M = int(2 ** _np.ceil(_np.log2(N)))
+                padded = _np.pad(data, (0, M - N), mode="constant")
+                X = fft_cooley_tukey(padded)
+                X = X[:N]
 
-    # Controllo aliasing
-    spectrum_magnitude = _np.abs(X)
-    threshold = _np.max(spectrum_magnitude) * 0.05  # 5% del massimo
-    freq_components = _np.abs(f[spectrum_magnitude > threshold])
-    if freq_components.size > 0:
-        f_max = _np.max(freq_components)
-        fs = 1 / dt_final
-        if f_max >= fs / 2:
-            _warnings.warn(
-                f"Potential aliasing detected: the signal contains frequency components up to {f_max:.2g}, "
-                f"which exceeds the Nyquist frequency ({fs/2:.2g}) based on the current sampling rate. "
-                "Please consider increasing the sampling frequency or applying an anti-aliasing filter prior to sampling. "
-                "Proceeding may lead to distorted spectral analysis results."
-            )
+            # Determine dt and frequencies
+            if t is not None:
+                dt_final = (t[-1] - t[0]) / (N - 1) if N > 1 else 1.0
+            elif dt is not None:
+                dt_final = dt
+            else:
+                return X
 
-    # Riordina le frequenze e i coefficienti FFT
-    order = _np.argsort(f)
-    f_sorted = f[order]
-    X_sorted = X[order]
+            f = _np.fft.fftfreq(N, d=dt_final)
 
-    return X_sorted, f_sorted
+            # Check aliasing
+            spectrum_magnitude = _np.abs(X)
+            threshold = _np.max(spectrum_magnitude) * 0.05
+            freq_components = _np.abs(f[spectrum_magnitude > threshold])
+            if freq_components.size > 0:
+                f_max = _np.max(freq_components)
+                fs = 1 / dt_final
+                if f_max >= fs / 2:
+                    warn(
+                        f"Potential aliasing detected: the signal contains frequency components up to {f_max:.2g}, "
+                        f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
+                        "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
+                        UserWarning
+                    )
 
-def ifft(data, freq=None, df=None):
+            order = _np.argsort(f)
+            return X[order], f[order]
+
+        # 1D Non-uniform sampling: NUFFT
+        try:
+            points = t
+            M = N
+            t_min, t_max = points.min(), points.max()
+            if t_max == t_min:
+                raise ValueError("'t' must span a non-zero interval.")
+            points_norm = (points - t_min) / (t_max - t_min) - 0.5
+
+            # Generate frequencies
+            dt = _np.mean(_np.diff(points)) if N > 1 else 1.0
+            fs = 1.0 / dt
+            frequencies = _np.linspace(-fs / 2, fs / 2 - fs / M, M)
+
+            # Uniform grid for FFT
+            N_grid = oversample * max(N, M)
+            h = 1.0 / N_grid
+            grid = _np.linspace(-0.5, 0.5 - h, N_grid)
+
+            # Gaussian interpolation kernel
+            sigma = 2.0 / oversample
+            spread = int(6 * sigma * N_grid)
+            spread = max(1, spread // 2 * 2 + 1)
+            kernel = _np.exp(-_np.arange(-spread//2 + 1, spread//2 + 1)**2 / (2 * sigma**2))
+            kernel /= _np.sum(kernel)
+
+            # Interpolate to uniform grid
+            signal_grid = _np.zeros(N_grid, dtype=complex)
+            for n in range(N):
+                idx = int((points_norm[n] + 0.5) * N_grid)
+                for i in range(-spread//2 + 1, spread//2 + 1):
+                    j = (idx + i) % N_grid
+                    dist = (points_norm[n] - grid[j]) * N_grid
+                    signal_grid[j] += data[n] * _np.exp(-dist**2 / (2 * sigma**2))
+
+            # FFT on uniform grid
+            fft_grid = spf.fft(signal_grid)
+
+            # Interpolate to target frequencies
+            result = _np.zeros(M, dtype=complex)
+            freq_norm = frequencies / (t_max - t_min)
+            for m in range(M):
+                for i in range(N_grid):
+                    phase = _np.exp(-2j * _np.pi * freq_norm[m] * grid[i])
+                    result[m] += fft_grid[i] * phase * h
+
+            if not _np.all(_np.isfinite(result)):
+                raise ValueError("Computed NUFFT contains non-finite values.")
+
+            scaled_frequencies = frequencies * (t_max - t_min)
+            return result, scaled_frequencies
+
+        except Exception as e:
+            raise ValueError(f"Error computing NUFFT: {str(e)}")
+
+    else:  # 2D data
+        N, M = data.shape
+        if N == 0 or M == 0:
+            warn("'data' is empty. Returning empty array.", UserWarning)
+            return _np.array([])
+        if N == 1 and M == 1:
+            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            return data, _np.array([0.0]), _np.array([0.0]) if (t is not None or dt is not None) else data
+
+        # Validate t for 2D
+        t1, t2 = None, None
+        if t is not None:
+            if not isinstance(t, tuple) or len(t) != 2:
+                raise TypeError("'t' must be a tuple of two 1D NumPy arrays for 2D data.")
+            t1, t2 = _np.asarray(t[0], dtype=float), _np.asarray(t[1], dtype=float)
+            if t1.ndim != 1 or t2.ndim != 1 or t1.shape[0] != N or t2.shape[0] != M:
+                raise ValueError("'t1' and 't2' must be 1D arrays of lengths 'N' and 'M', respectively.")
+            if not _np.all(_np.isreal(t1)) or not _np.all(_np.isreal(t2)):
+                raise TypeError("'t1' and 't2' must contain only real numbers.")
+            if not _np.all(_np.isfinite(t1)) or not _np.all(_np.isfinite(t2)):
+                raise ValueError("'t1'or 't2' contains non-finite values (NaN or inf).")
+            if not _np.all(_np.diff(t1) > 0) or not _np.all(_np.diff(t2) > 0):
+                raise ValueError("'t1' and 't2' must be monotonically increasing.")
+
+        # Validate dt for 2D
+        if dt is not None:
+            if not isinstance(dt, tuple) or len(dt) != 2:
+                raise TypeError("'dt' must be a tuple of two floats for 2D data.")
+            dt1, dt2 = dt
+            if not isinstance(dt1, (int, float)) or not isinstance(dt2, (int, float)):
+                raise TypeError("'dt1' and 'dt2' must be real numbers.")
+            if not _np.isfinite(dt1) or not _np.isfinite(dt2) or dt1 <= 0 or dt2 <= 0:
+                raise ValueError("'dt1' and 'dt2' must be positive finite values.")
+
+        try:
+            # Initialize output
+            X = _np.zeros((N, M), dtype=complex)
+
+            # FFT along rows (axis 1, using t2)
+            for i in range(N):
+                row_t = t2 if t2 is not None else None
+                row_dt = dt2 if dt is not None else None
+                X[i, :], _ = fft(data[i, :], t=row_t, dt=row_dt, oversample=oversample)
+
+            # FFT along columns (axis 0, using t1)
+            X = X.T.copy()
+            for j in range(M):
+                col_t = t1 if t1 is not None else None
+                col_dt = dt1 if dt is not None else None
+                X[j, :], _ = fft(X[j, :], t=col_t, dt=col_dt, oversample=oversample)
+            X = X.T
+
+            # Compute frequencies
+            if t is not None:
+                dt1_final = (t1[-1] - t1[0]) / (N - 1) if t1 is not None and N > 1 else 1.0
+                dt2_final = (t2[-1] - t2[0]) / (M - 1) if t2 is not None and M > 1 else 1.0
+            elif dt is not None:
+                dt1_final, dt2_final = dt
+            else:
+                return X
+
+            f1 = _np.fft.fftfreq(N, d=dt1_final)
+            f2 = _np.fft.fftfreq(M, d=dt2_final)
+
+            # Check aliasing
+            spectrum_magnitude = _np.abs(X)
+            threshold = _np.max(spectrum_magnitude) * 0.05
+            freq_components = _np.abs(f1[_np.any(spectrum_magnitude > threshold, axis=1)])
+            if freq_components.size > 0:
+                f1_max = _np.max(freq_components)
+                fs1 = 1 / dt1_final
+                if f1_max >= fs1 / 2:
+                    warn(
+                        f"Potential aliasing detected on axis 0: the signal contains frequency components up to {f_max:.2g}, "
+                        f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
+                        "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
+                        UserWarning
+                    )
+            freq_components = _np.abs(f2[_np.any(spectrum_magnitude > threshold, axis=0)])
+            if freq_components.size > 0:
+                f2_max = _np.max(freq_components)
+                fs2 = 1 / dt2_final
+                if f2_max >= fs2 / 2:
+                    warn(
+                        f"Potential aliasing detected on axis 1: the signal contains frequency components up to {f_max:.2g}, "
+                        f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
+                        "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
+                        UserWarning
+                    )
+
+            order1, order2 = _np.argsort(f1), _np.argsort(f2)
+            X = X[order1][:, order2]
+            return X, f1[order1], f2[order2]
+
+        except Exception as e:
+            raise ValueError(f"Error computing FFT2: {str(e)}")
+
+def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]] = None,
+         df: Optional[Union[float, Tuple[float, float]]] = None, oversample: int = 2
+         ) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray], Tuple[_np.ndarray, _np.ndarray, _np.ndarray]]:
     """
     Compute the Inverse Fast Fourier Transform (IFFT) of a signal.
 
+    For 1D signals, supports both uniformly and non-uniformly sampled frequency data using
+    IFFT or Non-Uniform IFFT (NUIFFT). For 2D signals, supports only uniformly sampled data
+    using 2D IFFT applied along rows and columns.
+
     Parameters
     ----------
-    data : array-like
-        Input frequency domain signal as a 1D NumPy array (complex).
-    freq : array-like, optional
-        Frequency samples corresponding to the signal. Must be a 1D NumPy array
-        of the same length as `data`, monotonically increasing, and uniformly spaced.
-    df : float, optional
-        Frequency spacing (in Hz) of the input data. Used if `freq` is not provided.
-        If both `freq` and `df` are None, time bins are not returned.
+    data : ndarray
+        Input frequency domain signal as a 1D or 2D NumPy array (complex). For 1D, shape `(N,)`.
+        For 2D, shape `(N, M)`.
+    freq : ndarray or tuple of ndarray, optional
+        Frequency samples:
+        - For 1D: 1D array of shape `(N,)`, monotonically increasing.
+        - For 2D: Tuple `(f1, f2)` where `f1` (shape `(N,)`) and `f2` (shape `(M,)`) are
+          1D arrays, monotonically increasing.
+        If `None`, time bins are returned only if `df` is provided. Defaults to `None`.
+    df : float or tuple of float, optional
+        Frequency spacing(s) for uniform sampling:
+        - For 1D: Single float `df_interval`.
+        - For 2D: Tuple `(df1, df2)` for spacings along axes.
+        Ignored if `freq` is provided. Defaults to `None`.
+    oversample : int, optional
+        Oversampling factor for NUIFFT interpolation in non-uniform 1D case. Must be >= 1.
+        Defaults to 2. Ignored for 2D data.
 
     Returns
     -------
-    x : numpy.ndarray
-        The IFFT of the input signal, a 1D complex array of the same length as `data`.
-    t : numpy.ndarray, optional
-        The time bins (in seconds) corresponding to the IFFT coefficients, returned
-        only if `freq` or `df` is provided. Same length as `data`.
-
-    Raises
-    ------
-    ValueError
-        If `freq` is provided and:
-        - Has a different length than `data`.
-        - Is not monotonically increasing.
-        - Is not uniformly spaced (equispaced).
+    x : ndarray
+        The IFFT or NUIFFT of the input signal. For 1D, shape `(N,)`. For 2D, shape `(N, M)`.
+        Complex-valued.
+    t : ndarray, optional
+        For 1D: Time bins, shape `(N,)`. Returned only if `freq` or `df` is provided.
+    t1, t2 : ndarray, optional
+        For 2D: Time bins along axes 0 and 1, shapes `(N,)` and `(M,)`, respectively.
+        Returned only if `freq` or `df` is provided.
 
     Notes
     -----
-    - For lengths <= 16, a direct IDFT is used.
-    - For non-power-of-2 lengths, the signal is zero-padded to the next power of 2.
-    - The IFFT is computed using the Cooley-Tukey algorithm for power-of-2 lengths.
+    - For 1D uniform sampling with N <= 16, a direct IDFT is used. For power-of-2 lengths,
+      the Cooley-Tukey IFFT algorithm is used.
+    - For 1D non-uniform sampling, a NUIFFT algorithm with Gaussian interpolation is used,
+      with O(N log N + M) complexity.
+    - For 2D signals, applies 1D IFFTs along rows and columns for uniform sampling.
     """
-
     from ._helper import ispow2, idft_direct, ifft_cooley_tukey
+    import scipy.fft as spf
 
-    data = _np.asarray(data)
-
-    if not (_np.issubdtype(data.dtype, _np.number)):
-        raise TypeError("'data' must contain only numeric types (int, float, or complex).")
-    
+    # Validate inputs
+    data = _np.asarray(data, dtype=complex)
+    if data.ndim not in (1, 2):
+        raise ValueError("'data' must be a 1D or 2D array.")
     if not _np.all(_np.isfinite(data)):
-            raise ValueError("'data' contains non-finite values (NaN or inf).")
+        raise ValueError("'data' contains non-finite values (NaN or inf).")
 
-    if freq is not None:
-        freq = _np.asarray(freq)
+    if not isinstance(oversample, int) or oversample < 1:
+        raise TypeError("'oversample' must be a positive integer.")
 
-        if (not (_np.issubdtype(freq.dtype, _np.floating) or _np.issubdtype(freq.dtype, _np.integer))) or not _np.all(_np.isreal(freq)):
-            raise TypeError("'freq' must contain only real numbers (int or float).")
-        
-        if freq.size != data.size:
-                raise ValueError("'freq' must have the same length as 'data'")
-        if not _np.all(_np.diff(freq) > 0):
-            raise ValueError("'freq' must be monotonically increasing")
-        if not _np.allclose(_np.diff(freq), _np.diff(freq)[0], rtol=1e-5):
-            raise ValueError("'freq' must be uniformly spaced (equispaced)")
+    if data.ndim == 1:
+        N = len(data)
+        if N == 0:
+            warn("'data' is empty. Returning empty array.", UserWarning)
+            return _np.array([])
+        if N == 1:
+            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            return data, _np.array([0.0]) if (freq is not None or df is not None) else data
 
-        if not _np.all(_np.isfinite(freq)):
-                raise ValueError("'freq' contains non-finite values (NaN or inf).")
-        
-    else:
-        if not isinstance(df, (int, float)):
-            raise TypeError("'df' must be a real number (int or float).")
-        if df <= 0:
-            raise ValueError("'df' must be a positive scalar.")
-
-    if data.size == 0:
-        _warnings.warn("'data' is an empty array. Returning and empty numpy.array.", UserWarning)
-        return _np.array([])
-    if data.size == 1:
-        _warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
-        return data
-    elif data.size <= 16:
-        x = idft_direct(data)
-    elif ispow2(data.size):
-        x = ifft_cooley_tukey(data)
-    else:
-        M = int(2 ** _np.ceil(_np.log2(data.size)))
-        padded = _np.pad(data, (0, M - data.size), mode="constant")
-        x = ifft_cooley_tukey(padded)
-        x = x[:data.size]
-
-    if freq is not None or df is not None:
+        # Validate freq for 1D
+        is_uniform = True
         if freq is not None:
-            df_value = (freq[-1] - freq[0]) / (freq.size - 1) if freq.size > 1 else 1.0
-        else:
-            df_value = df
+            freq = _np.asarray(freq, dtype=float)
+            if freq.ndim != 1 or freq.size != N:
+                raise ValueError("'freq' must be a 1D array of length 'N' for 1D data.")
+            if not _np.all(_np.isreal(freq)):
+                raise TypeError("'freq' must contain only real numbers.")
+            if not _np.all(_np.isfinite(freq)):
+                raise ValueError("'freq' contains non-finite values (NaN or inf).")
+            if not _np.all(_np.diff(freq) > 0):
+                raise ValueError("'freq' must be monotonically increasing.")
+            # Check uniformity
+            if freq.size > 1 and not _np.allclose(_np.diff(freq), _np.diff(freq)[0], rtol=1e-5):
+                warn("Non-uniform frequency sampling detected. Using NUIFFT algorithm.", UserWarning)
+                is_uniform = False
 
-        # fs = 1 / df_value  # Frequenza di campionamento temporale
-        dt = 1 / (data.size * df_value)  # Intervallo di tempo (step)
-        t = _np.arange(0, data.size) * dt  # Array dei tempi
+        # Validate df for 1D
+        if df is not None:
+            if not isinstance(df, (int, float)):
+                raise TypeError("'df' must be a real number for 1D data.")
+            if not _np.isfinite(df) or df <= 0:
+                raise ValueError("'df' must be a positive finite value.")
 
-        return x, t
+        # 1D Uniform sampling
+        if is_uniform:
+            if N <= 16:
+                x = idft_direct(data)
+            elif ispow2(N):
+                x = ifft_cooley_tukey(data)
+            else:
+                M = int(2 ** _np.ceil(_np.log2(N)))
+                padded = _np.pad(data, (0, M - N), mode="constant")
+                x = ifft_cooley_tukey(padded)
+                x = x[:N]
 
-    return x
+            if freq is not None or df is not None:
+                df_value = (freq[-1] - freq[0]) / (N - 1) if freq is not None and N > 1 else df
+                dt = 1 / (N * df_value) if df_value is not None else 1.0
+                t = _np.arange(0, N) * dt
+                return x, t
+            return x
+
+        # 1D Non-uniform sampling: NUIFFT
+        try:
+            points = freq
+            M = N
+            f_min, f_max = points.min(), points.max()
+            if f_max == f_min:
+                raise ValueError("'freq' must span a non-zero interval.")
+            points_norm = (points - f_min) / (f_max - f_min) - 0.5
+
+            # Generate time points
+            df_value = _np.mean(_np.diff(points)) if N > 1 else 1.0
+            fs = 1.0 / df_value
+            times = _np.linspace(-fs / 2, fs / 2 - fs / M, M)
+
+            # Uniform grid for FFT
+            N_grid = oversample * max(N, M)
+            h = 1.0 / N_grid
+            grid = _np.linspace(-0.5, 0.5 - h, N_grid)
+
+            # Gaussian interpolation kernel
+            sigma = 2.0 / oversample
+            spread = int(6 * sigma * N_grid)
+            spread = max(1, spread // 2 * 2 + 1)
+            kernel = _np.exp(-_np.arange(-spread//2 + 1, spread//2 + 1)**2 / (2 * sigma**2))
+            kernel /= _np.sum(kernel)
+
+            # Interpolate to uniform grid
+            signal_grid = _np.zeros(N_grid, dtype=complex)
+            for n in range(N):
+                idx = int((points_norm[n] + 0.5) * N_grid)
+                for i in range(-spread//2 + 1, spread//2 + 1):
+                    j = (idx + i) % N_grid
+                    dist = (points_norm[n] - grid[j]) * N_grid
+                    signal_grid[j] += data[n] * _np.exp(-dist**2 / (2 * sigma**2))
+
+            # IFFT on uniform grid
+            ifft_grid = spf.ifft(signal_grid)
+
+            # Interpolate to target times
+            result = _np.zeros(M, dtype=complex)
+            time_norm = times / (f_max - f_min)
+            for m in range(M):
+                for i in range(N_grid):
+                    phase = _np.exp(2j * _np.pi * time_norm[m] * grid[i])
+                    result[m] += ifft_grid[i] * phase * h
+
+            if not _np.all(_np.isfinite(result)):
+                raise ValueError("Computed NUIFFT contains non-finite values.")
+
+            scaled_times = times * (f_max - f_min)
+            return result, scaled_times
+
+        except Exception as e:
+            raise ValueError(f"Error computing NUIFFT: {str(e)}")
+
+    else:  # 2D data
+        N, M = data.shape
+        if N == 0 or M == 0:
+            warn("'data' is empty. Returning empty array.", UserWarning)
+            return _np.array([])
+        if N == 1 and M == 1:
+            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            return data, _np.array([0.0]), _np.array([0.0]) if (freq is not None or df is not None) else data
+
+        # Validate freq for 2D
+        f1, f2 = None, None
+        if freq is not None:
+            if not isinstance(freq, tuple) or len(freq) != 2:
+                raise TypeError("'freq' must be a tuple of two 1D NumPy arrays for 2D data.")
+            f1, f2 = _np.asarray(freq[0], dtype=float), _np.asarray(freq[1], dtype=float)
+            if f1.ndim != 1 or f2.ndim != 1 or f1.shape[0] != N or f2.shape[0] != M:
+                raise ValueError("'f1' and 'f2' must be 1D arrays of lengths 'N' and 'M', respectively.")
+            if not _np.all(_np.isreal(f1)) or not _np.all(_np.isreal(f2)):
+                raise TypeError("'f1' and 'f2' must contain only real numbers.")
+            if not _np.all(_np.isfinite(f1)) or not _np.all(_np.isfinite(f2)):
+                raise ValueError("'f1' or 'f2' contains non-finite values (NaN or inf).")
+            if not _np.all(_np.diff(f1) > 0) or not _np.all(_np.diff(f2) > 0):
+                raise ValueError("'f1' and 'f2' must be monotonically increasing.")
+
+        # Validate df for 2D
+        if df is not None:
+            if not isinstance(df, tuple) or len(df) != 2:
+                raise TypeError("'df' must be a tuple of two floats for 2D data.")
+            df1, df2 = df
+            if not isinstance(df1, (int, float)) or not isinstance(df2, (int, float)):
+                raise TypeError("'df1' and 'df2' must be real numbers.")
+            if not _np.isfinite(df1) or not _np.isfinite(df2) or df1 <= 0 or df2 <= 0:
+                raise ValueError("'df1' and 'df2' must be positive finite values.")
+
+        try:
+            # Initialize output
+            x = _np.zeros((N, M), dtype=complex)
+
+            # IFFT along rows (axis 1, using f2)
+            for i in range(N):
+                row_f = f2 if f2 is not None else None
+                row_df = df2 if df is not None else None
+                x[i, :], _ = ifft(data[i, :], freq=row_f, df=row_df, oversample=oversample)
+
+            # IFFT along columns (axis 0, using f1)
+            x = x.T.copy()
+            for j in range(M):
+                col_f = f1 if f1 is not None else None
+                col_df = df1 if df is not None else None
+                x[j, :], _ = ifft(x[j, :], freq=col_f, df=col_df, oversample=oversample)
+            x = x.T
+
+            # Compute times
+            if freq is not None:
+                df1_final = (f1[-1] - f1[0]) / (N - 1) if f1 is not None and N > 1 else 1.0
+                df2_final = (f2[-1] - f2[0]) / (M - 1) if f2 is not None and M > 1 else 1.0
+            elif df is not None:
+                df1_final, df2_final = df
+            else:
+                return x
+
+            dt1 = 1 / (N * df1_final)
+            dt2 = 1 / (M * df2_final)
+            t1 = _np.arange(0, N) * dt1
+            t2 = _np.arange(0, M) * dt2
+            return x, t1, t2
+
+        except Exception as e:
+            raise ValueError(f"Error computing IFFT2: {str(e)}")
 
 def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel = "", ylabel = "", xscale = 0, yscale = 0, xlim = [], ylim = []):
     """
@@ -247,12 +559,12 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel
     yscale : int, optional
         Scaling factor for the y-axis.
     xlim : tuple, optional
-        Limits for the x-axis, in the form (xmin, xmax). The values should
-        already be scaled with respect to `xscale`. If None or an empty tuple,
+        Limits for the x-axis, in the form `(xmin, xmax)`. The values should
+        already be scaled with respect to `xscale`. If `None` or an empty tuple,
         the default limits will be automatically determined from the data.
     ylim : tuple, optional
-        Limits for the y-axis, in the form (ymin, ymax). The values should
-        already be scaled with respect to `yscale`. If None or an empty tuple,
+        Limits for the y-axis, in the form `(ymin, ymax)`. The values should
+        already be scaled with respect to `yscale`. If `None` or an empty tuple,
         the default limits will be automatically determined from the data.
 
     Returns
@@ -338,7 +650,7 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel
     max_freq = order / (t[-1] - t[0])  # Maximum frequency in Fourier expansion
 
     if max_freq > f_nyquist:
-        _warnings.warn(
+        warn(
             f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
             f"which exceeds the Nyquist frequency ({f_nyquist:.2g}) based on the current sampling rate. "
             "Please consider increasing the sampling frequency or applying an anti-aliasing filter prior to sampling. "
@@ -504,7 +816,7 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
 
     if b < a:
         a, b = b, a
-        _warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+        warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
 
     if a == b:
         raise ValueError("'a' must be not equal to 'b'.")
@@ -569,213 +881,6 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     _plt.legend()
 
     return f_original, f_approx, a0, a_n, b_n
-
-def psd(data, t = None, plot = True, spectrogram = False, log = None, logcs = False, psd_unit = None, time_unit = "s", freq_unit = "Hz", color = "k"):
-    """
-    Compute the Power Spectral Density (PSD) of a signal using the FFT.
-
-    Parameters
-    ----------
-    data : numpy.array
-        Input signal as a 1D NumPy array (real or complex).
-    t : numpy.array, optional
-        Time samples corresponding to the signal. If provided, must be a 1D NumPy
-        array of the same length as `data`, monotonically increasing, and uniformly
-        spaced. Units are specified by `time_unit`. If None, only the PSD is returned
-        without frequencies.
-    plot : bool, optional
-        Whether to plot the PSD or spectrogram.
-    spectrogram : bool, optional
-        If True, compute and plot a spectrogram (time-frequency representation).
-        Requires `t` to be provided.
-    log : str, optional
-        If set to 'x' or 'y', the corresponding axis is plotted on a logarithmic scale;
-        if 'xy', both axes. Default is `None`.
-    logcs : bool, optional
-        If `True` (and `spectrogram = True`), the color scale is set to logarithmic.
-        Default is `False`.
-    psd_unit : str, optional
-        Unit of the power spectral density (e.g., V^2/Hz). Default is `None`.
-    time_unit : str, optional
-        Unit of time for `t` (e.g., 's' for seconds, 'ms' for milliseconds).
-        Default is `'s'`.
-    freq_unit : str, optional
-        Unit of frequency for the frequency axis (e.g., 'Hz', 'kHz').
-        Default is `'Hz'`.
-    color : str, optional
-        Color passed to `matplotlib.pyplot.plot` when plotting the PSD. Default is `k` (black).
-
-    Returns
-    -------
-    S : numpy.ndarray
-        The PSD of the input signal, a 1D real array of length `floor(N/2) + 1`
-        (positive frequencies only).
-    freqs : numpy.ndarray
-        The frequency bins (in Hz) corresponding to the FFT coefficients, returned
-        only if `t` is provided. Same length as `S`.
-
-    Raises
-    ------
-    ValueError
-        If `t` is provided and:
-        - Has a different length than `data`.
-        - Is not monotonically increasing.
-        - Is not uniformly spaced (equispaced).
-        If `log` is not one of 'x', 'y', 'xy', 'cs', or None.
-    """
-
-    from matplotlib.colors import LogNorm
-
-    data = _np.asarray(data)
-    if t is not None:
-        t = _np.asarray(t)
-
-    # --- Validazioni iniziali ---
-    if log is not None and log not in ("x", "y", "xy", "cs"):
-        raise ValueError("'log' must be one of: 'x', 'y', 'xy', 'cs' or None.")
-    
-    if logcs and not spectrogram:
-        _warnings.warn("'logcs = True' has no effect unless 'spectrogram = True'.", RuntimeWarning)
-    
-    if spectrogram and t is None:
-        raise ValueError("Parameter 't' must be provided if 'spectrogram = True'.")
-    
-    if logcs and t is None:
-        _warnings.warn("'logcs = True' requires 't' to be defined.", RuntimeWarning)
-
-    if data.size == 0:
-        return _np.array([]), _np.array([])
-
-    if psd_unit == None or psd_unit == "":
-        label_psd = f"Power Spectral Density"
-    else:
-        label_psd = f"Power Spectral Density [{psd_unit}]"
-
-    # --- Calcolo FFT e frequenze ---
-    X, freqs = fft(data, t)
-    
-    N = data.size
-    S = _np.abs(X)**2
-    # S = S[:N//2 + 1]       # Frequenze positive
-    # freqs = freqs[:N//2 + 1]
-
-    # --- Calcolo fs e normalizzazione ---
-    fs = 1.0
-    if t is not None:
-        if t.size != N:
-            raise ValueError("'t' must have the same length as 'data'.")
-        if not _np.all(_np.diff(t) > 0):
-            raise ValueError("'t' must be strictly increasing.")
-        if not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
-            raise ValueError("'t' must be uniformly spaced.")
-        dt = (t[-1] - t[0]) / (N - 1)
-        fs = 1.0 / dt
-
-    # S[1:] *= 2 / (fs * N)   # Per frequenze non-DC
-    # S[0] /= (fs * N)        # Per frequenza zero
-
-    # --- Plot se richiesto ---
-    if plot and t is not None:
-        if spectrogram:
-            # Parametri automatici
-            N_total = data.size
-            fs = 1.0 / (t[1] - t[0])
-            window_size = min(512, N_total // 20)
-            step = window_size // 4
-
-            t_spec = []
-            S_list = []
-
-            for start in range(0, N_total - window_size + 1, step):
-                stop = start + window_size
-                seg = data[start:stop]
-                seg_t = t[start:stop]
-                X = fft(seg, t=None)
-                N = seg.size
-                fs_seg = 1.0 / (seg_t[1] - seg_t[0])
-                freqs_full = _np.fft.fftfreq(N, d=1/fs_seg)
-                pos_mask = freqs_full >= 0
-                freqs = freqs_full[pos_mask][:N//2 + 1]
-                S_seg = _np.abs(X)[pos_mask][:N//2 + 1] ** 2
-                S_seg[1:] *= 2 / (fs_seg * N)
-                S_seg[0] /= (fs_seg * N)
-                S_list.append(S_seg)
-                t_spec.append(_np.mean(seg_t))
-
-            S_array = _np.array(S_list).T
-            t_spec = _np.array(t_spec)
-
-            if not _np.all(_np.diff(t_spec) > 0):
-                raise ValueError("'t_spec' is not monotonically increasing.")
-            if not _np.all(_np.diff(freqs) > 0):
-                raise ValueError("'freqs' is not monotonically increasing.")
-
-            fig, ax = _plt.subplots()
-            if log in ("x", "xy"):
-                ax.set_xscale("log")
-            if log in ("y", "xy"):
-                ax.set_yscale("log")
-
-            if logcs:
-                norm = LogNorm(vmin=S_array[S_array > 0].min(), vmax=S_array.max())
-            else:
-                norm = None
-
-            T, F = _np.meshgrid(t_spec, freqs)
-            t_edges = _np.concatenate([t_spec - _np.diff(t_spec, append=t_spec[-1])/2, [t_spec[-1] + (t_spec[-1] - t_spec[-2])/2]])
-            f_edges = _np.concatenate([freqs - _np.diff(freqs, append=freqs[-1])/2, [freqs[-1] + (freqs[-1] - freqs[-2])/2]])
-            if logcs:
-                pcm = ax.pcolormesh(t_edges, f_edges, S_array, shading='auto', cmap='plasma', norm=norm)
-            else:
-                pcm = ax.pcolormesh(t_edges, f_edges, S_array, shading='auto', cmap='plasma', norm=None)
-            fig.colorbar(pcm, ax=ax, label=label_psd, pad = 0)
-            # --- Grafico standard della PSD ---
-            # Gestione dei limiti per evitare problemi con logscale
-            if log in ("x", "xy"):
-                t_mask = t_spec > 0  # Esclude tempi <= 0 solo se scala log su x
-                t_spec_filtered = t_spec[t_mask]
-                t_min = t_spec_filtered[0] if t_spec_filtered.size > 0 else t_spec[0]
-                t_max = t_spec_filtered[-1] if t_spec_filtered.size > 0 else t_spec[-1]
-            else:
-                t_min = t_spec[0]
-                t_max = t_spec[-1]
-
-            if log in ("y", "xy"):
-                f_mask = freqs > 0  # Esclude frequenze <= 0 solo se scala log su y
-                freqs_filtered = freqs[f_mask]
-                f_min = freqs_filtered[0] if freqs_filtered.size > 0 else freqs[0]
-                f_max = freqs_filtered[-1] if freqs_filtered.size > 0 else freqs[-1]
-            else:
-                f_min = freqs[0]
-                f_max = freqs[-1]
-
-            # Imposta i limiti degli assi
-            ax.set_xlim(t_min, t_max)
-            ax.set_ylim(f_min, f_max)
-            ax.set_xlabel(f"Time [{time_unit}]")
-            ax.set_ylabel(f"Frequency [{freq_unit}]")
-        else:
-            # --- Grafico standard della PSD ---
-            mask = freqs > 0 if log in ("x", "xy", "y") else slice(None)
-            f_plot = freqs[mask]
-            S_plot = S[mask]
-
-            if log in ("x", "xy"):
-                _plt.xscale("log")
-
-            if log in ("y", "xy"):
-                _plt.yscale("log")
-
-            _plt.plot(f_plot, S_plot, lw = 0.8, color = color)
-
-            if f_plot.size > 0:
-                _plt.xlim(f_plot[0], f_plot[-1])
-            _plt.xlabel(f"Frequency [{freq_unit}]")
-            _plt.ylabel(label_psd)
-
-    if t is not None:
-        return S, freqs
-    return S
 
 def harmonic(t, y, prominence = 0.05, n_max = None, verbose = True):
     """
@@ -928,7 +1033,7 @@ def decompose(t, y, freqs, verbose = True):
     y : array-like
         Signal samples.
     freqs : array like
-        Frequencies (Hz) of the components to extract.
+        Frequencies of the components to extract.
     verbose : bool, optional
         If `True`, prints a formatted table of the components.
 
@@ -1033,160 +1138,138 @@ def decompose(t, y, freqs, verbose = True):
 
     return components
 
-def convolve(a, v, mode='full', use_fft=True, axis=-1):
-    """
-    Compute the discrete, linear convolution of two input arrays with optional FFT acceleration.
-
-    Parameters
-    ----------
-    a : array-like
-        First input array.
-    v : array-like
-        Second input array (the filter or kernel).
-    mode : {'full', 'valid', 'same'}, optional
-        Indicates the size of the output:
-        - 'full': (default) return the full convolution.
-        - 'same': return output of the same size as `a`.
-        - 'valid': return only those parts where `v` fully overlaps `a`.
-    use_fft : bool, optional
-        If True, use FFT-based convolution when it is more efficient.
-        For small arrays, direct method is used.
-    axis : int, optional
-        Axis along which to perform the convolution.
-
-    Returns
-    -------
-    output : ndarray
-        Convolution of `a` with `v`, along the specified axis.
-
-    Raises
-    ------
-    ValueError
-        If `mode` is invalid or inputs are not broadcastable.
-
-    Notes
-    -----
-    This function extends `np.convolve` by supporting n-dimensional input along a specific axis,
-    automatic dispatch between FFT and direct convolution, and better handling of numeric types.
-    """
-    from scipy.signal import fftconvolve
-
-    a = _np.asarray(a)
-    v = _np.asarray(v)
-
-    if not (_np.issubdtype(a.dtype, _np.number)):
-        raise TypeError("'a' must contain only numeric types (int, float, or complex).")
-
-    if not (_np.issubdtype(b.dtype, _np.number)):
-        raise TypeError("'b' must contain only numeric types (int, float, or complex).")
-    
-    if not _np.all(_np.isfinite(a)):
-        raise ValueError("'a' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(b)):
-        raise ValueError("'b' contains non-finite values (NaN or inf).")
-
-    if mode not in ('full', 'same', 'valid'):
-        raise ValueError("`mode` must be one of {'full', 'same', 'valid'}.")
-
-    if a.ndim == 1 and v.ndim == 1:
-        if use_fft and (a.size + v.size > 500):  # empirical threshold
-            return fftconvolve(a, v, mode=mode)
-        else:
-            return _np.convolve(a, v, mode=mode)
-
-    # If axis is not last, move it to the end
-    a = _np.moveaxis(a, axis, -1)
-    result_shape = list(a.shape)
-    result_shape[-1] = {
-        'full': a.shape[-1] + v.shape[-1] - 1,
-        'same': a.shape[-1],
-        'valid': max(a.shape[-1] - v.shape[-1] + 1, 0)
-    }[mode]
-
-    output = _np.empty(result_shape, dtype=_np.result_type(a, v))
-    it = _np.nditer(a[..., 0], flags=['multi_index'])
-
-    for _ in it:
-        idx = it.multi_index
-        slice_a = a[idx + (slice(None),)]
-        if use_fft and (slice_a.size + v.size > 500):
-            output[idx + (slice(None),)] = fftconvolve(slice_a, v, mode=mode)
-        else:
-            output[idx + (slice(None),)] = _np.convolve(slice_a, v, mode=mode)
-
-    return np.moveaxis(output, -1, axis)
-
-def envelope(signal, method='hilbert', mode='upper', filter_size=31, fs=1.0):
+def envelope(signal: _np.ndarray, 
+             method: str = 'peaks', 
+             mode: str = 'upper', 
+             filter_size: int = 31, 
+             fs: float = 1.0, 
+             remove_mean: bool = False) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]:
     """
     Compute the envelope of a 1D real-valued signal.
 
     Parameters
     ----------
-    signal : array_like
-        The input real-valued signal.
-    method : {'hilbert', 'abs_filt'}, optional
-        The method to compute the envelope:
-        - 'hilbert': uses the analytic signal via the Hilbert transform.
-        - 'abs_filt': uses |signal| filtered with a moving average or median.
-    mode : {'upper', 'lower', 'both'}, optional
-        Select which envelope to return:
-        - 'upper': the upper envelope (default).
-        - 'lower': the lower envelope.
-        - 'both' : returns a tuple (upper, lower).
-    filter_size : int, optional
-        Size of the smoothing filter (only used for 'abs_filt' method). Must be odd.
-    fs : float, optional
-        Sampling frequency (only relevant for some future extensions or plotting).
+        signal : array_like
+            The input real-valued signal (1D array).
+        method : {'hilbert', 'peaks', 'adaptive'}, optional
+            The method to compute the envelope:
+            - 'hilbert': Uses the analytic signal via the Hilbert transform (best for bandpass signals).
+            - 'peaks': Interpolates a smooth curve through signal peaks (versatile for general signals).
+            - 'adaptive': Applies a variable-width filter to |signal| (robust to noise).
+            Defaults to 'peaks'.
+        mode : {'upper', 'lower', 'both'}, optional
+            Select which envelope to return:
+            - 'upper': The upper envelope (default).
+            - 'lower': The lower envelope.
+            - 'both': Returns a tuple (upper, lower).
+        filter_size : int, optional
+            Size of the smoothing filter for 'adaptive' method. Must be odd and positive.
+            Defaults to 31.
+        fs : float, optional
+            Sampling frequency in Hz, used for frequency estimation in 'adaptive' method.
+            Defaults to 1.0.
+        remove_mean : bool, optional
+            If True, removes the signal mean before computing the envelope.
+            Defaults to False.
 
     Returns
     -------
-    envelope : ndarray or tuple of ndarrays
-        The computed envelope(s), depending on `mode`.
+        ndarray or tuple of ndarrays
+            The computed envelope(s):
+            - If mode='upper' or 'lower', returns a 1D array.
+            - If mode='both', returns a tuple (upper, lower).
 
     Notes
     -----
-    - The Hilbert method provides a mathematically correct envelope for bandpass signals.
-    - The abs_filt method is more robust to noise and useful when the signal is not analytic.
-    - The 'lower' envelope is the negative of the envelope of -signal.
-
-    References
-    ----------
-    - Oppenheim, A. V., & Schafer, R. W. (2010). Discrete-Time Signal Processing.
-    - Boashash, B. (1992). Estimating and interpreting the instantaneous frequency of a signal.
+    - The 'hilbert' method is mathematically rigorous for bandpass signals but may fail for broadband or non-oscillatory signals.
+    - The 'peaks' method is versatile, interpolating through local maxima/minima, and works well for most signals.
+    - The 'adaptive' method adjusts filter width based on local signal frequency, ideal for noisy or irregular signals.
+    - The lower envelope is computed as the negative of the upper envelope of -signal.
     """
-    from scipy.signal import hilbert, medfilt
-
-    signal = _np.asarray(signal)
-
+    from scipy.signal import hilbert, find_peaks, medfilt
+    from scipy.interpolate import UnivariateSpline
+    # Validate signal
+    signal = _np.asarray(signal, dtype=float)
     if signal.ndim != 1:
-        raise ValueError("Input signal must be one-dimensional.")
-    if filter_size % 2 == 0:
-        raise ValueError("filter_size must be an odd integer.")
-
-    if (not (_np.issubdtype(signal.dtype, _np.floating) or _np.issubdtype(signal.dtype, _np.integer))) or not _np.all(_np.isreal(signal)):
-        raise TypeError("'signal' must contain only real numbers (int or float).")
-    
+        raise ValueError("signal must be one-dimensional.")
+    if not _np.issubdtype(signal.dtype, _np.floating) or not _np.all(_np.isreal(signal)):
+        raise TypeError("signal must contain real numbers (float).")
     if not _np.all(_np.isfinite(signal)):
-            raise ValueError("'signal' contains non-finite values (NaN or inf).")
+        raise ValueError("signal contains non-finite values (NaN or inf).")
 
-    if method == 'hilbert':
-        analytic = hilbert(signal)
-        env = _np.abs(analytic)
+    # Validate method
+    valid_methods = ['hilbert', 'peaks', 'adaptive']
+    if method not in valid_methods:
+        raise ValueError(f"method must be one of {valid_methods}.")
 
-    elif method == 'abs_filt':
-        abs_sig = _np.abs(signal)
-        env = medfilt(abs_sig, kernel_size=filter_size)
+    # Validate mode
+    valid_modes = ['upper', 'lower', 'both']
+    if mode not in valid_modes:
+        raise ValueError(f"mode must be one of {valid_modes}.")
 
-    else:
-        raise ValueError("Invalid method. Choose 'hilbert' or 'abs_filt'.")
+    # Validate filter_size
+    if not isinstance(filter_size, int):
+        raise TypeError("filter_size must be an integer.")
+    if filter_size % 2 == 0 or filter_size < 1:
+        raise ValueError("filter_size must be a positive odd integer.")
 
-    if mode == 'upper':
-        return env
-    elif mode == 'lower':
-        return -envelope(-signal, method=method, mode='upper', filter_size=filter_size, fs=fs)
-    elif mode == 'both':
-        upper = env
-        lower = -envelope(-signal, method=method, mode='upper', filter_size=filter_size, fs=fs)
-        return upper, lower
-    else:
-        raise ValueError("Invalid mode. Choose 'upper', 'lower', or 'both'.")
+    # Validate fs
+    if not isinstance(fs, (int, float)) or fs <= 0:
+        raise ValueError("fs must be a positive number.")
+
+    # Validate remove_mean
+    if not isinstance(remove_mean, bool):
+        raise TypeError("remove_mean must be a boolean.")
+
+    # Remove mean if requested
+    if remove_mean:
+        signal = signal - _np.mean(signal)
+
+    try:
+        if method == 'hilbert':
+            # Compute envelope using Hilbert transform
+            analytic = hilbert(signal)
+            env = _np.abs(analytic)
+
+        elif method == 'peaks':
+            # Find peaks for upper envelope
+            peaks, _ = find_peaks(signal, distance=filter_size // 2)
+            if len(peaks) < 2:
+                # Fallback to constant envelope if too few peaks
+                env = _np.full_like(signal, _np.max(_np.abs(signal)))
+            else:
+                # Interpolate through peaks
+                x = _np.arange(len(signal))
+                spline = UnivariateSpline(peaks, signal[peaks], k=3, s=0, ext='const')
+                env = spline(x)
+                env = _np.maximum(env, 0)  # Ensure non-negative envelope
+
+        elif method == 'adaptive':
+            # Compute absolute signal
+            abs_sig = _np.abs(signal)
+            # Estimate local frequency using zero-crossings
+            zero_crossings = _np.where(_np.diff(_np.sign(signal)))[0]
+            if len(zero_crossings) > 1:
+                mean_period = _np.mean(_np.diff(zero_crossings))
+                adaptive_size = max(3, int(mean_period / 2) * 2 + 1)  # Ensure odd
+            else:
+                adaptive_size = filter_size
+            # Apply median filter with adaptive size
+            env = medfilt(abs_sig, kernel_size=adaptive_size)
+
+        # Handle mode
+        if mode == 'upper':
+            return env
+        elif mode == 'lower':
+            # Compute lower envelope as upper envelope of -signal
+            lower_env = envelope(-signal, method=method, mode='upper', 
+                                filter_size=filter_size, fs=fs, remove_mean=False)
+            return -lower_env
+        elif mode == 'both':
+            upper = env
+            lower_env = envelope(-signal, method=method, mode='upper', 
+                                filter_size=filter_size, fs=fs, remove_mean=False)
+            return upper, -lower_env
+
+    except Exception as e:
+        raise ValueError(f"Error computing envelope: {str(e)}")

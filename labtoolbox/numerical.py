@@ -1,5 +1,5 @@
 import numpy as _np
-import warnings as _warnings
+from warnings import warn
 from inspect import signature as _signature
 from typing import Callable, Tuple, List, Union, Optional
 
@@ -22,7 +22,7 @@ def boole(f, a, b, n = None, varname = None, max_step = 0.1, **kwargs):
         Name of the integration variable as expected by `f`. If not provided and `f` is a lambda
         or function with one positional argument, it is inferred automatically.
     max_step : float, optional
-        Maximum width of a Boole segment. Only used if `n` is not provided. Default is 0.1.
+        Maximum width of a Boole segment. Only used if `n` is not provided. Default is `0.1`.
     **kwargs
         Additional parameters passed to `f`.
 
@@ -42,10 +42,10 @@ def boole(f, a, b, n = None, varname = None, max_step = 0.1, **kwargs):
     
     if b < a:
         a, b = b, a
-        _warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+        warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
 
     if a == b:
-        _warnings.warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
+        warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
         return 0.0
 
     if n is not None and n < 1:
@@ -99,83 +99,6 @@ def boole(f, a, b, n = None, varname = None, max_step = 0.1, **kwargs):
 
     return (2 * h / 45) * total
 
-def BooleDiscrete(x, y):
-    """
-    Approximate the definite integral of discrete data using Boole's Rule.
-
-    Parameters
-    ----------
-    x : array-like
-        Array of x-coordinates (must be equispaced and sorted in ascending order).
-    y : array-like
-        Array of y-coordinates (function values at x points).
-
-    Returns
-    -------
-    float
-        Approximation of the definite integral using Boole's Rule.
-    """
-    x = _np.asarray(x)
-    y = _np.asarray(y)
-
-    if len(x) != len(y):
-        raise ValueError("'x' and 'y' must have the same length.")
-    if len(x) < 5:
-        raise ValueError("At least 5 points are required for Boole's Rule.")
-    
-    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
-            raise TypeError("'x' must contain only real numbers (int or float).")
-    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
-            raise TypeError("'y' must contain only real numbers (int or float).")
-    
-    if not _np.all(_np.isfinite(x)):
-                raise ValueError("'x' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(y)):
-                raise ValueError("'y' contains non-finite values (NaN or inf).")
-
-    if not _np.all(x[:-1] < x[1:]):
-        _warnings.warn("'x' was not sorted in ascending order; sorting automatically.", UserWarning)
-        sorted_indices = _np.argsort(x)
-        x = x[sorted_indices]
-        y = y[sorted_indices]
-    
-    h = x[1] - x[0]
-    if not _np.allclose(_np.diff(x), h):
-        raise ValueError("'x' must be equispaced.")
-
-    n = (len(x) - 1) // 4  # Number of Boole segments
-    # remainder = (len(x)-1) % 4
-
-    # if remainder != 0:
-    #     _warnings.warn(
-    #         f"The number of points ({len(x)}) does not satisfy the Boole's rule condition (4n + 1). "
-    #         f"Only the first {4 * n + 1} points will be used; {remainder} points will be ignored. "
-    #         "This may introduce a bias if the omitted data is significant.",
-    #         UserWarning
-    #     )
-
-    if n < 1 or (len(x) - 1) % 4 != 0:
-        _warnings.warn("Number of points does not satisfy 4n + 1; extending arrays with zeros.", UserWarning)
-        points_needed = 4 * (n + 1) + 1  # Prossimo numero valido di punti (4n + 1)
-        if n < 1:
-            points_needed = 5  # Minimo numero di punti per Boole
-        h = x[1] - x[0]  # Passo equispaziato
-        x_new = _np.linspace(x[0], x[0] + (points_needed - 1) * h, points_needed)
-        y_new = _np.zeros(points_needed)
-        y_new[:len(y)] = y  # Copia i valori originali, il resto rimane zero
-        x, y = x_new, y_new
-        n = (len(x) - 1) // 4  # Aggiorna n
-
-    # Apply Boole's Rule
-    total = 0.0
-    for i in range(n):
-        j = 4 * i
-        weights = _np.array([7, 32, 12, 32, 7])
-        segment = y[j:j+5]
-        total += _np.dot(weights, segment)
-
-    return (2 * h / 45) * total
-
 def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
     """
     Perform numerical integration using Romberg's method.
@@ -189,11 +112,11 @@ def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
     b : float
         Upper limit of integration.
     varname : str, optional
-        Name of the integration variable. If None, it's inferred automatically (only if `f` has one arg).
+        Name of the integration variable. If `None`, it's inferred automatically (only if `f` has one arg).
     tol : float, optional
-        Desired absolute tolerance. Default is 1e-8.
+        Desired absolute tolerance. Default is `1e-8`.
     max_iter : int, optional
-        Maximum number of Romberg iterations. Default is 10.
+        Maximum number of Romberg iterations. Default is `10`.
     **kwargs
         Additional keyword arguments passed to `f`.
 
@@ -213,10 +136,10 @@ def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
     
     if b < a:
         a, b = b, a
-        _warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+        warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
 
     if a == b:
-        _warnings.warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
+        warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
         return 0.0
     
     if not isinstance(tol, (int, float)) or tol <= 0:
@@ -254,7 +177,7 @@ def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
     for k in range(1, max_iter):
         h /= 2
         if h < _np.finfo(float).eps:
-            _warnings.warn(f"Step size h = {h} is below machine precision; stopping early.", UserWarning)
+            warn(f"Step size h = {h} is below machine precision; stopping early.", UserWarning)
             return R[k-1, k-1]
         # Composite Trapezoid Rule refinement
         subtotal = sum(eval_f(a + (2 * i - 1) * h) for i in range(1, 2**(k-1)+1))
@@ -269,109 +192,8 @@ def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
             return R[k, k]
 
     # If it gets here, it didn't converge
-    _warnings.warn(f"Romberg integration did not converge after {max_iter} iterations.", UserWarning)
+    warn(f"Romberg integration did not converge after {max_iter} iterations.", UserWarning)
     return R[max_iter - 1, max_iter - 1]
-
-def RombergDiscrete(x, y, tol=1e-8, max_iter=10):
-    """
-    Perform numerical integration on discrete data using Romberg's method.
-
-    Parameters
-    ----------
-    x : array-like
-        Array of x-coordinates (must be equispaced and sorted in ascending order).
-    y : array-like
-        Array of y-coordinates (function values at x points).
-    tol : float, optional
-        Desired absolute tolerance. Default is 1e-8.
-    max_iter : int, optional
-        Maximum number of Romberg iterations. Default is 10.
-
-    Returns
-    -------
-    float
-        Approximation of the definite integral.
-    """
-    x = _np.asarray(x)
-    y = _np.asarray(y)
-
-    if len(x) != len(y):
-        raise ValueError("'x' and 'y' must have the same length.")
-    
-    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
-            raise TypeError("'x' must contain only real numbers (int or float).")
-    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
-            raise TypeError("'y' must contain only real numbers (int or float).")
-    
-    if not _np.all(_np.isfinite(x)):
-                raise ValueError("'x' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(y)):
-                raise ValueError("'y' contains non-finite values (NaN or inf).")
-
-    if len(x) < 2:
-        raise ValueError("At least 2 points are required for Romberg integration.")
-    if tol <= 0:
-        raise ValueError("'tol' must be positive.")
-    if not isinstance(max_iter, int) or max_iter < 1:
-        raise ValueError("'max_iter' must be a positive integer.")
-
-    if not _np.all(x[:-1] < x[1:]):
-        _warnings.warn("'x' was not sorted in ascending order; sorting automatically.", UserWarning)
-        sorted_indices = _np.argsort(x)
-        x = x[sorted_indices]
-        y = y[sorted_indices]
-
-    h = x[1] - x[0]
-    if not _np.allclose(_np.diff(x), h):
-        raise ValueError("'x' must be equispaced.")
-
-    R = _np.zeros((max_iter, max_iter))
-
-    n_points = len(x)
-    max_k = int(_np.floor(_np.log2(n_points - 1)))
-    expected_points = 2**max_k + 1
-
-    if n_points != expected_points:
-        _warnings.warn(
-            f"The number of points ({n_points}) does not satisfy the Romberg condition (2^k + 1). "
-            f"Only the first {expected_points} points will be used; {n_points - expected_points} points will be ignored. "
-            "This may introduce a bias if the omitted data is significant.",
-            UserWarning
-        )
-        x = x[:expected_points]
-        y = y[:expected_points]
-        n_points = expected_points
-
-    a, b = x[0], x[-1]
-    h_initial = b - a
-
-    # First row: trapezoid rule
-    R[0, 0] = 0.5 * h_initial * (y[0] + y[-1])
-
-    for k in range(1, min(max_iter, max_k + 1)):
-        h = h_initial / (2**k)
-        if h < _np.finfo(float).eps:
-            _warnings.warn(f"Step size h = {h} is below machine precision; stopping early.", UserWarning)
-            return R[k-1, k-1]
-
-        # Composite Trapezoid Rule refinement
-        step = 2**(k-1)
-        indices = _np.arange(1, n_points, step)
-        if indices[-1] >= n_points:
-            indices = indices[:-1]
-        subtotal = sum(y[i] for i in indices)
-        R[k, 0] = 0.5 * R[k-1, 0] + h * subtotal
-
-        # Romberg extrapolation
-        for j in range(1, k + 1):
-            R[k, j] = (4**j * R[k, j-1] - R[k-1, j-1]) / (4**j - 1)
-
-        # Convergence check
-        if abs(R[k, k] - R[k-1, k-1]) < tol:
-            return R[k, k]
-
-    _warnings.warn(f"Romberg integration did not converge after {max_iter} iterations.", UserWarning)
-    return R[k-1, k-1]
 
 def newton(f, x0, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, **kwargs):
     """
@@ -388,11 +210,11 @@ def newton(f, x0, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, **k
     varname : str, optional
         Name of the variable with respect to which we take the root. Required if `f` has multiple arguments.
     tol : float, optional
-        Absolute tolerance for convergence. Default is 1e-10.
+        Absolute tolerance for convergence. Default is `1e-10`.
     maxiter : int, optional
-        Maximum number of iterations. Default is 50.
+        Maximum number of iterations. Default is `50`.
     dx : float, optional
-        Step size for numerical differentiation. Default is 1e-6.
+        Step size for numerical differentiation. Default is `1e-6`.
     **kwargs
         Additional keyword arguments passed to `f` (and fprime if provided).
 
@@ -400,11 +222,6 @@ def newton(f, x0, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, **k
     -------
     float
         Approximated root of the function.
-
-    Raises
-    ------
-    RuntimeError
-        If the method fails to converge within `maxiter` iterations.
     """
 
     if not callable(f):
@@ -474,12 +291,6 @@ def newton(f, x0, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, **k
 
     raise RuntimeError(f"Newton-Raphson did not converge after {maxiter} iterations.")
 
-from scipy.stats import qmc as _qmc
-
-class LebesgueIntegrationError(Exception):
-    """Custom exception for Lebesgue integration errors."""
-    pass
-
 def lebesgue(func: Callable[[float], float], 
              interval: Tuple[float, float], 
              num_samples: int = 10000, 
@@ -510,27 +321,30 @@ def lebesgue(func: Callable[[float], float],
         float or tuple
             The approximate value of the Lebesgue integral. If `return_error` is `True`, returns `(integral, error_estimate)`.
     """
+
+    from scipy.stats import qmc
+
     # Input validation
     if not callable(func):
-        raise LebesgueIntegrationError("The function 'func' must be callable.")
+        raise TypeError("The function 'func' must be callable.")
     if not isinstance(interval, (tuple, list)) or len(interval) != 2:
-        raise LebesgueIntegrationError("Interval must be a tuple of two floats (a, b).")
+        raise TypeError("'interval' must be a tuple of two floats (a, b).")
     a, b = interval
     if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
-        raise LebesgueIntegrationError("Interval bounds must be numeric.")
+        raise ValueError("Interval bounds must be numeric.")
     if a >= b:
-        raise LebesgueIntegrationError("Interval must satisfy a < b.")
+        raise ValueError("Interval must satisfy a < b.")
     if not isinstance(num_samples, int) or num_samples <= 0:
-        raise LebesgueIntegrationError("Number of samples must be a positive integer.")
+        raise ValueError("Number of samples must be a positive integer.")
     if indicator_func is not None and not callable(indicator_func):
-        raise LebesgueIntegrationError("The indicator function must be callable.")
+        raise TypeError("The indicator function must be callable.")
 
     # Compute the Lebesgue measure of the interval
     measure = b - a
 
     # Generate samples
     if use_quasi_mc:
-        sampler = _qmc.Sobol(d=1, scramble=True)
+        sampler = qmc.Sobol(d=1, scramble=True)
         samples = sampler.random(n=num_samples)
         points = a + (b - a) * samples[:, 0]
     else:
@@ -549,7 +363,7 @@ def lebesgue(func: Callable[[float], float],
 
         # Check for non-finite values
         if not _np.all(_np.isfinite(values)):
-            raise LebesgueIntegrationError("Function evaluations contain non-finite values.")
+            raise ValueError("Function evaluations contain non-finite values.")
 
         # Compute Monte Carlo estimate
         integral = measure * _np.mean(values)
@@ -562,9 +376,9 @@ def lebesgue(func: Callable[[float], float],
         
         return integral
     except Exception as e:
-        raise LebesgueIntegrationError(f"Error during integration: {str(e)}")
+        raise ValueError(f"Error during integration: {str(e)}")
 
-def lebesgue2(func: Callable[[float, float], float], 
+def dblebesgue(func: Callable[[float, float], float], 
               domain: Tuple[Tuple[float, float], Tuple[float, float]], 
               num_samples: int = 10000, 
               use_quasi_mc: bool = True,
@@ -594,27 +408,28 @@ def lebesgue2(func: Callable[[float, float], float],
         float or tuple
             The approximate value of the Lebesgue integral. If `return_error` is `True`, returns `(integral, error_estimate)`.
     """
+    from scipy.stats import qmc
     # Input validation
     if not callable(func):
-        raise LebesgueIntegrationError("The function 'func' must be callable.")
+        raise TypeError("The function 'func' must be callable.")
     if not isinstance(domain, (tuple, list)) or len(domain) != 2:
-        raise LebesgueIntegrationError("Domain must be a tuple of two intervals ([a, b], [c, d]).")
+        raise TypeError("Domain must be a tuple of two intervals ([a, b], [c, d]).")
     (a, b), (c, d) = domain
     if not all(isinstance(x, (int, float)) for x in [a, b, c, d]):
-        raise LebesgueIntegrationError("Domain bounds must be numeric.")
+        raise ValueError("Domain bounds must be numeric.")
     if a >= b or c >= d:
-        raise LebesgueIntegrationError("Domain intervals must satisfy a < b and c < d.")
+        raise ValueError("Domain intervals must satisfy a < b and c < d.")
     if not isinstance(num_samples, int) or num_samples <= 0:
-        raise LebesgueIntegrationError("Number of samples must be a positive integer.")
+        raise ValueError("Number of samples must be a positive integer.")
     if indicator_func is not None and not callable(indicator_func):
-        raise LebesgueIntegrationError("The indicator function must be callable.")
+        raise TypeError("The indicator function must be callable.")
 
     # Compute the Lebesgue measure of the domain
     measure = (b - a) * (d - c)
 
     # Generate samples
     if use_quasi_mc:
-        sampler = _qmc.Sobol(d=2, scramble=True)
+        sampler = qmc.Sobol(d=2, scramble=True)
         samples = sampler.random(n=num_samples)
         x_points = a + (b - a) * samples[:, 0]
         y_points = c + (d - c) * samples[:, 1]
@@ -635,7 +450,7 @@ def lebesgue2(func: Callable[[float, float], float],
 
         # Check for non-finite values
         if not _np.all(_np.isfinite(values)):
-            raise LebesgueIntegrationError("Function evaluations contain non-finite values.")
+            raise ValueError("Function evaluations contain non-finite values.")
 
         # Compute Monte Carlo estimate
         integral = measure * _np.mean(values)
@@ -648,7 +463,7 @@ def lebesgue2(func: Callable[[float, float], float],
         
         return integral
     except Exception as e:
-        raise LebesgueIntegrationError(f"Error during integration: {str(e)}")
+        raise ValueError(f"Error during integration: {str(e)}")
 
 def nlebesgue(func: Callable[[List[float]], float], 
               domain: List[Tuple[float, float]], 
@@ -678,23 +493,24 @@ def nlebesgue(func: Callable[[List[float]], float],
     Returns:
     ----------
         float or tuple
-            The approximate value of the Lebesgue integral. If `return_error` is `True`, returns `(integral, error_estimate)`.
+            The approximate value of the Lebesgue integral. If `return_error` is `True`, returns `(integral, error_estimate)`.  
     """
+    from scipy.stats import qmc
     # Input validation
     if not callable(func):
-        raise LebesgueIntegrationError("The function 'func' must be callable.")
+        raise TypeError("The function 'func' must be callable.")
     if not isinstance(domain, (list, tuple)) or not domain:
-        raise LebesgueIntegrationError("Domain must be a non-empty list of intervals.")
+        raise TypeError("Domain must be a non-empty list of intervals.")
     if not all(isinstance(interval, (tuple, list)) and len(interval) == 2 for interval in domain):
-        raise LebesgueIntegrationError("Each domain entry must be a tuple of two floats.")
+        raise ValueError("Each domain entry must be a tuple of two floats.")
     if not all(isinstance(x, (int, float)) for interval in domain for x in interval):
-        raise LebesgueIntegrationError("Domain bounds must be numeric.")
+        raise ValueError("Domain bounds must be numeric.")
     if not all(a < b for a, b in domain):
-        raise LebesgueIntegrationError("Each interval must satisfy a < b.")
+        raise ValueError("Each interval must satisfy a < b.")
     if not isinstance(num_samples, int) or num_samples <= 0:
-        raise LebesgueIntegrationError("Number of samples must be a positive integer.")
+        raise ValueError("Number of samples must be a positive integer.")
     if indicator_func is not None and not callable(indicator_func):
-        raise LebesgueIntegrationError("The indicator function must be callable.")
+        raise TypeError("The indicator function must be callable.")
 
     # Compute the Lebesgue measure of the domain
     measure = _np.prod([b - a for a, b in domain])
@@ -702,7 +518,7 @@ def nlebesgue(func: Callable[[List[float]], float],
     # Generate samples
     n_dims = len(domain)
     if use_quasi_mc:
-        sampler = _qmc.Sobol(d=n_dims, scramble=True)
+        sampler = qmc.Sobol(d=n_dims, scramble=True)
         samples = sampler.random(n=num_samples)
         points = _np.array([domain[i][0] + (domain[i][1] - domain[i][0]) * samples[:, i] for i in range(n_dims)]).T
     else:
@@ -721,7 +537,7 @@ def nlebesgue(func: Callable[[List[float]], float],
 
         # Check for non-finite values
         if not _np.all(_np.isfinite(values)):
-            raise LebesgueIntegrationError("Function evaluations contain non-finite values.")
+            raise ValueError("Function evaluations contain non-finite values.")
 
         # Compute Monte Carlo estimate
         integral = measure * _np.mean(values)
@@ -734,4 +550,109 @@ def nlebesgue(func: Callable[[List[float]], float],
         
         return integral
     except Exception as e:
-        raise LebesgueIntegrationError(f"Error during integration: {str(e)}")
+        raise ValueError(f"Error during integration: {str(e)}")
+
+def lagrange(f: Callable[[_np.ndarray], float], 
+                         constraints: List[Callable[[_np.ndarray], float]], 
+                         x0: _np.ndarray, 
+                         tol: float = 1e-6) -> Tuple[_np.ndarray, _np.ndarray]:
+    """
+    Solve a constrained optimization problem using Lagrange multipliers.
+
+    Find the extremum of f(x) subject to constraints g_i(x) = 0 for all i.
+
+    Parameters
+    ----------
+        f : callable
+            The objective function f(x), where x is a 1D numpy array.
+            Must return a scalar (float).
+        constraints : list of callables
+            List of constraint functions [g_1(x), ..., g_m(x)], where each g_i(x)
+            takes a 1D numpy array and returns a scalar (float).
+            Each g_i(x) = 0 defines a constraint.
+        x0 : array_like
+            Initial guess for the solution x, a 1D array of length n (number of variables).
+        tol : float, optional
+            Tolerance for the solver (used in scipy.optimize.fsolve).
+            Defaults to 1e-6.
+
+    Returns
+    -------
+        tuple of (ndarray, ndarray)
+            - x_opt: The optimal point x* (1D array of length n).
+            - lambda_opt: The Lagrange multipliers (1D array of length m, where m is the number of constraints).
+
+    Notes
+    -----
+    The solver may not converge for poorly conditioned problems or bad initial guesses.
+
+    Examples
+    --------
+    >>> from labtoolbox.numerical import lagrange
+    >>> import numpy as np
+    >>> # Minimize f(x, y) = x^2 + y^2 subject to x + y = 1
+    >>> f = lambda x: x[0]**2 + x[1]**2
+    >>> constraints = [lambda x: x[0] + x[1] - 1]
+    >>> x0 = np.array([0.5, 0.5])
+    >>> x_opt, lambda_opt = lagrange_multipliers(f, constraints, x0)
+    >>> print(x_opt, lambda_opt)  # Expected: x_opt ≈ [0.5, 0.5], lambda_opt ≈ [-1.0]
+    """
+
+    from scipy.optimize import fsolve, approx_fprime
+    
+    # Validate f
+    if not callable(f):
+        raise TypeError("f must be a callable function.")
+
+    # Validate constraints
+    if not isinstance(constraints, list) or not all(callable(g) for g in constraints):
+        raise TypeError("constraints must be a list of callable functions.")
+    if not constraints:
+        raise ValueError("constraints list cannot be empty.")
+
+    # Validate x0
+    x0 = _np.asarray(x0, dtype=float)
+    if x0.ndim != 1 or not _np.all(_np.isfinite(x0)):
+        raise ValueError("x0 must be a 1D array of finite values.")
+
+    # Validate tol
+    if not isinstance(tol, (int, float)) or tol <= 0 or not _np.isfinite(tol):
+        raise ValueError("tol must be a positive finite float.")
+
+    n = len(x0)  # Number of variables
+    m = len(constraints)  # Number of constraints
+
+    def system(vars: _np.ndarray) -> _np.ndarray:
+        """System of equations: ∇f = Σ λ_i ∇g_i, g_i = 0."""
+        x = vars[:n]  # Variables
+        lam = vars[n:]  # Lagrange multipliers
+        # Compute ∇f
+        grad_f = approx_fprime(x, f, epsilon=1e-8)
+        # Compute Σ λ_i ∇g_i
+        grad_g_sum = _np.zeros(n)
+        for i, g in enumerate(constraints):
+            grad_g = approx_fprime(x, g, epsilon=1e-8)
+            grad_g_sum += lam[i] * grad_g
+        # Equations: ∇f - Σ λ_i ∇g_i = 0
+        eq1 = grad_f - grad_g_sum
+        # Equations: g_i(x) = 0
+        eq2 = _np.array([g(x) for g in constraints])
+        return _np.concatenate([eq1, eq2])
+
+    # Initial guess: x0 for variables, zeros for multipliers
+    initial_guess = _np.concatenate([x0, _np.zeros(m)])
+
+    try:
+        # Solve the system
+        solution = fsolve(system, initial_guess, xtol=tol)
+        if not _np.all(_np.isfinite(solution)):
+            raise ValueError("Solver returned non-finite values.")
+        x_opt = solution[:n]
+        lambda_opt = solution[n:]
+        # Verify constraints
+        constraint_vals = _np.array([g(x_opt) for g in constraints])
+        if not _np.all(_np.abs(constraint_vals) < tol * 10):
+            raise ValueError("Solution does not satisfy constraints within tolerance.")
+        return x_opt, lambda_opt
+    except Exception as e:
+        raise ValueError(f"Error solving Lagrange multipliers: {str(e)}")
