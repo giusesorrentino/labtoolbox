@@ -1158,11 +1158,11 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
     y_err : array-like
         Uncertainties (standard deviations) on the observed data.
     f1 : callable
-        First model function to compare. Must have signature f(x, *params).
+        First model function to compare.
     p0_1 : list or array-like
         Initial guess for the parameters of the first model.
     f2 : callable
-        Second model function to compare. Must have signature f(x, *params).
+        Second model function to compare.
     p0_2 : list or array-like
         Initial guess for the parameters of the second model.
     burn : int, optional
@@ -1193,12 +1193,6 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
 
     Notes
     -----
-    The Bayes factor is estimated using the approximation:
-
-        ln(B12) = -0.5 x (BIC1 - BIC2)
-
-    which is valid under regularity conditions and large sample sizes.
-
     Interpretation of ln(B12):
 
         - ln B12 > 5            : Strong evidence for model 1
@@ -1548,8 +1542,9 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
             If `True`, residuals in the upper panel will be normalized.
         verbose : bool, optional
             If `True`, prints the output of `wls_fit` (or `ols_fit`) to the screen. Default is `False`.
-        summary : bool, optional
-            ...
+        summary : bool, optional  
+            If `True`, prints a formatted summary report of the fit, including  
+            reduced chi-square, p-value, and percentage of residuals within ±2σ.
 
     Returns
     ----------
@@ -1934,7 +1929,7 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
 def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", ylabel="y [uy]", xlim = [], ylim = [], showlegend = True, legendloc = None, 
-              bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True, verbose = True):
+              bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True, verbose = True, print_parameters = True):
     """
     General-purpose fit of multi-parameter functions, with an option to display residuals.
 
@@ -1986,8 +1981,12 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
             If `True`, adds an upper panel showing fit residuals.
         norm : bool, optional
             If `True`, residuals in the upper panel will be normalized.
-        verbose : bool, optional
-            If ...
+        verbose : bool, optional  
+            If `True`, prints a formatted summary report of the fit, including  
+            reduced chi-square, p-value, and percentage of residuals within ±2σ.
+        print_parameters : bool, optional  
+            If `True`, prints the best-fit parameters along with their standard uncertainties.
+
 
     Returns
     ----------
@@ -2109,32 +2108,33 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
     # Calcolo del chi-quadrato
     y_fit = f(x, *popt)
 
-    if y_err is not None:
-        # Stampa dei parametri con incertezze
-        for i in range(len(popt)):
+    if print_parameters:
+        if y_err is not None:
+            # Stampa dei parametri con incertezze
+            for i in range(len(popt)):
 
-            # Calcola l'esponente di sigma
-            exponent = int(_math.floor(_math.log10(abs(perr[i]))))
-            factor = 10**(exponent - 1)
-            rounded_sigma = (round(perr[i] / factor) * factor)
+                # Calcola l'esponente di sigma
+                exponent = int(_math.floor(_math.log10(abs(perr[i]))))
+                factor = 10**(exponent - 1)
+                rounded_sigma = (round(perr[i] / factor) * factor)
 
-            # Arrotonda la media
-            rounded_mean = round(popt[i], -exponent + 1) 
+                # Arrotonda la media
+                rounded_mean = round(popt[i], -exponent + 1) 
 
-            # Converte in stringa mantenendo zeri finali
-            fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
+                # Converte in stringa mantenendo zeri finali
+                fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
 
-            if popt[i] != 0:
-                nu = perr[i] / popt[i]
-                print(
-                    f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f}) [{_np.abs(nu) * 100:.2f}%]"
-                )
-            else:
-                print(f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f})")
-    else:
-        print(f"Parameter {i + 1} = {popt[i]:.2g}")
+                if popt[i] != 0:
+                    nu = perr[i] / popt[i]
+                    print(
+                        f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f}) [{_np.abs(nu) * 100:.2f}%]"
+                    )
+                else:
+                    print(f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f})")
+        else:
+            print(f"Parameter {i + 1} = {popt[i]:.2g}")
 
-    print()
+        print()
 
     # k = _np.sum((-1 <= resid_norm) & (resid_norm <= 1))
 

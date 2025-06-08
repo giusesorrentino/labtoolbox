@@ -38,7 +38,7 @@ cd labtoolbox
 pip install .
 ```
 
-As for now, the package is not [disponibile su] conda-foge if you are using Anaconda/Jupyter Notebook. If you still want to install LabToolbox, you can run (only the first time [non so se per ogni file .ipynb o basta una volta]) the following code in your firt cell:
+As of now, the package is not available on conda-forge. If you’re using Anaconda or Jupyter Notebook, you can still install `labtoolbox` by running the following code in the first cell of your notebook (only once per environment, not every time or for each `.ipynb` file):
 
 ```bash
 !pip install labtoolbox
@@ -49,10 +49,17 @@ and then you can import the library.
 ### Important Note
 
 As of version 3.1.0, the library must be imported using lowercase:
+
 ```python
 import labtoolbox
 ```
+
 The previous form with capitalization (`import LabToolbox`) is no longer supported.
+
+If you have already installed a previous version of the package, you may encounter an issue where only the old import works, while the new one fails. This is typically caused by residual files from the previous installation. To resolve this, navigate to your site-packages directory (where Python packages are installed), then either:
+
+-	Rename the old package folder (e.g., from `LabToolbox/` to `labtoolbox/`);
+- Delete the old folder along with any associated metadata directories (e.g., .egg-info) and reinstall the new version using `pip`.
 
 ## Dependencies
 
@@ -61,30 +68,30 @@ LabToolbox relies on a set of well-established scientific Python libraries. When
 - **numpy** – fundamental package for numerical computing.
 - **scipy** – scientific and technical computing tools.
 - **matplotlib** – for plotting and data visualization.
-- **seaborn** – ???
 <!-- - **statsmodels** – statistical modeling and inference.
 - **emcee** – affine-invariant ensemble sampler for MCMC.
 - **corner** – corner plots for visualizing multidimensional distributions.
 - **lmfit** – flexible curve-fitting with parameter constraints.
 - **astropy** – core astronomy library for Python. -->
 
-> **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9.6. Starting from version 3.0.0, it has been tested only on Python 3.13.3. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.6.
+> **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9.6. Starting from version 3.0.0, it has been tested only on Python 3.11. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.6.
 
 ## Library Structure
 
 The `labtoolbox` package is organized into multiple submodules, each dedicated to a specific aspect of experimental data analysis. Below is an overview of the submodules and their functionalities:
 
-| Subpackage              | Description                                                                 |
-|-------------------------|-----------------------------------------------------------------------------|
-| `linalg`     | Tools for linear algebra operations. |
-| `numerical`  | ... |
-| `optics`     | ... |
-| `signals`    | Signal analysis tools for laboratory experiments, featuring frequency domain analysis and post-processing of acquired data. |
-| `special`    | ... |
-| `stats`      | Statistical tools for linear and non-linear curve fittin, experimental data analysis, including histogram construction, residual analysis, and likelihood/posterior computation for parametric models. |
-| `utils`      | A collection of helper functions for tasks like data formatting and general-purpose utilities used throughout the package. |
+
+| Subpackage    | Description                                                                                                          |
+|----------------|----------------------------------------------------------------------------------------------------------------------|
+| `numerical`    | General-purpose numerical routines, such as numerical integration and root finding        |
+| `signals`      | Tools for post-processing and analysis of acquired signals. |
+| `special`      | Special mathematical functions. |
+| `stats`        | Tools for statistical analysis and data modeling. |
+| `utils`        | A collection of general-purpose utilities used throughout the package. |
 <!-- | `fit`        | Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods. | -->
 <!-- | `uncertainty`| Methods for estimating and propagating uncertainties in experimental contexts, allowing quantification of how input errors affect model outputs. | -->
+<!-- | `optics`       | Optics-related tools, including polarization modeling, Jones calculus, and waveplate simulations.                   |
+| `linalg`       | Tools for linear algebra operations, including matrix manipulations, eigensystems, and coordinate transformations. | -->
 
 ## Documentation
 
@@ -104,6 +111,6 @@ Additionally, the Code of Conduct contains a section titled “Author’s Ethica
 
 Labtoolbox makes use of the `uncertainty_class` package, available on [GitHub](https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master), which provides functionality for uncertainty propagation in calculations. Manual installation is not required, as it is included as a module within LabToolbox.
 
-Some utility functions — namely `my_cov`, `my_var`, `my_mean`, `my_line`, and `y_estrapolato` — are adapted from the `my_lib_santanastasio` package, available at [this link](https://baltig.infn.it/LabMeccanica/PythonJupyter), originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
+Some utility functions are adapted from the `my_lib_santanastasio` package, available at [this link](https://baltig.infn.it/LabMeccanica/PythonJupyter), originally developed by F. Santanastasio for the *Laboratorio di Meccanica* course at the University of Rome “La Sapienza”.
 
-Additionally, the `lin_fit` and `model_fit` functions provide the option to visualize fit residuals. This feature draws inspiration from the `VoigtFit` ibrary, available on [GitHub](https://github.com/jkrogager/VoigtFit), with the relevant portions of code clearly annotated within the source.
+Additionally, the `lin_fit` and `model_fit` functions provide the option to visualize fit residuals. This feature draws inspiration from the `VoigtFit` package, available on [GitHub](https://github.com/jkrogager/VoigtFit), with the relevant portions of code clearly annotated within the source.

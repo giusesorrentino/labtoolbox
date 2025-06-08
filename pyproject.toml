@@ -16,6 +16,8 @@ description = "A Python package for the analysis and processing of experimental 
 authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
 ]
+author = "Giuseppe Sorrentino"
+author-email = "sorrentinogiuse@icloud.com"
 readme = "README.md"
 license = 'MIT'
 license-files = ["LICENSE"]

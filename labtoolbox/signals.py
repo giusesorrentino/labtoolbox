@@ -20,14 +20,18 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
         For 2D, shape `(N, M)`.
     t : ndarray or tuple of ndarray, optional
         Time samples:
+
         - For 1D: 1D array of shape `(N,)`, monotonically increasing.
         - For 2D: Tuple `(t1, t2)` where `t1` (shape `(N,)`) and `t2` (shape `(M,)`) are
           1D arrays, monotonically increasing.
+
         If `None`, only `X` is returned unless `dt` is provided. Defaults to `None`.
     dt : float or tuple of float, optional
         Time interval(s) for uniform sampling:
+
         - For 1D: Single float `dt_interval`.
         - For 2D: Tuple `(dt1, dt2)` for intervals along axes.
+
         Ignored if `t` is provided. Used to calculate frequency bins if `t` is `None`.
         Defaults to `None`.
     oversample : int, optional
@@ -47,11 +51,11 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
 
     Notes
     -----
-    - For 1D uniform sampling with N <= 16, a direct DFT is used. For power-of-2 lengths,
-      the Cooley-Tukey FFT algorithm is used.
-    - For 1D non-uniform sampling, a NUFFT algorithm with Gaussian interpolation is used,
-      with O(N log N + M) complexity.
-    - For 2D signals, applies 1D FFTs along rows and columns for uniform sampling.
+
+        - For 1D uniform sampling with N <= 16, a direct DFT is used. For power-of-2 lengths, the Cooley-Tukey FFT algorithm is used.
+        - For 1D non-uniform sampling, a NUFFT algorithm with Gaussian interpolation is used, with O(N log N + M) complexity.
+        - For 2D signals, applies 1D FFTs along rows and columns for uniform sampling.
+
     """
     from ._helper import ispow2, fft_cooley_tukey, dft_direct
     import scipy.fft as spf
@@ -308,14 +312,18 @@ def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray,
         For 2D, shape `(N, M)`.
     freq : ndarray or tuple of ndarray, optional
         Frequency samples:
+
         - For 1D: 1D array of shape `(N,)`, monotonically increasing.
         - For 2D: Tuple `(f1, f2)` where `f1` (shape `(N,)`) and `f2` (shape `(M,)`) are
           1D arrays, monotonically increasing.
+
         If `None`, time bins are returned only if `df` is provided. Defaults to `None`.
     df : float or tuple of float, optional
         Frequency spacing(s) for uniform sampling:
+
         - For 1D: Single float `df_interval`.
         - For 2D: Tuple `(df1, df2)` for spacings along axes.
+
         Ignored if `freq` is provided. Defaults to `None`.
     oversample : int, optional
         Oversampling factor for NUIFFT interpolation in non-uniform 1D case. Must be >= 1.
@@ -334,11 +342,13 @@ def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray,
 
     Notes
     -----
+
     - For 1D uniform sampling with N <= 16, a direct IDFT is used. For power-of-2 lengths,
       the Cooley-Tukey IFFT algorithm is used.
     - For 1D non-uniform sampling, a NUIFFT algorithm with Gaussian interpolation is used,
       with O(N log N + M) complexity.
     - For 2D signals, applies 1D IFFTs along rows and columns for uniform sampling.
+
     """
     from ._helper import ispow2, idft_direct, ifft_cooley_tukey
     import scipy.fft as spf
@@ -1149,19 +1159,23 @@ def envelope(signal: _np.ndarray,
 
     Parameters
     ----------
-        signal : array_like
+        signal : array-like
             The input real-valued signal (1D array).
         method : {'hilbert', 'peaks', 'adaptive'}, optional
             The method to compute the envelope:
+
             - 'hilbert': Uses the analytic signal via the Hilbert transform (best for bandpass signals).
             - 'peaks': Interpolates a smooth curve through signal peaks (versatile for general signals).
-            - 'adaptive': Applies a variable-width filter to |signal| (robust to noise).
+            - 'adaptive': Applies a variable-width filter to abs(signal) (robust to noise).
+
             Defaults to 'peaks'.
         mode : {'upper', 'lower', 'both'}, optional
             Select which envelope to return:
+
             - 'upper': The upper envelope (default).
             - 'lower': The lower envelope.
             - 'both': Returns a tuple (upper, lower).
+
         filter_size : int, optional
             Size of the smoothing filter for 'adaptive' method. Must be odd and positive.
             Defaults to 31.
@@ -1176,15 +1190,17 @@ def envelope(signal: _np.ndarray,
     -------
         ndarray or tuple of ndarrays
             The computed envelope(s):
+
             - If mode='upper' or 'lower', returns a 1D array.
             - If mode='both', returns a tuple (upper, lower).
 
     Notes
     -----
-    - The 'hilbert' method is mathematically rigorous for bandpass signals but may fail for broadband or non-oscillatory signals.
-    - The 'peaks' method is versatile, interpolating through local maxima/minima, and works well for most signals.
-    - The 'adaptive' method adjusts filter width based on local signal frequency, ideal for noisy or irregular signals.
-    - The lower envelope is computed as the negative of the upper envelope of -signal.
+
+        - The 'hilbert' method is mathematically rigorous for bandpass signals but may fail for broadband or non-oscillatory signals.
+        - The 'peaks' method is versatile, interpolating through local maxima/minima, and works well for most signals.
+        - The 'adaptive' method adjusts filter width based on local signal frequency, ideal for noisy or irregular signals.
+
     """
     from scipy.signal import hilbert, find_peaks, medfilt
     from scipy.interpolate import UnivariateSpline

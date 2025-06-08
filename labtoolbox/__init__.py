@@ -35,8 +35,6 @@ from . import utils
 from . import fit
 from . import stats
 from . import uncertainty
-from . import linalg
-from . import optics
 from . import numerical
 from . import special
 
@@ -47,8 +45,6 @@ __all__ = [
     'fit',
     'stats',
     'uncertainty',
-    'linalg',
-    'optics',
     'numerical',
     'special',
     'PrintResult',

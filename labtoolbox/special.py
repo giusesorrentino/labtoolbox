@@ -40,7 +40,7 @@ def rect(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     """
     Compute the rectangular function (boxcar function).
 
-    Returns 1 for |x| < 0.5, 0.5 for |x| = 0.5, and 0 for |x| > 0.5.
+    Returns 1 for abs(x) < 0.5, 0.5 for abs(x) = 0.5, and 0 for abs(x) > 0.5.
 
     Parameters
     ----------
