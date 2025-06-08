@@ -1,11 +1,13 @@
 import numpy as _np
 import matplotlib.pyplot as _plt
-from warnings import warn
-from typing import Union, Tuple, Optional
+import warnings
+from typing import Union, Tuple, Optional, Callable, List
+from numpy.typing import ArrayLike
 
-def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]] = None,
-        dt: Optional[Union[float, Tuple[float, float]]] = None, oversample: int = 2
-        ) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray], Tuple[_np.ndarray, _np.ndarray, _np.ndarray]]:
+def fft(data: ArrayLike, 
+        t: Optional[Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]] = None,
+        dt: Optional[Union[float, Tuple[float, float]]] = None, 
+        oversample: int = 2) -> Union[ArrayLike, Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike, ArrayLike]]:
     """
     Compute the Fast Fourier Transform (FFT) of a signal.
 
@@ -73,10 +75,10 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
     if data.ndim == 1:
         N = len(data)
         if N == 0:
-            warn("'data' is empty. Returning empty array.", UserWarning)
+            warnings.warn("'data' is empty. Returning empty array.", UserWarning)
             return _np.array([])
         if N == 1:
-            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
             return data, _np.array([0.0]) if (t is not None or dt is not None) else data
 
         # Validate t for 1D
@@ -93,7 +95,7 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
                 raise ValueError("'t' must be monotonically increasing.")
             # Check uniformity
             if t.size > 1 and not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
-                warn("Non-uniform sampling detected. Using NUFFT algorithm.", UserWarning)
+                warnings.warn("Non-uniform sampling detected. Using NUFFT algorithm.", UserWarning)
                 is_uniform = False
 
         # Validate dt for 1D
@@ -133,7 +135,7 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
                 f_max = _np.max(freq_components)
                 fs = 1 / dt_final
                 if f_max >= fs / 2:
-                    warn(
+                    warnings.warn(
                         f"Potential aliasing detected: the signal contains frequency components up to {f_max:.2g}, "
                         f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
                         "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
@@ -201,10 +203,10 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
     else:  # 2D data
         N, M = data.shape
         if N == 0 or M == 0:
-            warn("'data' is empty. Returning empty array.", UserWarning)
+            warnings.warn("'data' is empty. Returning empty array.", UserWarning)
             return _np.array([])
         if N == 1 and M == 1:
-            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
             return data, _np.array([0.0]), _np.array([0.0]) if (t is not None or dt is not None) else data
 
         # Validate t for 2D
@@ -270,7 +272,7 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
                 f1_max = _np.max(freq_components)
                 fs1 = 1 / dt1_final
                 if f1_max >= fs1 / 2:
-                    warn(
+                    warnings.warn(
                         f"Potential aliasing detected on axis 0: the signal contains frequency components up to {f_max:.2g}, "
                         f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
                         "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
@@ -281,7 +283,7 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
                 f2_max = _np.max(freq_components)
                 fs2 = 1 / dt2_final
                 if f2_max >= fs2 / 2:
-                    warn(
+                    warnings.warn(
                         f"Potential aliasing detected on axis 1: the signal contains frequency components up to {f_max:.2g}, "
                         f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
                         "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
@@ -295,9 +297,9 @@ def fft(data: _np.ndarray, t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np
         except Exception as e:
             raise ValueError(f"Error computing FFT2: {str(e)}")
 
-def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]] = None,
-         df: Optional[Union[float, Tuple[float, float]]] = None, oversample: int = 2
-         ) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray], Tuple[_np.ndarray, _np.ndarray, _np.ndarray]]:
+def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]] = None,
+         df: Optional[Union[float, Tuple[float, float]]] = None, 
+         oversample: int = 2) -> Union[ArrayLike, Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike, ArrayLike]]:
     """
     Compute the Inverse Fast Fourier Transform (IFFT) of a signal.
 
@@ -366,10 +368,10 @@ def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray,
     if data.ndim == 1:
         N = len(data)
         if N == 0:
-            warn("'data' is empty. Returning empty array.", UserWarning)
+            warnings.warn("'data' is empty. Returning empty array.", UserWarning)
             return _np.array([])
         if N == 1:
-            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
             return data, _np.array([0.0]) if (freq is not None or df is not None) else data
 
         # Validate freq for 1D
@@ -386,7 +388,7 @@ def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray,
                 raise ValueError("'freq' must be monotonically increasing.")
             # Check uniformity
             if freq.size > 1 and not _np.allclose(_np.diff(freq), _np.diff(freq)[0], rtol=1e-5):
-                warn("Non-uniform frequency sampling detected. Using NUIFFT algorithm.", UserWarning)
+                warnings.warn("Non-uniform frequency sampling detected. Using NUIFFT algorithm.", UserWarning)
                 is_uniform = False
 
         # Validate df for 1D
@@ -473,10 +475,10 @@ def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray,
     else:  # 2D data
         N, M = data.shape
         if N == 0 or M == 0:
-            warn("'data' is empty. Returning empty array.", UserWarning)
+            warnings.warn("'data' is empty. Returning empty array.", UserWarning)
             return _np.array([])
         if N == 1 and M == 1:
-            warn("'data' is a scalar. Returning 'data'.", UserWarning)
+            warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
             return data, _np.array([0.0]), _np.array([0.0]) if (freq is not None or df is not None) else data
 
         # Validate freq for 2D
@@ -540,7 +542,9 @@ def ifft(data: _np.ndarray, freq: Optional[Union[_np.ndarray, Tuple[_np.ndarray,
         except Exception as e:
             raise ValueError(f"Error computing IFFT2: {str(e)}")
 
-def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel = "", ylabel = "", xscale = 0, yscale = 0, xlim = [], ylim = []):
+def dfs(t: ArrayLike, data: ArrayLike, order: int, plot: bool = True, showpanel: bool = True, apply_filter: bool = True, 
+        xlabel: str = "", ylabel: str = "", xscale: int = 0, yscale: int = 0, 
+        xlim: Tuple[float, float] = [], ylim: Tuple[float, float] = []) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
     """
     Computes the discrete Fourier series approximation of a sampled function.
 
@@ -660,7 +664,7 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel
     max_freq = order / (t[-1] - t[0])  # Maximum frequency in Fourier expansion
 
     if max_freq > f_nyquist:
-        warn(
+        warnings.warn(
             f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
             f"which exceeds the Nyquist frequency ({f_nyquist:.2g}) based on the current sampling rate. "
             "Please consider increasing the sampling frequency or applying an anti-aliasing filter prior to sampling. "
@@ -762,7 +766,9 @@ def dfs(t, data, order, plot=True, showpanel = True, apply_filter = True, xlabel
 
     return f_approx, a0, a_n, b_n
 
-def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabel = "y [uy]", xscale = 0, yscale = 0):
+def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], interval: Tuple[float, float], order: int, 
+                   num_points: int = 1000, xlabel: str = "x [ux]", ylabel: str = "y [uy]", 
+                   xscale: int = 0, yscale: int = 0) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
     """
     Computes the Fourier series approximation of a function f(x)
     
@@ -770,7 +776,7 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     ----------
     f : callable
         Function to approximate.
-    interval : list of float
+    interval : tuple of float
         The interval (a, b) over which to compute the Fourier series.
     order : int
         Number of Fourier modes (n) to use in the approximation.
@@ -811,8 +817,8 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
     if not callable(f):
         raise TypeError("'f' must be a callable function.")
     
-    if not isinstance(interval, list):
-        raise TypeError("'interval' must be a list.")
+    if not isinstance(interval, (list, tuple)):
+        raise TypeError("'interval' must be a list or a tuple.")
     if len(interval) != 2:
         raise ValueError("'interval' must have exactly two elements.")
     
@@ -826,7 +832,7 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
 
     if b < a:
         a, b = b, a
-        warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+        warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
 
     if a == b:
         raise ValueError("'a' must be not equal to 'b'.")
@@ -892,7 +898,7 @@ def fourier_series(f, interval, order, num_points=1000, xlabel = "x [ux]", ylabe
 
     return f_original, f_approx, a0, a_n, b_n
 
-def harmonic(t, y, prominence = 0.05, n_max = None, verbose = True):
+def harmonic(t: ArrayLike, y: ArrayLike, prominence: float = 0.05, n_max: Optional[int] = None, verbose: bool = True) -> List[dict]:
     """
     Identifies the dominant harmonics present in a real-valued signal.
 
@@ -1027,7 +1033,7 @@ def harmonic(t, y, prominence = 0.05, n_max = None, verbose = True):
 
     return harmonics
 
-def decompose(t, y, freqs, verbose = True):
+def decompose(t: ArrayLike, y: ArrayLike, freqs: ArrayLike, verbose: bool = True) -> List[dict]:
     """
     Reconstructs specified sinusoidal components from a real-valued signal.
 
@@ -1042,7 +1048,7 @@ def decompose(t, y, freqs, verbose = True):
         Time array.
     y : array-like
         Signal samples.
-    freqs : array like
+    freqs : array-like
         Frequencies of the components to extract.
     verbose : bool, optional
         If `True`, prints a formatted table of the components.
@@ -1148,12 +1154,12 @@ def decompose(t, y, freqs, verbose = True):
 
     return components
 
-def envelope(signal: _np.ndarray, 
+def envelope(signal: ArrayLike, 
              method: str = 'peaks', 
              mode: str = 'upper', 
              filter_size: int = 31, 
              fs: float = 1.0, 
-             remove_mean: bool = False) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]:
+             remove_mean: bool = False) -> Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]:
     """
     Compute the envelope of a 1D real-valued signal.
 

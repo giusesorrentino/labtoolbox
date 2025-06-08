@@ -1,9 +1,10 @@
 import numpy as _np
+from numpy.typing import ArrayLike
 from warnings import warn
 from inspect import signature as _signature
 from typing import Callable, Tuple, List, Union, Optional
 
-def boole(f, a, b, n = None, varname = None, max_step = 0.1, **kwargs):
+def boole(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: float, b: float, n: Optional[int] = None, varname: Optional[str] = None, max_step: float = 0.1, **kwargs) -> float:
     """
     Approximate the definite integral of a function using Boole's Rule.
 
@@ -99,7 +100,8 @@ def boole(f, a, b, n = None, varname = None, max_step = 0.1, **kwargs):
 
     return (2 * h / 45) * total
 
-def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
+def romberg(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: float, b: float, 
+            varname: Optional[str] = None, tol: float = 1e-8, max_iter: int = 10, **kwargs) -> float:
     """
     Perform numerical integration using Romberg's method.
 
@@ -195,7 +197,8 @@ def romberg(f, a, b, varname=None, tol=1e-8, max_iter=10, **kwargs):
     warn(f"Romberg integration did not converge after {max_iter} iterations.", UserWarning)
     return R[max_iter - 1, max_iter - 1]
 
-def newton(f, x0, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, **kwargs):
+def newton(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], x0: float, fprime: Optional[Callable] = None, 
+           varname: Optional[str] = None, tol: float = 1e-10, maxiter: int = 50, dx: float = 1e-6, **kwargs) -> float:
     """
     Find the root of a scalar function using the Newton-Raphson method.
 
@@ -291,7 +294,7 @@ def newton(f, x0, fprime=None, varname=None, tol=1e-10, maxiter=50, dx=1e-6, **k
 
     raise RuntimeError(f"Newton-Raphson did not converge after {maxiter} iterations.")
 
-def lebesgue(func: Callable[[float], float], 
+def lebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
              interval: Tuple[float, float], 
              num_samples: int = 10000, 
              use_quasi_mc: bool = True,
@@ -378,7 +381,7 @@ def lebesgue(func: Callable[[float], float],
     except Exception as e:
         raise ValueError(f"Error during integration: {str(e)}")
 
-def dblebesgue(func: Callable[[float, float], float], 
+def dblebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
               domain: Tuple[Tuple[float, float], Tuple[float, float]], 
               num_samples: int = 10000, 
               use_quasi_mc: bool = True,
@@ -465,7 +468,7 @@ def dblebesgue(func: Callable[[float, float], float],
     except Exception as e:
         raise ValueError(f"Error during integration: {str(e)}")
 
-def nlebesgue(func: Callable[[List[float]], float], 
+def nlebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
               domain: List[Tuple[float, float]], 
               num_samples: int = 10000, 
               use_quasi_mc: bool = True,
@@ -552,10 +555,10 @@ def nlebesgue(func: Callable[[List[float]], float],
     except Exception as e:
         raise ValueError(f"Error during integration: {str(e)}")
 
-def lagrange(f: Callable[[_np.ndarray], float], 
-                         constraints: List[Callable[[_np.ndarray], float]], 
-                         x0: _np.ndarray, 
-                         tol: float = 1e-6) -> Tuple[_np.ndarray, _np.ndarray]:
+def lagrange(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+                         constraints: List[Callable[[ArrayLike], float]], 
+                         x0: ArrayLike, 
+                         tol: float = 1e-6) -> Tuple[ArrayLike, ArrayLike]:
     """
     Solve a constrained optimization problem using Lagrange multipliers.
 

@@ -1,9 +1,13 @@
 import math as _math
 import numpy as _np
 import matplotlib.pyplot as _plt
-from warnings import warn
+import warnings
+from typing import Union, Tuple, List, Callable, Optional
+from numpy.typing import ArrayLike
 
-def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = "", verbose = True):
+def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0, 
+         bins: Union[str, int] = "auto", label: str = "", 
+         unit: str = "", verbose: bool = True) -> Tuple[float, float, float, float, float]:
     """
     Plots the histogram of a dataset and assess its Gaussianity using statistical indicators and a Shapiro-Wilk test.
 
@@ -201,10 +205,12 @@ def hist(data, data_err, scale = 0, bins = "auto", label = "", unit = "", verbos
     return mean, sigma, skewness, kurtosis, p_value
 
 def analyze_residuals(*args, **kwargs):
-    warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
+    warnings.warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
     return residuals(args, kwargs)
 
-def residuals(data, expected_data, data_err, scale = 0, unit = "", bins = "auto", confidence = 2, norm = False, verbose = True):
+def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, scale: int = 0, 
+              unit: str = "", bins: Union[str, int] = "auto", confidence: int = 2, 
+              norm: bool = False, verbose: bool = True) -> Tuple[float, float, float, float, float, float]:
     """
     Analyzes and visualizes the residuals of the quantity of interes, including histogram, Gaussianity test, and autocorrelation test (Durbin-Watson statistic).
 
@@ -509,7 +515,7 @@ def samples(n, distribution='normal', **params):
     >>> samples(200, 'poisson', lam=3)
     array([...])
     """
-    warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
 
     dist = distribution.lower()
     rng = _np.random.default_rng()
@@ -657,8 +663,11 @@ def remove_outliers(data, data_err=None, expected=None, method="zscore", thresho
 
     return data[mask]
 
-def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, verbose = True,
-              names=None, prior_bounds=None, plot_dataset = False, plot_density = True, color = 'k', **kwargs):
+def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float], float], p0: Union[List, ArrayLike], 
+              burn: int = 1000, steps: int = 5000, thin: int = 10, maxfev: int = 5000, verbose: bool = True,
+              names: Optional[List[str]] = None, prior_bounds: Optional[List[tuple]] = None, 
+              plot_dataset: bool = False, 
+              plot_density: bool = True, color: str = 'k', **kwargs) -> Tuple[ArrayLike, ArrayLike]:
     """
     Performs a Bayesian parameter estimation using MCMC for a user-defined model function.
 
@@ -710,11 +719,11 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, v
 
     Returns
     -------
-    mle_params : ndarray, shape (M,)
+    mle_params : numpy.ndarray, shape (M,)
         The parameter vector corresponding to the sample with the highest log-probability (maximum
         likelihood estimate) in the posterior chain
 
-    flat_samples : ndarray, shape (n_samples, M)
+    flat_samples : numpy.ndarray, shape (n_samples, M)
         Flattened MCMC sample chain (after burn-in and thinning). Each row is a sample of the M parameters.
         This chain can be used for uncertainty analysis, plotting posteriors, or further statistical inference.
 
@@ -959,7 +968,8 @@ def posterior(x, y, y_err, f, p0, burn=1000, steps=5000, thin=10, maxfev=5000, v
 
     return mle_params, flat_samples
 
-def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample_size = 10000):
+def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], x_val: List[ArrayLike], x_err: List[ArrayLike], 
+              params: Optional[List[ArrayLike]] = None, method: str = 'Monte_Carlo', MC_sample_size: int = 10000) -> Tuple[ArrayLike, ArrayLike, Tuple[ArrayLike, ArrayLike]]:
     """
     Propagates uncertainty from i_nput arrays to a generic function using the `uncertainty_class` library.
 
@@ -999,7 +1009,7 @@ def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample
     """
 
     try:
-        import seaborn as sns
+        import seaborn
     except ImportError:
         raise ImportError(
             "The 'seaborn' package is not installed. "
@@ -1145,7 +1155,11 @@ def propagate(func, x_val, x_err, params = None, method='Monte_Carlo', MC_sample
     
     return f_values, f_err, (confidence_bands_lower, confidence_bands_upper)
 
-def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10, maxfev=5000, prior_bounds1=None, prior_bounds2=None, verbose = True):
+def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+                 p0_1: Union[List, ArrayLike], f2: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+                 p0_2: Union[List, ArrayLike], burn: int = 1000, steps: int = 5000, 
+                 thin: int = 10, maxfev: int = 5000, prior_bounds1: Optional[List[tuple]] = None, 
+                 prior_bounds2: Optional[List[tuple]] = None, verbose: bool = True) -> Tuple[float, float, float]:
     """
     Estimate the Bayes factor between two models using the Bayesian Information Criterion (BIC).
 
@@ -1309,7 +1323,7 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
                 raise TypeError(f"Elements of 'prior_bounds2[{i}]' must be a real numbers (int or float).")
 
     if len(x) <= 10 * len(p0_1) or len(x) <= 10 * len(p0_2):
-        warn("The BIC approximation is only valid for sample size much larger than the number of parameters in the model. Results may be inaccurate.", Warning)
+        warnings.warn("The BIC approximation is only valid for sample size much larger than the number of parameters in the model. Results may be inaccurate.", Warning)
 
     if not (len(x) == len(y) == len(y_err)):
         raise ValueError("'x', 'y' and 'y_err' must have the same length.")
@@ -1398,13 +1412,13 @@ def bayes_factor(x, y, y_err, f1, p0_1, f2, p0_2, burn=1000, steps=5000, thin=10
 
     return lnB12, BIC1, BIC2
 
-def mean(x, kind='arithmetic'):
+def mean(x: Union[float, ArrayLike], kind: str = 'arithmetic') -> float:
     """
     Compute the mean of an i_nput scalar or numpy array, with the specified type of mean.
 
     Parameters
     ----------
-    x : scalar or array-like
+    x : float or array-like
         Input data. Can be a scalar or a numpy array. If a scalar is provided, it is returned as the mean.
     
     kind : str or float, optional
@@ -1485,8 +1499,12 @@ def mean(x, kind='arithmetic'):
     else:
         raise ValueError(f"Unsupported mean type '{kind}'.")
     
-def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel="y [uy]", xlim = [], ylim = [], showlegend = True, legendloc = None, log = None,
-            xscale = 0, yscale = 0, mscale = 0, cscale = 0, m_units = "", c_units = "", confidence = 2, confidencerange = True, residuals=True, norm = True, verbose = False, summary = True):
+def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayLike] = None, fitmodel: str = "wls", 
+            xlabel: str = "x [ux]", ylabel: str = "y [uy]", xlim: Tuple[float, float] = [], ylim: Tuple[float, float] = [], 
+            showlegend: bool = True, legendloc: Optional[str] = None, log: Optional[str] = None,
+            xscale: int = 0, yscale: int = 0, mscale: int = 0, cscale: int = 0, m_units: str = "", c_units: str = "", 
+            confidence: int = 2, confidencerange: bool = True, residuals: bool = True, norm: bool = True, 
+            verbose: bool = False, summary: bool = True) -> Tuple[float, float, float, float, float, float]:
     """
     Performs a linear fit (Weighted Least Squares or Ordinary Least Squares) and displays experimental data along with the regression line and uncertainty band.
 
@@ -1717,9 +1735,9 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     scale_str = f" \\times 10^{{{mscale}}}" if mscale != 0 else ""
 
     if unit_str or scale_str:
-        result1 = f"$m = ({mean_str} \pm {sigma_str}){scale_str}{unit_str}$"
+        result1 = f"$m = ({mean_str} \\pm {sigma_str}){scale_str}{unit_str}$"
     else:
-        result1 = f"$m = {mean_str} \pm {sigma_str}$"
+        result1 = f"$m = {mean_str} \\pm {sigma_str}$"
     
     # ------------------------ 
 
@@ -1744,9 +1762,9 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
     scale_str = f" \\times 10^{{{cscale}}}" if cscale != 0 else ""
 
     if unit_str or scale_str:
-        result2 = f"$c = ({mean_str} \pm {sigma_str}){scale_str}{unit_str}$"
+        result2 = f"$c = ({mean_str} \\pm {sigma_str}){scale_str}{unit_str}$"
     else:
-        result2 = f"$c = {mean_str} \pm {sigma_str}$"
+        result2 = f"$c = {mean_str} \\pm {sigma_str}$"
     
     # ------------------------ 
 
@@ -1928,8 +1946,13 @@ def lin_fit(x, y, y_err, x_err = None, fitmodel = "wls", xlabel="x [ux]", ylabel
 
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
-def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", ylabel="y [uy]", xlim = [], ylim = [], showlegend = True, legendloc = None, 
-              bounds = None, confidencerange = True, log=None, maxfev=5000, xscale=0, yscale=0, confidence = 2, residuals=True, norm = True, verbose = True, print_parameters = True):
+def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+              x_err: Optional[ArrayLike] = None, y_err: Optional[ArrayLike] = None, p0: Optional[Union[List[float], ArrayLike]] = None, 
+              xlabel: str = "x [ux]", ylabel: str = "y [uy]", xlim: Tuple[float, float] = [], ylim: Tuple[float, float] = [], 
+              showlegend: bool = True, legendloc: Optional[str] = None, bounds: Optional[Tuple[ArrayLike, ArrayLike]] = None, 
+              confidencerange: bool = True, log: Optional[str] = None, maxfev: int = 5000, 
+              xscale: int = 0, yscale: int = 0, confidence: int = 2, residuals: bool = True, norm: bool = True, 
+              verbose: bool = True, print_parameters: bool = True) -> Tuple[ArrayLike, ArrayLike, float, float]:
     """
     General-purpose fit of multi-parameter functions, with an option to display residuals.
 
@@ -1945,7 +1968,7 @@ def model_fit(x, y, f, x_err = None, y_err = None, p0 = None, xlabel="x [ux]", y
             Uncertainties associated with the independent variable. Default is `None`.
         y_err : array-like, optional
             Uncertainties associated with the dependent variable. Default is `None`.
-        p0 : list, optional
+        p0 : list or array-like of floats, optional
             Initial guess for the model parameters, in the form `[a, ..., z]`. Default is `None`.
         xlabel : str, optional
             Label (and units) for the independent variable.

@@ -1,11 +1,12 @@
 import math as _math
-import warnings as _warnings 
+import warnings
 import numpy as _np
-from typing import Callable
+from numpy.typing import ArrayLike
+from typing import Callable, Union, List
 
 # --------------------------------------------------------------------------------
 
-def PrintResult(value, err, name = "", unit = ""):
+def PrintResult(value: Union[float, ArrayLike], err: Union[float, ArrayLike], name: Union[List[str], str] = "", unit: Union[List[str], str] = "") -> None:
     """
     Returns a formatted string in the "mean ± sigma" format, with sigma to two significant figures,
     and the mean rounded consistently.
@@ -109,7 +110,7 @@ def PrintResult(value, err, name = "", unit = ""):
         for i in range(len(value)):
             PrintResult(value[i], err[i], name[i], unit[i])
 
-def format_str(data, err):
+def format_str(data: Union[float, ArrayLike], err: Union[float, ArrayLike]) -> List[str]:
     """
     Formats data and uncertainties into LaTeX strings of the form "$data \pm data_err$".
 
@@ -165,7 +166,7 @@ def format_str(data, err):
 
     return result
 
-def latex_table(data, header, filename, caption="", label="", align="c"):
+def latex_table(data: List[ArrayLike], header: List[str], filename: str, caption: str = "", label: str = "", align:str = "c") -> None:
     """
     Writes a LaTeX-formatted table to file with caption, label, and custom styling.
 
@@ -228,7 +229,7 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
 
     # If columns have different lengths, pad the shorter ones
     if len(set(lengths)) != 1:
-        warn("Columns in 'data' have different lengths. Padding shorter columns with empty values.")
+        warnings.warn("Columns in 'data' have different lengths. Padding shorter columns with empty values.")
         for i, col in enumerate(data):
             if len(col) < max_length:
                 pad_value = _np.nan if _np.issubdtype(col.dtype, _np.number) else None
@@ -277,22 +278,22 @@ def latex_table(data, header, filename, caption="", label="", align="c"):
         f.write("\\end{table}\n")
     
 def noise(n, std):
-    warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
+    warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
     from .stats import samples
     return samples(n, 'normal', mu = 0, sigma = std)
 
-def convert(value, from_unit: str, to_unit: str):
+def convert(value: Union[float, ArrayLike], from_unit: Union[str, List[str]], to_unit: Union[str, List[str]]) -> Union[float, ArrayLike]:
     """
     Converts a physical quantity between units, supporting SI prefixes, non-SI units and 
     compound units.
 
     Parameters
     ----------
-    value : float or int or numpy.array
+    value : float or or array-like
         Numerical value to be converted.
-    from_unit : str or list
+    from_unit : str or list of str
         Unit of the i_nput quantity (e.g., 'erg', 'km/s', 'eV/Å^3').
-    to_unit : str or list
+    to_unit : str or list of str
         Desired target unit (e.g., 'J', 'm/s', 'GeV/fm^3').
 
     Returns
@@ -365,8 +366,8 @@ def convert(value, from_unit: str, to_unit: str):
 
         return _np.array(converted_values)
 
-def genspace(start: float, stop: float, num: int, f: Callable[[float], float], 
-             endpoint: bool = True) -> _np.ndarray:
+def genspace(start: float, stop: float, num: int, f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+             endpoint: bool = True) -> ArrayLike:
     """
     Generate an array of points with spacing determined by a callable function.
 

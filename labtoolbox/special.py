@@ -1,11 +1,10 @@
 import numpy as _np
 from typing import Union, Tuple, List, Callable
+from numpy.typing import ArrayLike
 
-def sgn(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
+def sgn(x: Union[float, ArrayLike]) -> Union[float, ArrayLike]:
     """
     Compute the sign function of the input.
-
-    Returns -1 for x < 0, 0 for x = 0, and 1 for x > 0.
 
     Parameters
     ----------
@@ -15,7 +14,7 @@ def sgn(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     Returns
     -------
     float or numpy.ndarray
-        The sign of x. Returns a scalar if x is scalar, otherwise a 1D array.
+        The sign of `x`. Returns a scalar if `x` is scalar, otherwise a 1D array.
 
     Examples
     --------
@@ -36,11 +35,9 @@ def sgn(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     result = _np.where(x < 0, -1.0, _np.where(x > 0, 1.0, 0.0))
     return result.item() if result.size == 1 else result
 
-def rect(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
+def rect(x: Union[float, ArrayLike]) -> Union[float, ArrayLike]:
     """
     Compute the rectangular function (boxcar function).
-
-    Returns 1 for abs(x) < 0.5, 0.5 for abs(x) = 0.5, and 0 for abs(x) > 0.5.
 
     Parameters
     ----------
@@ -50,7 +47,7 @@ def rect(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     Returns
     -------
     float or numpy.ndarray
-        The rectangular function evaluated at x. Returns a scalar if x is scalar,
+        The rectangular function evaluated at `x`. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
@@ -73,7 +70,7 @@ def rect(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     result = _np.where(abs_x < 0.5, 1.0, _np.where(abs_x == 0.5, 0.5, 0.0))
     return result.item() if result.size == 1 else result
 
-def tri(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
+def tri(x: Union[float, ArrayLike]) -> Union[float, ArrayLike]:
     """
     Compute a triangle pulse. Not to be confused with `labtoolbox.triangle`.
 
@@ -85,7 +82,7 @@ def tri(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     Returns
     -------
     float or numpy.ndarray
-        The triangle wave evaluated at x. Returns a scalar if x is scalar,
+        The triangle wave evaluated at x. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
@@ -107,24 +104,21 @@ def tri(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     result = rect(x/2) * (1 - _np.abs(x))
     return result.item() if result.size == 1 else result
 
-def saw(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.ndarray]:
+def saw(x: Union[float, ArrayLike], T: float = 1.0) -> Union[float, ArrayLike]:
     """
     Compute the sawtooth wave function.
-
-    The function is periodic with period T, ranging from -1 to 1, with a linear
-    increase and a sharp drop at x = nT.
 
     Parameters
     ----------
     x : float or numpy.ndarray
         Input value(s), scalar or 1D array of real numbers.
     T : float, optional
-        Period of the sawtooth wave. Must be positive. Defaults to 1.0.
+        Period of the sawtooth wave. Must be positive. Defaults to `1.0`.
 
     Returns
     -------
     float or numpy.ndarray
-        The sawtooth wave evaluated at x. Returns a scalar if x is scalar,
+        The sawtooth wave evaluated at `x`. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
@@ -151,32 +145,29 @@ def saw(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.ndarra
     result = 2 * (x / T - _np.floor(0.5 + x / T))
     return result.item() if result.size == 1 else result
 
-def triangle(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.ndarray]:
+def triangle(x: Union[float, ArrayLike], T: float = 1.0) -> Union[float, ArrayLike]:
     """
     Compute the triangle wave function.
-
-    The function is periodic with period T, ranging from 0 to 1, with a linear
-    increase to 1 at x = nT + T/4 and linear decrease to 0.
 
     Parameters
     ----------
     x : float or numpy.ndarray
         Input value(s), scalar or 1D array of real numbers.
     T : float, optional
-        Period of the triangle wave. Must be positive. Defaults to 1.0.
+        Period of the triangle wave. Must be positive. Defaults to `1.0`.
 
     Returns
     -------
     float or numpy.ndarray
-        The triangle wave evaluated at x. Returns a scalar if x is scalar,
+        The triangle wave evaluated at `x`. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
     --------
     >>> from labtoolbox.special import triangle
-    >>> triangle(0.25, T=1.0)
+    >>> triangle(0.25)
     1.0
-    >>> triangle([0, 0.25, 0.5], T=1.0)
+    >>> triangle([0, 0.25, 0.5])
     array([0., 1., 0.])
     """
     x = _np.asarray(x, dtype=float)
@@ -195,11 +186,11 @@ def triangle(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.n
     result = 2 * _np.abs(x / T - _np.floor(0.5 + x / T))
     return result.item() if result.size == 1 else result
 
-def square(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.ndarray]:
+def square(x: Union[float, ArrayLike], T: float = 1.0) -> Union[float, ArrayLike]:
     """
     Compute the square wave function.
 
-    The function is periodic with period T, alternating between -1 and 1 based
+    The function is periodic with period `T`, alternating between -1 and 1 based
     on the sign of sin(2 * pi * x / T).
 
     Parameters
@@ -207,20 +198,20 @@ def square(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.nda
     x : float or numpy.ndarray
         Input value(s), scalar or 1D array of real numbers.
     T : float, optional
-        Period of the square wave. Must be positive. Defaults to 1.0.
+        Period of the square wave. Must be positive. Defaults to `1.0`.
 
     Returns
     -------
     float or numpy.ndarray
-        The square wave evaluated at x. Returns a scalar if x is scalar,
+        The square wave evaluated at `x`. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
     --------
     >>> from labtoolbox.special import square
-    >>> square(0.25, T=1.0)
+    >>> square(0.25)
     1.0
-    >>> square([0, 0.5, 1.0], T=1.0)
+    >>> square([0, 0.5, 1.0])
     array([ 1., -1.,  1.])
     """
     x = _np.asarray(x, dtype=float)
@@ -239,11 +230,11 @@ def square(x: Union[float, _np.ndarray], T: float = 1.0) -> Union[float, _np.nda
     result = sgn(_np.sin(2 * _np.pi * x / T))
     return result.item() if result.size == 1 else result
 
-def step(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
+def step(x: Union[float, ArrayLike]) -> Union[float, ArrayLike]:
     """
     Compute the Heaviside step function.
 
-    Returns 0 for x < 0, 1 for x >= 0.
+    Returns `0` for `x < 0`, 1 for `x >= 0`.
 
     Parameters
     ----------
@@ -253,7 +244,7 @@ def step(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     Returns
     -------
     float or numpy.ndarray
-        The step function evaluated at x. Returns a scalar if x is scalar,
+        The step function evaluated at `x`. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
@@ -275,25 +266,23 @@ def step(x: Union[float, _np.ndarray]) -> Union[float, _np.ndarray]:
     result = _np.where(x < 0, 0.0, 1.0)
     return result.item() if result.size == 1 else result
 
-def lorentz(x: Union[float, _np.ndarray], x0: float = 0.0, g: float = 1.0) -> Union[float, _np.ndarray]:
+def lorentz(x: Union[float, ArrayLike], x0: float = 0.0, g: float = 1.0) -> Union[float, ArrayLike]:
     """
     Compute the Lorentzian (Cauchy) distribution function.
-
-    The function is defined as g / (pi * ((x - x0)^2 + g^2)).
 
     Parameters
     ----------
     x : float or numpy.ndarray
         Input value(s), scalar or 1D array of real numbers.
     x0 : float, optional
-        Center of the Lorentzian distribution. Defaults to 0.0.
+        Center of the Lorentzian distribution. Defaults to `0.0`.
     g : float, optional
-        Width parameter (half-width at half-maximum). Must be positive. Defaults to 1.0.
+        Width parameter. Must be positive. Defaults to `1.0`.
 
     Returns
     -------
     float or numpy.ndarray
-        The Lorentzian function evaluated at x. Returns a scalar if x is scalar,
+        The Lorentzian function evaluated at `x`. Returns a scalar if `x` is scalar,
         otherwise a 1D array.
 
     Examples
@@ -333,9 +322,9 @@ def indicator(point: Union[float, Tuple[float, float], List[float]],
     ----------
         point : float, tuple, or list
             The point to check for domain membership. 
-            - For 1D: a float (e.g., x).
-            - For 2D: a tuple of two floats (e.g., (x, y)).
-            - For nD: a list of floats (e.g., [x1, x2, ..., xn]).
+            - For 1D: a float (e.g., `x`).
+            - For 2D: a tuple of two floats (e.g., `(x, y)`).
+            - For nD: a list of floats (e.g., `[x1, x2, ..., xn]`).
         domain_type : str
             The type of domain. Supported values:
             - 'interval': 1D interval [a, b].
@@ -357,8 +346,8 @@ def indicator(point: Union[float, Tuple[float, float], List[float]],
     -------
         bool or int
             Indicator of domain membership:
-            - True or 1 if the point is in the domain.
-            - False or 0 if the point is not in the domain.
+            - `True` or `1` if the point is in the domain.
+            - `False` or `0` if the point is not in the domain.
     """
     # Validate return_type
     if return_type not in ["bool", "int"]:
