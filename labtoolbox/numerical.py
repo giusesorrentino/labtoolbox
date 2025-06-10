@@ -1,10 +1,13 @@
 import numpy as _np
 from numpy.typing import ArrayLike
-from warnings import warn
+import warnings
 from inspect import signature as _signature
 from typing import Callable, Tuple, List, Union, Optional
+from ._helper import GenericError
 
-def boole(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: float, b: float, n: Optional[int] = None, varname: Optional[str] = None, max_step: float = 0.1, **kwargs) -> float:
+def boole(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+          a: float, b: float, n: Optional[int] = None, 
+          varname: Optional[str] = None, max_step: float = 0.1, **kwargs) -> float:
     """
     Approximate the definite integral of a function using Boole's Rule.
 
@@ -43,10 +46,10 @@ def boole(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: fl
     
     if b < a:
         a, b = b, a
-        warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+        warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
 
     if a == b:
-        warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
+        warnings.warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
         return 0.0
 
     if n is not None and n < 1:
@@ -138,10 +141,10 @@ def romberg(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: 
     
     if b < a:
         a, b = b, a
-        warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
+        warnings.warn("Integration limits 'a' and 'b' have been swapped.", UserWarning)
 
     if a == b:
-        warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
+        warnings.warn("Warning: Integration limits 'a' and 'b' are equal; integral is zero.")
         return 0.0
     
     if not isinstance(tol, (int, float)) or tol <= 0:
@@ -179,7 +182,7 @@ def romberg(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: 
     for k in range(1, max_iter):
         h /= 2
         if h < _np.finfo(float).eps:
-            warn(f"Step size h = {h} is below machine precision; stopping early.", UserWarning)
+            warnings.warn(f"Step size h = {h} is below machine precision; stopping early.", UserWarning)
             return R[k-1, k-1]
         # Composite Trapezoid Rule refinement
         subtotal = sum(eval_f(a + (2 * i - 1) * h) for i in range(1, 2**(k-1)+1))
@@ -194,10 +197,11 @@ def romberg(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], a: 
             return R[k, k]
 
     # If it gets here, it didn't converge
-    warn(f"Romberg integration did not converge after {max_iter} iterations.", UserWarning)
+    warnings.warn(f"Romberg integration did not converge after {max_iter} iterations.", UserWarning)
     return R[max_iter - 1, max_iter - 1]
 
-def newton(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], x0: float, fprime: Optional[Callable] = None, 
+def newton(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
+           x0: float, fprime: Optional[Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]] = None, 
            varname: Optional[str] = None, tol: float = 1e-10, maxiter: int = 50, dx: float = 1e-6, **kwargs) -> float:
     """
     Find the root of a scalar function using the Newton-Raphson method.
@@ -209,7 +213,7 @@ def newton(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], x0: 
     x0 : float
         Initial guess.
     fprime : callable, optional
-        Derivative function. If None, numerical differentiation is used.
+        Derivative function. If `None`, numerical differentiation is used.
     varname : str, optional
         Name of the variable with respect to which we take the root. Required if `f` has multiple arguments.
     tol : float, optional
@@ -219,7 +223,7 @@ def newton(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], x0: 
     dx : float, optional
         Step size for numerical differentiation. Default is `1e-6`.
     **kwargs
-        Additional keyword arguments passed to `f` (and fprime if provided).
+        Additional keyword arguments passed to `f` (and `fprime` if provided).
 
     Returns
     -------
@@ -308,14 +312,14 @@ def lebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]],
         func : callable
             The integrand function, which must be Lebesgue measurable.
         interval : tuple
-            The integration interval [a, b], where a < b.
+            The integration interval `[a, b]`, where a < b.
         num_samples : int, optional
             Number of Monte Carlo samples. Defaults to `10000`.
         use_quasi_mc : bool, optional
             If `True`, uses Quasi-Monte Carlo (Sobol sequence) for sampling. Defaults to `True`.
         indicator_func : callable, optional
             A function that returns `True` if a point is in the integration domain, `False` otherwise.
-            If `None`, the entire interval [a, b] is used. Defaults to `None`.
+            If `None`, the entire interval `[a, b]` is used. Defaults to `None`.
         return_error : bool, optional
             If `True`, returns a tuple (integral, error_estimate). Defaults to `False`.
 
@@ -329,18 +333,18 @@ def lebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]],
 
     # Input validation
     if not callable(func):
-        raise TypeError("The function 'func' must be callable.")
+        raise TypeError("'func' must be callable.")
     if not isinstance(interval, (tuple, list)) or len(interval) != 2:
         raise TypeError("'interval' must be a tuple of two floats (a, b).")
     a, b = interval
     if not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
-        raise ValueError("Interval bounds must be numeric.")
+        raise ValueError("'interval' bounds must be numeric.")
     if a >= b:
-        raise ValueError("Interval must satisfy a < b.")
+        raise ValueError("'interval' must satisfy a < b.")
     if not isinstance(num_samples, int) or num_samples <= 0:
-        raise ValueError("Number of samples must be a positive integer.")
+        raise ValueError("'num_samples' must be a positive integer.")
     if indicator_func is not None and not callable(indicator_func):
-        raise TypeError("The indicator function must be callable.")
+        raise TypeError("'indicator_func' must be callable.")
 
     # Compute the Lebesgue measure of the interval
     measure = b - a
@@ -379,7 +383,7 @@ def lebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]],
         
         return integral
     except Exception as e:
-        raise ValueError(f"Error during integration: {str(e)}")
+        raise GenericError(f"Error during integration: {str(e)}")
 
 def dblebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
               domain: Tuple[Tuple[float, float], Tuple[float, float]], 
@@ -393,16 +397,16 @@ def dblebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]
     Parameters
     ----------
         func : callable
-            The integrand function f(x, y), which must be Lebesgue measurable.
+            The integrand function `f(x, y)`, which must be Lebesgue measurable.
         domain : tuple
-            The integration domain ([a, b], [c, d]).
+            The integration domain `([a, b], [c, d])`.
         num_samples : int, optional
             Number of Monte Carlo samples. Defaults to `10000`.
         use_quasi_mc : bool, optional
             If `True`, uses Quasi-Monte Carlo (Sobol sequence) for sampling. Defaults to `True`.
         indicator_func : callable, optional
-            A function that returns True if a point (x, y) is in the integration domain, False otherwise.
-            If `None`, the entire domain [a, b] x [c, d] is used. Defaults to `None`.
+            A function that returns True if a point `(x, y)` is in the integration domain, False otherwise.
+            If `None`, the entire domain `([a, b], [c, d])` is used. Defaults to `None`.
         return_error : bool, optional
             If `True`, returns a tuple `(integral, error_estimate)`. Defaults to `False`.
 
@@ -414,18 +418,18 @@ def dblebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]
     from scipy.stats import qmc
     # Input validation
     if not callable(func):
-        raise TypeError("The function 'func' must be callable.")
+        raise TypeError("'func' must be callable.")
     if not isinstance(domain, (tuple, list)) or len(domain) != 2:
-        raise TypeError("Domain must be a tuple of two intervals ([a, b], [c, d]).")
+        raise TypeError("'domain' must be a tuple of two intervals ([a, b], [c, d]).")
     (a, b), (c, d) = domain
     if not all(isinstance(x, (int, float)) for x in [a, b, c, d]):
-        raise ValueError("Domain bounds must be numeric.")
+        raise ValueError("'domain' bounds must be numeric.")
     if a >= b or c >= d:
-        raise ValueError("Domain intervals must satisfy a < b and c < d.")
+        raise ValueError("'domain' intervals must satisfy a < b and c < d.")
     if not isinstance(num_samples, int) or num_samples <= 0:
-        raise ValueError("Number of samples must be a positive integer.")
+        raise ValueError("'num_samples' must be a positive integer.")
     if indicator_func is not None and not callable(indicator_func):
-        raise TypeError("The indicator function must be callable.")
+        raise TypeError("'indicator_func' must be callable.")
 
     # Compute the Lebesgue measure of the domain
     measure = (b - a) * (d - c)
@@ -466,7 +470,7 @@ def dblebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]
         
         return integral
     except Exception as e:
-        raise ValueError(f"Error during integration: {str(e)}")
+        raise GenericError(f"Error during integration: {str(e)}")
 
 def nlebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
               domain: List[Tuple[float, float]], 
@@ -480,15 +484,15 @@ def nlebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
     Parameters
     ----------
         func : callable
-            The integrand function f(x_1, ..., x_n), which must be Lebesgue measurable.
+            The integrand function `f(x_1, ..., x_n)`, which must be Lebesgue measurable.
         domain : list
-            List of intervals [(a_1, b_1), ..., (a_n, b_n)] defining the domain.
+            List of intervals `[(a_1, b_1), ..., (a_n, b_n)]` defining the domain.
         num_samples : int, optional 
             Number of Monte Carlo samples. Defaults to `10000`.
         use_quasi_mc : bool, optional
             If `True`, uses Quasi-Monte Carlo (Sobol sequence) for sampling. Defaults to `True`.
         indicator_func : callable, optional
-            A function that returns `True` if a point (x_1, ..., x_n) is in the integration domain, `False` otherwise.
+            A function that returns `True` if a point `(x_1, ..., x_n)` is in the integration domain, `False` otherwise.
             If `None`, the entire domain is used. Defaults to `None`.
         return_error : bool, optional
             If `True`, returns a tuple `(integral, error_estimate)`. Defaults to `False`.
@@ -501,19 +505,19 @@ def nlebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
     from scipy.stats import qmc
     # Input validation
     if not callable(func):
-        raise TypeError("The function 'func' must be callable.")
+        raise TypeError("'func' must be callable.")
     if not isinstance(domain, (list, tuple)) or not domain:
-        raise TypeError("Domain must be a non-empty list of intervals.")
+        raise TypeError("'domain' must be a non-empty list of intervals.")
     if not all(isinstance(interval, (tuple, list)) and len(interval) == 2 for interval in domain):
         raise ValueError("Each domain entry must be a tuple of two floats.")
     if not all(isinstance(x, (int, float)) for interval in domain for x in interval):
-        raise ValueError("Domain bounds must be numeric.")
+        raise ValueError("'domain' bounds must be numeric.")
     if not all(a < b for a, b in domain):
         raise ValueError("Each interval must satisfy a < b.")
     if not isinstance(num_samples, int) or num_samples <= 0:
-        raise ValueError("Number of samples must be a positive integer.")
+        raise ValueError("'num_samples' must be a positive integer.")
     if indicator_func is not None and not callable(indicator_func):
-        raise TypeError("The indicator function must be callable.")
+        raise TypeError("'indicator_func' must be callable.")
 
     # Compute the Lebesgue measure of the domain
     measure = _np.prod([b - a for a, b in domain])
@@ -553,37 +557,34 @@ def nlebesgue(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
         
         return integral
     except Exception as e:
-        raise ValueError(f"Error during integration: {str(e)}")
+        raise GenericError(f"Error during integration: {str(e)}")
 
 def lagrange(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
-                         constraints: List[Callable[[ArrayLike], float]], 
-                         x0: ArrayLike, 
-                         tol: float = 1e-6) -> Tuple[ArrayLike, ArrayLike]:
+             constraints: List[Callable[[ArrayLike], float]], 
+             x0: ArrayLike, 
+             tol: float = 1e-6) -> Tuple[ArrayLike, ArrayLike]:
     """
     Solve a constrained optimization problem using Lagrange multipliers.
-
-    Find the extremum of f(x) subject to constraints g_i(x) = 0 for all i.
 
     Parameters
     ----------
         f : callable
-            The objective function f(x), where x is a 1D numpy array.
-            Must return a scalar (float).
+            The objective function `f`. Must return a scalar (float).
         constraints : list of callables
-            List of constraint functions [g_1(x), ..., g_m(x)], where each g_i(x)
+            List of constraint functions `[g_1(x), ..., g_m(x)]`, where each `g_i(x)`
             takes a 1D numpy array and returns a scalar (float).
             Each g_i(x) = 0 defines a constraint.
         x0 : array_like
-            Initial guess for the solution x, a 1D array of length n (number of variables).
+            Initial guess for the solution, a 1D array of length `n` (number of variables).
         tol : float, optional
-            Tolerance for the solver (used in scipy.optimize.fsolve).
-            Defaults to 1e-6.
+            Tolerance for the solver (used in `scipy.optimize.fsolve`).
+            Defaults to `1e-6`.
 
     Returns
     -------
         tuple of (ndarray, ndarray)
-            - x_opt: The optimal point x* (1D array of length n).
-            - lambda_opt: The Lagrange multipliers (1D array of length m, where m is the number of constraints).
+            - x_opt: The optimal point (1D array of length `n`).
+            - lambda_opt: The Lagrange multipliers (1D array of length `m`, where `m` is the number of constraints).
 
     Notes
     -----
@@ -597,35 +598,36 @@ def lagrange(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]],
     >>> f = lambda x: x[0]**2 + x[1]**2
     >>> constraints = [lambda x: x[0] + x[1] - 1]
     >>> x0 = np.array([0.5, 0.5])
-    >>> x_opt, lambda_opt = lagrange_multipliers(f, constraints, x0)
-    >>> print(x_opt, lambda_opt)  # Expected: x_opt ≈ [0.5, 0.5], lambda_opt ≈ [-1.0]
+    >>> x_opt, lambda_opt = lagrange(f, constraints, x0)
+    >>> print(x_opt, lambda_opt)  # Expected: x_opt ≈ [0.5, 0.5], lambda_opt ≈ [1.0]
+    [0.5 0.5] [1.00000002]
     """
 
     from scipy.optimize import fsolve, approx_fprime
     
     # Validate f
     if not callable(f):
-        raise TypeError("f must be a callable function.")
+        raise TypeError("'f' must be a callable function.")
 
     # Validate constraints
     if not isinstance(constraints, list) or not all(callable(g) for g in constraints):
-        raise TypeError("constraints must be a list of callable functions.")
+        raise TypeError("'constraints' must be a list of callable functions.")
     if not constraints:
-        raise ValueError("constraints list cannot be empty.")
+        raise ValueError("'constraints' list cannot be empty.")
 
     # Validate x0
     x0 = _np.asarray(x0, dtype=float)
     if x0.ndim != 1 or not _np.all(_np.isfinite(x0)):
-        raise ValueError("x0 must be a 1D array of finite values.")
+        raise ValueError("'x0' must be a 1D array of finite values.")
 
     # Validate tol
     if not isinstance(tol, (int, float)) or tol <= 0 or not _np.isfinite(tol):
-        raise ValueError("tol must be a positive finite float.")
+        raise ValueError("'tol' must be a positive finite float.")
 
     n = len(x0)  # Number of variables
     m = len(constraints)  # Number of constraints
 
-    def system(vars: _np.ndarray) -> _np.ndarray:
+    def system(vars: ArrayLike) -> ArrayLike:
         """System of equations: ∇f = Σ λ_i ∇g_i, g_i = 0."""
         x = vars[:n]  # Variables
         lam = vars[n:]  # Lagrange multipliers
@@ -649,7 +651,7 @@ def lagrange(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]],
         # Solve the system
         solution = fsolve(system, initial_guess, xtol=tol)
         if not _np.all(_np.isfinite(solution)):
-            raise ValueError("Solver returned non-finite values.")
+            raise ValueError("'scipy.optimize.fsolve' returned non-finite values.")
         x_opt = solution[:n]
         lambda_opt = solution[n:]
         # Verify constraints
@@ -657,5 +659,11 @@ def lagrange(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]],
         if not _np.all(_np.abs(constraint_vals) < tol * 10):
             raise ValueError("Solution does not satisfy constraints within tolerance.")
         return x_opt, lambda_opt
+    
     except Exception as e:
-        raise ValueError(f"Error solving Lagrange multipliers: {str(e)}")
+        raise GenericError(
+            message=f"Error solving Lagrange multipliers: {str(e)}",
+            context="executing lagrange",
+            original_error=e,
+            details={"x0_shape": x0.shape, "n_constraints": m}
+        )

@@ -694,9 +694,9 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
         the MCMC walkers. Can be `None`.
     burn : int, optional
         Number of burn-in steps to discard from the beginning of each walker chain before flattening.
-        These initial steps are typically biased by the starting conditions. Default is 1000.
+        These initial steps are typically biased by the starting conditions. Default is `1000`.
     steps : int, optional
-        Total number of MCMC steps for each walker. Default is 5000
+        Total number of MCMC steps for each walker. Default is `5000`.
     thin : int, optional
         Subsampling factor to reduce autocorrelation between samples. Only every `thin`-th sample is retained. Default is 10.
     maxfev : int, optional
@@ -1008,14 +1008,6 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
             Lower and upper confidence bands for each point `j`.
     """
 
-    try:
-        import seaborn
-    except ImportError:
-        raise ImportError(
-            "The 'seaborn' package is not installed. "
-            "Please install it by running 'pip install seaborn'."
-        )
-
     from ._helper import uncert_prop
 
     # --- Controllo func ---
@@ -1198,7 +1190,7 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
     Returns
     -------
     lnB12 : float
-        Estimated natural logarithm of the Bayes factor ln(B12).
+        Estimated natural logarithm of the Bayes factor.
         A positive value favors model M1; a negative value favors model M1.
     BIC1 : float
         Bayesian Information Criterion for the first model.
@@ -1412,7 +1404,7 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
 
     return lnB12, BIC1, BIC2
 
-def mean(x: Union[float, ArrayLike], kind: str = 'arithmetic') -> float:
+def mean(x: Union[float, ArrayLike], kind: str = 'arith') -> float:
     """
     Compute the mean of an i_nput scalar or numpy array, with the specified type of mean.
 
@@ -1436,7 +1428,7 @@ def mean(x: Union[float, ArrayLike], kind: str = 'arithmetic') -> float:
     Returns
     -------
     result : float
-        The computed mean of x, according to the specified type.
+        The computed mean of `x`, according to the specified type.
 
     Examples
     --------
@@ -1461,9 +1453,9 @@ def mean(x: Union[float, ArrayLike], kind: str = 'arithmetic') -> float:
         if not _np.all(_np.isfinite(x)):
                 raise ValueError("'x' contains non-finite values (NaN or inf).")
     
-    if kind == 'arithmetic':
+    if kind == 'arith':
         return _np.mean(x)
-    elif kind == 'geometric':
+    elif kind == 'geom':
         if _np.any(x <= 0):
             raise ValueError("Geometric mean requires all elements to be positive.")
         return _np.exp(_np.mean(_np.log(x)))
@@ -1471,9 +1463,9 @@ def mean(x: Union[float, ArrayLike], kind: str = 'arithmetic') -> float:
         if _np.any(x == 0):
             raise ValueError("Harmonic mean requires non-zero elements.")
         return len(x) / _np.sum(1.0 / x)
-    elif kind == 'maximum':
+    elif kind == 'max':
         return _np.max(x)
-    elif kind == 'minimum':
+    elif kind == 'min':
         return _np.min(x)
     elif kind == 'rms':
         return _np.sqrt(_np.mean(x**2))
@@ -1500,7 +1492,7 @@ def mean(x: Union[float, ArrayLike], kind: str = 'arithmetic') -> float:
         raise ValueError(f"Unsupported mean type '{kind}'.")
     
 def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayLike] = None, fitmodel: str = "wls", 
-            xlabel: str = "x [ux]", ylabel: str = "y [uy]", xlim: Tuple[float, float] = [], ylim: Tuple[float, float] = [], 
+            xlabel: str = "x [ux]", ylabel: str = "y [uy]", xlim: Optional[Tuple[float, float]] = None, ylim: Optional[Tuple[float, float]] = None, 
             showlegend: bool = True, legendloc: Optional[str] = None, log: Optional[str] = None,
             xscale: int = 0, yscale: int = 0, mscale: int = 0, cscale: int = 0, m_units: str = "", c_units: str = "", 
             confidence: int = 2, confidencerange: bool = True, residuals: bool = True, norm: bool = True, 
@@ -1529,27 +1521,27 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         legendloc : str, optional
             Location of the legend on the plot ('upper right', 'lower left', 'upper center', etc.). Default is `None`.
         log : str, optional
-            If set to `'x'` or `'y'`, the corresponding axis is plotted on a logarithmic scale; if `'xy'`, both axes. Defaul is `None`.
+            If set to `'x'` or `'y'`, the corresponding axis is plotted on a logarithmic scale; if `'xy'`, both axes. Default is `None`.
         xscale : int, optional
             Scaling factor for the x-axis (e.g., `xscale = -2` corresponds to 1e-2, to convert meters to centimeters).
         yscale : int, optional
             Scaling factor for the y-axis.
         xlim : tuple, optional
             Limits for the x-axis, in the form (xmin, xmax). The values should
-            already be scaled with respect to `xscale`. If None or an empty tuple,
+            already be scaled with respect to `xscale`. If `None` or an empty tuple,
             the default limits will be automatically determined from the data.
         ylim : tuple, optional
             Limits for the y-axis, in the form (ymin, ymax). The values should
-            already be scaled with respect to `yscale`. If None or an empty tuple,
+            already be scaled with respect to `yscale`. If `None` or an empty tuple,
             the default limits will be automatically determined from the data.
         mscale : int, optional
             Scaling factor for the slope `m`.
         cscale : int, optional
             Scaling factor for the intercept `c`.
         m_units : str, optional
-            Unit of measurement for `m` (note the consistency with x, y, and scale factors). Default is `""`.
+            Unit of measurement for `m`. Default is `""`.
         c_units : str, optional
-            Unit of measurement for `c` (note the consistency with x, y, and scale factors). Default is `""`.
+            Unit of measurement for `c`. Default is `""`.
         confidence : int, optional
             Residual confidence interval to display, i.e., `[-confidence, +confidence]`.
         confidencerange : bool, optional
@@ -1577,7 +1569,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         chi2_red : float
             Reduced chi-square value (χ²/dof).
         p_value : float
-            Fit p-value (probability that the observed χ² is compatible with the model).
+            Fit p-value.
 
     Notes
     ----------
@@ -1588,6 +1580,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     """
 
     from scipy.stats import chi2
+    import math as _math
     from ._helper import my_cov, my_mean, my_var, my_line, y_estrapolato
 
     try:
@@ -1635,21 +1628,23 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     if not isinstance(yscale, (int, float)):
         raise TypeError("'yscale' must be a real number (int or float).")
 
-    if not isinstance(xlim, list):
-        raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
-    if len(xlim) != 0:
-        if len(xlim) != 2:
-            raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
-        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
-            raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
+    if xlim is not None:
+        if not isinstance(xlim, list):
+            raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
+        if len(xlim) != 0:
+            if len(xlim) != 2:
+                raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
+            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+                raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
         
-    if not isinstance(ylim, list):
-        raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
-    if len(ylim) != 0:
-        if len(ylim) != 2:
-            raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
-        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
-            raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
+    if ylim is not None:
+        if not isinstance(ylim, list):
+            raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
+        if len(ylim) != 0:
+            if len(ylim) != 2:
+                raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
+            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+                raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
         
     if not isinstance(xlabel, (str)):
         raise TypeError("'xlabel' must be a string.")
@@ -1948,13 +1943,13 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
 
 def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], 
               x_err: Optional[ArrayLike] = None, y_err: Optional[ArrayLike] = None, p0: Optional[Union[List[float], ArrayLike]] = None, 
-              xlabel: str = "x [ux]", ylabel: str = "y [uy]", xlim: Tuple[float, float] = [], ylim: Tuple[float, float] = [], 
+              xlabel: str = "x [ux]", ylabel: str = "y [uy]", xlim: Optional[Tuple[float, float]] = None, ylim: Optional[Tuple[float, float]] = None, 
               showlegend: bool = True, legendloc: Optional[str] = None, bounds: Optional[Tuple[ArrayLike, ArrayLike]] = None, 
               confidencerange: bool = True, log: Optional[str] = None, maxfev: int = 5000, 
               xscale: int = 0, yscale: int = 0, confidence: int = 2, residuals: bool = True, norm: bool = True, 
               verbose: bool = True, print_parameters: bool = True) -> Tuple[ArrayLike, ArrayLike, float, float]:
     """
-    General-purpose fit of multi-parameter functions, with an option to display residuals.
+    General-purpose fit of multi-parameter functions.
 
     Parameters
     ----------
@@ -1975,12 +1970,12 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         ylabel : str, optional
             Label (and units) for the dependent variable.
         xlim : tuple, optional
-            Limits for the x-axis, in the form (xmin, xmax). The values should
-            already be scaled with respect to `xscale`. If None or an empty tuple,
+            Limits for the x-axis, in the form `(xmin, xmax)`. The values should
+            already be scaled with respect to `xscale`. If `None` or an empty tuple,
             the default limits will be automatically determined from the data.
         ylim : tuple, optional
-            Limits for the y-axis, in the form (ymin, ymax). The values should
-            already be scaled with respect to `yscale`. If None or an empty tuple,
+            Limits for the y-axis, in the form `(ymin, ymax)`. The values should
+            already be scaled with respect to `yscale`. If `None` or an empty tuple,
             the default limits will be automatically determined from the data.
         showlegend : bool, optional
             If `True`, displays a legend with the reduced chi-square and p-value in the plot.
@@ -1991,7 +1986,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         confidencerange : bool, optional
             If `True`, displays the 1σ uncertainty band around the best-fit curve.
         log : str, optional
-            If set to `'x'` or `'y'`, the corresponding axis is plotted on a logarithmic scale; if `'xy'`, both axes. Defaul is `None`.
+            If set to `'x'` or `'y'`, the corresponding axis is plotted on a logarithmic scale; if `'xy'`, both axes. Default is `None`.
         maxfev : int, optional
             Maximum number of iterations allowed by `curve_fit`.
         xscale : int, optional
@@ -2010,7 +2005,6 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         print_parameters : bool, optional  
             If `True`, prints the best-fit parameters along with their standard uncertainties.
 
-
     Returns
     ----------
         popt : array-like
@@ -2020,15 +2014,16 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         chi2_red : float
             Reduced chi-square value (χ²/dof).
         p_value : float
-            Fit p-value (probability that the observed χ² is compatible with the model).
+            Fit p-value.
 
     Notes
     ----------
     The values of `xscale` and `yscale` affect only the axis scaling in the plot and have no impact on the fitting computation itself. 
-    All model parameters are estimated using the original i_nput data as provided.
+    All model parameters are estimated using the original input data as provided.
     """
 
     from scipy.optimize import curve_fit
+    import math as _math
 
     x = _np.asarray(x)
     y = _np.asarray(y)
@@ -2075,21 +2070,23 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
     if not isinstance(yscale, (int, float)):
         raise TypeError("'yscale' must be a real number (int or float).")
 
-    if not isinstance(xlim, list):
-        raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
-    if len(xlim) != 0:
-        if len(xlim) != 2:
-            raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
-        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
-            raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
-        
-    if not isinstance(ylim, list):
-        raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
-    if len(ylim) != 0:
-        if len(ylim) != 2:
-            raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
-        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
-            raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
+    if xlim is not None:
+        if not isinstance(xlim, list):
+            raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
+        if len(xlim) != 0:
+            if len(xlim) != 2:
+                raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
+            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+                raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
+
+    if ylim is not None:    
+        if not isinstance(ylim, list):
+            raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
+        if len(ylim) != 0:
+            if len(ylim) != 2:
+                raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
+            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+                raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
         
     if not isinstance(xlabel, (str)):
         raise TypeError("'xlabel' must be a string.")

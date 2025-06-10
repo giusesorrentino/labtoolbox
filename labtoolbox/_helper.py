@@ -386,6 +386,7 @@ class uncert_prop:
     # Plot distribution from which popt_MC is sampled
     def x_MC_dist_plot(self,contours = 15,cmap='jet',xlabel=None, ylabel=None, save_name=None):
         import matplotlib.pyplot as plt
+        from scipy.stats import multivariate_normal
         if self.method=='Monte_Carlo':
             if len(self.x)==2:
                 # Create grid and multivariate normal
@@ -490,3 +491,91 @@ class uncert_prop:
         # Upper & lower prediction bands.
         lcb, ucb = yp - dy, yp + dy
         return (lcb, ucb)
+    
+# --*-- Error Handling Class --*-- #
+
+class GenericError(Exception):
+    """
+    A generic exception class for handling unexpected errors in any context.
+
+    This exception is raised when an operation or process fails due to an unhandled or
+    unexpected error. It provides a descriptive message, an optional context, the original
+    exception (if any), and optional additional details for debugging purposes.
+
+    Parameters
+    ----------
+    message : str
+        A descriptive message explaining the error.
+    context : str, optional
+        A brief description of the situation where the error occurred (e.g., 'computing transform',
+        'parsing input'). Defaults to 'unspecified context'.
+    original_error : Exception, optional
+        The original exception that triggered this error, if applicable. Defaults to None.
+    details : dict, optional
+        Additional details about the error, such as parameter values or input characteristics.
+        Defaults to None.
+
+    Attributes
+    ----------
+    message : str
+        The error message.
+    context : str
+        The context description.
+    original_error : Exception or None
+        The original exception, if provided.
+    details : dict or None
+        Additional error details, if provided.
+
+    Examples
+    --------
+    >>> try:
+    ...     result = 1 / 0
+    ... except Exception as e:
+    ...     raise GenericError(
+    ...         message="Failed to perform division",
+    ...         context="computing reciprocal",
+    ...         original_error=e,
+    ...         details={"numerator": 1, "denominator": 0}
+    ...     )
+    Traceback (most recent call last):
+      ...
+    GenericError: Failed to perform division (context: computing reciprocal).
+    Original error: division by zero.
+    Details: {'numerator': 1, 'denominator': 0}.
+    """
+
+    def __init__(self, message: str, context: str = "unspecified context",
+                 original_error: Exception = None, details: dict = None):
+        self.message = message
+        self.context = context
+        self.original_error = original_error
+        self.details = details
+        super().__init__(self._format_message())
+
+    def _format_message(self) -> str:
+        """
+        Format the error message for display.
+
+        Returns
+        -------
+        str
+            A formatted string containing the message, context, original error (if any),
+            and details (if any).
+        """
+        msg = f"{self.message} (context: {self.context})."
+        if self.original_error:
+            msg += f"\nOriginal error: {str(self.original_error)}."
+        if self.details:
+            msg += f"\nDetails: {self.details}."
+        return msg
+
+    def __str__(self) -> str:
+        """
+        Return the formatted error message.
+
+        Returns
+        -------
+        str
+            The formatted error message.
+        """
+        return self._format_message()

@@ -1,5 +1,10 @@
 import numpy as _np
-from .stats import model_fit, lin_fit
+import matplotlib.pyplot as _plt
+from typing import Callable, Optional, Union, Tuple, List
+from numpy.typing import ArrayLike
+from ._helper import GenericError
+
+from .stats import lin_fit, model_fit
 
 def bootstrap_fit(func, xdata, ydata, y_err = None, p0 = None, punits = None, n_iter = 1000, bounds = (-_np.inf, _np.inf)):
     """
@@ -91,3 +96,9 @@ def bootstrap_fit(func, xdata, ydata, y_err = None, p0 = None, punits = None, n_
             PrintResult(value, error, name=name, ux=unit)
 
     return popt_mean, popt_std, all_popt
+
+# def lin_fit(*args, **kwargs):
+#     return linear(*args, **kwargs)
+
+# def model_fit(*args, **kwargs):
+#     return curve(*args, **kwargs)

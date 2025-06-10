@@ -466,4 +466,4 @@ def genspace(start: float, stop: float, num: int, f: Callable[[Union[float, Arra
         return points
     
     except Exception as e:
-        raise ValueError(f"Error generating points: {str(e)}")
+        raise warnings.warn(f"Error generating points: {str(e)}")

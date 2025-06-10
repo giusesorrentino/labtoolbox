@@ -5,7 +5,7 @@ LabToolbox: A scientific data analysis package
 Documentation is available in the docstrings and on GitHub:
 https://github.com/giusesorrentino/labtoolbox
 
-Submodules
+Modules
 ----------
 ::
 
@@ -55,9 +55,9 @@ __all__ = [
 
 # --- Version checker ---
 
+import json
 import warnings
 import importlib.metadata
-import json
 from urllib.request import urlopen
 
 def _check_latest_version(package_name='labtoolbox'):

@@ -74,7 +74,7 @@ LabToolbox relies on a set of well-established scientific Python libraries. When
 - **lmfit** – flexible curve-fitting with parameter constraints.
 - **astropy** – core astronomy library for Python. -->
 
-> **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9.6. Starting from version 3.0.0, it has been tested only on Python 3.11. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.6.
+> **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9. Starting from version 3.1.0, it has been tested only on Python 3.11. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.6.
 
 ## Library Structure
 

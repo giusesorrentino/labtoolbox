@@ -3,6 +3,7 @@ import matplotlib.pyplot as _plt
 import warnings
 from typing import Union, Tuple, Optional, Callable, List
 from numpy.typing import ArrayLike
+from ._helper import GenericError
 
 def fft(data: ArrayLike, 
         t: Optional[Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]] = None,
@@ -38,7 +39,7 @@ def fft(data: ArrayLike,
         Defaults to `None`.
     oversample : int, optional
         Oversampling factor for NUFFT interpolation in non-uniform 1D case. Must be >= 1.
-        Defaults to 2. Ignored for 2D data.
+        Defaults to `2`. Ignored for 2D data.
 
     Returns
     -------
@@ -295,7 +296,7 @@ def fft(data: ArrayLike,
             return X, f1[order1], f2[order2]
 
         except Exception as e:
-            raise ValueError(f"Error computing FFT2: {str(e)}")
+            raise GenericError(f"Error computing FFT2: {str(e)}")
 
 def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]] = None,
          df: Optional[Union[float, Tuple[float, float]]] = None, 
@@ -540,28 +541,46 @@ def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, Array
             return x, t1, t2
 
         except Exception as e:
-            raise ValueError(f"Error computing IFFT2: {str(e)}")
+            raise GenericError(f"Error computing IFFT2: {str(e)}")
 
-def dfs(t: ArrayLike, data: ArrayLike, order: int, plot: bool = True, showpanel: bool = True, apply_filter: bool = True, 
-        xlabel: str = "", ylabel: str = "", xscale: int = 0, yscale: int = 0, 
-        xlim: Tuple[float, float] = [], ylim: Tuple[float, float] = []) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
+def dfs(
+    t: ArrayLike,
+    data: ArrayLike,
+    order: int,
+    plot: bool = True,
+    showharmonics: bool = False,
+    showlegend: bool = True,
+    shift: bool = True,
+    apply_filter: bool = True,
+    xlabel: str = "",
+    ylabel: str = "",
+    xscale: int = 0,
+    yscale: int = 0,
+    xlim: Optional[Tuple[float, float]] = None,
+    ylim: Optional[Tuple[float, float]] = None
+) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
     """
-    Computes the discrete Fourier series approximation of a sampled function.
+    Computes the discrete Fourier series approximation of a sampled signal.
 
     Parameters
     ----------
     t : array-like
         1D array of sample points (must be uniformly spaced).
     data : array-like
-        1D array of function values sampled at points t.
+        1D array of sampled signal.
     order : int
         Order of the Fourier approximation (number of harmonics).
     plot : bool, optional
         If `True`, plots the original function and its Fourier approximation.
-    showpanel : bool, optional
-        If `True`, a top panel will display the superposition of sinusoidal basis functions
-        (harmonics) used in the Fourier series decomposition. This panel visualizes the
-        contributions of individual harmonics to the approximation of the input data.
+    showharmonics : bool, optional
+        If `True`, overlays individual harmonics (sinusoidal basis functions) used in the Fourier
+        approximation on the main plot with reduced opacity. This visualizes the contributions of
+        each harmonic to the approximation of the input data. If `False`, only the input data and
+        the Fourier approximation are plotted. Defaults to `False`.
+    showlegend : bool, optional
+        If `True`, ...
+    shift : bool, optional
+        If `True`, shifts the individual harmonics of `a0` (the mean value of `data`).
     apply_filter : bool, optional
         If `True`, applies a basic low-pass filter to reduce high-frequency noise.
     xlabel : str, optional
@@ -600,175 +619,148 @@ def dfs(t: ArrayLike, data: ArrayLike, order: int, plot: bool = True, showpanel:
     ----------
     The values of `xscale` and `yscale` affect only the axis scaling in the plot. All outputs are estimated using the original input data as provided.
     """
+    try:
+        from scipy.integrate import simpson
+        # import matplotlib.cm as _cm
+        # Validazione input
+        data = _np.asarray(data)
+        t = _np.asarray(t)
 
-    from scipy.integrate import simpson
-
-    data = _np.asarray(data)
-    t = _np.asarray(t)
-
-    if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
-        raise ValueError("'t' must be uniformly spaced.")
-
-    if not isinstance(order, (int)):
-        raise TypeError("'order' must be an integer.")
-    if order <= 0:
-        raise ValueError("'order' must be equal or greater than 1.")
-    
-    if t.size != data.size:
-        raise ValueError("'t' must have the same length as 'data'")
-    
-    if not (_np.issubdtype(data.dtype, _np.number)):
-        raise TypeError("'data' must contain only numeric types (int, float, or complex).")
-    
-    if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
-        raise TypeError("'t' must contain only real numbers (int or float).")
-    
-    if not _np.all(_np.isfinite(data)):
+        if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
+            raise ValueError("'t' must be uniformly spaced.")
+        if not isinstance(order, int):
+            raise TypeError("'order' must be an integer.")
+        if order <= 0:
+            raise ValueError("'order' must be equal or greater than 1.")
+        if t.size != data.size:
+            raise ValueError("'t' must have the same length as 'data'")
+        if not _np.issubdtype(data.dtype, _np.number):
+            raise TypeError("'data' must contain only numeric types (int, float, or complex).")
+        if not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer)) or not _np.all(_np.isreal(t)):
+            raise TypeError("'t' must contain only real numbers (int or float).")
+        if not _np.all(_np.isfinite(data)):
             raise ValueError("'data' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(t)):
+        if not _np.all(_np.isfinite(t)):
             raise ValueError("'t' contains non-finite values (NaN or inf).")
+        if not isinstance(xscale, (int, float)):
+            raise TypeError("'xscale' must be a real number (int or float).")
+        if not isinstance(yscale, (int, float)):
+            raise TypeError("'yscale' must be a real number (int or float).")
+        if xlim is not None:
+            if not isinstance(xlim, (list, tuple)):
+                raise TypeError("'xlim' must be a list or tuple (either empty or containing two real numbers).")
+            if len(xlim) != 0 and (len(xlim) != 2 or not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim)):
+                raise TypeError("'xlim' must be empty or a list/tuple of exactly two finite real numbers.")
+        if ylim is not None:
+            if not isinstance(ylim, (list, tuple)):
+                raise TypeError("'ylim' must be a list or tuple (either empty or containing two real numbers).")
+            if len(ylim) != 0 and (len(ylim) != 2 or not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim)):
+                raise TypeError("'ylim' must be empty or a list/tuple of exactly two finite real numbers.")
+        if not isinstance(xlabel, str):
+            raise TypeError("'xlabel' must be a string.")
+        if not isinstance(ylabel, str):
+            raise TypeError("'ylabel' must be a string.")
 
-    if not isinstance(xscale, (int, float)):
-        raise TypeError("'xscale' must be a real number (int or float).")
-    if not isinstance(yscale, (int, float)):
-        raise TypeError("'yscale' must be a real number (int or float).")
+        xscale = 10**xscale
+        yscale = 10**yscale
 
-    if not isinstance(xlim, list):
-        raise TypeError("'xlim' must be a list (either empty or containing two real numbers).")
-    if len(xlim) != 0:
-        if len(xlim) != 2:
-            raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
-        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
-            raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
-        
-    if not isinstance(ylim, list):
-        raise TypeError("'ylim' must be a list (either empty or containing two real numbers).")
-    if len(ylim) != 0:
-        if len(ylim) != 2:
-            raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
-        if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
-            raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
-        
-    if not isinstance(xlabel, (str)):
-        raise TypeError("'xlabel' must be a string.")
-    if not isinstance(ylabel, (str)):
-        raise TypeError("'ylabel' must be a string.")
-    
-    xscale = 10**xscale
-    yscale = 10**yscale
+        N = len(t)
+        dt = t[1] - t[0]
+        fs = 1 / dt
+        f_nyquist = fs / 2
+        max_freq = order / (t[-1] - t[0])
 
-    N = len(t)
-    dt = t[1] - t[0]
-    fs = 1 / dt                  # Sampling frequency
-    f_nyquist = fs / 2          # Nyquist frequency
-    max_freq = order / (t[-1] - t[0])  # Maximum frequency in Fourier expansion
+        if max_freq > f_nyquist:
+            warnings.warn(
+                f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
+                f"which exceeds the Nyquist frequency ({f_nyquist:.2g}). "
+                "Consider increasing the sampling frequency or applying an anti-aliasing filter."
+            )
 
-    if max_freq > f_nyquist:
-        warnings.warn(
-            f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
-            f"which exceeds the Nyquist frequency ({f_nyquist:.2g}) based on the current sampling rate. "
-            "Please consider increasing the sampling frequency or applying an anti-aliasing filter prior to sampling. "
-            "Proceeding may lead to distorted spectral analysis results."
+        a = t[0]
+        b = t[-1]
+        T = b - a
+
+        # Zeroth coefficient
+        a0 = 2 * simpson(data, t) / T
+
+        a_n = []
+        b_n = []
+
+        for n in range(1, order):
+            cos_term = _np.cos(2 * _np.pi * n * t / T)
+            sin_term = _np.sin(2 * _np.pi * n * t / T)
+            an = 2 * simpson(data * cos_term, t) / T
+            bn = 2 * simpson(data * sin_term, t) / T
+            if apply_filter:
+                decay = _np.exp(- (n / order)**2)
+                an *= decay
+                bn *= decay
+            a_n.append(an)
+            b_n.append(bn)
+
+        # Construct approximation
+        f_approx = _np.full_like(t, a0 / 2)
+        for n in range(1, order):
+            f_approx += (
+                a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
+                b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T)
+            )
+
+        if plot:
+
+            # Plot armoniche con alpha ridotto se showpanel=True
+            if showharmonics:
+                if shift:
+                    i = a0
+                max_harmonics = min(order - 1, 5)  # Limita a 10 armoniche per chiarezza
+                # cmap = _cm.viridis
+                # norm = _plt.Normalize(1, max_harmonics)
+                for n in range(1, max_harmonics + 1):
+                    harmonic = (
+                        a_n[n-1] * _np.cos(2 * _np.pi * n * t / T) +
+                        b_n[n-1] * _np.sin(2 * _np.pi * n * t / T)
+                    )
+                    _plt.plot(
+                        t / xscale, ((harmonic + i) / yscale),
+                        color="dodgerblue", lw=0.8, alpha=0.3
+                    )
+
+            # color=cmap(norm(n))
+            
+            # Plot dati originali e approssimazione
+            _plt.plot(
+                t / xscale, data / yscale, label="Input data",
+                lw=1, color="mediumblue", marker=''
+            )
+            _plt.plot(
+                t / xscale, f_approx / yscale, label=f"Partial Fourier series\nNo. of terms = {order}",
+                lw=1, color="crimson", linestyle='-'
+            )
+
+            # Imposta limiti e etichette
+            if xlim:
+                _plt.xlim(xlim)
+            if ylim:
+                _plt.ylim(ylim)
+            _plt.xlabel(xlabel)
+            _plt.ylabel(ylabel)
+            if showlegend:
+                _plt.legend()
+
+        return f_approx, a0, _np.array(a_n), _np.array(b_n)
+
+    except Exception as e:
+        raise GenericError(
+            message="Unexpected error in discrete Fourier series computation",
+            context="executing dfs",
+            original_error=e,
+            details={"t_shape": t.shape, "data_shape": data.shape, "order": order}
         )
-
-    a = t[0]
-    b = t[-1]
-    T = b - a  # Assumed period of the signal
-
-    # Zeroth coefficient
-    a0 = 2 * simpson(data, t) / T
-
-    a_n = []
-    b_n = []
-
-    for n in range(1, order):
-        cos_term = _np.cos(2 * _np.pi * n * t / T)
-        sin_term = _np.sin(2 * _np.pi * n * t / T)
-
-        an = 2 * simpson(data * cos_term, t) / T
-        bn = 2 * simpson(data * sin_term, t) / T
-
-        if apply_filter:
-            # Apply exponential decay to filter high-frequency components
-            decay = _np.exp(- (n / order)**2)
-            an *= decay
-            bn *= decay
-
-        a_n.append(an)
-        b_n.append(bn)
-
-    # Construct approximation
-    f_approx = _np.full_like(t, a0 / 2)
-
-    for n in range(1, order):
-        f_approx += (
-            a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
-            b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T)
-        )
-
-    if plot:
-
-        fig = _plt.figure(figsize=(6.4, 4.8))
-
-        if showpanel:
-            gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
-            axs = gs.subplots(sharex=True)
-
-            # Pannello superiore: componenti armoniche
-            total_harmonic = _np.zeros_like(t, dtype=float)
-            for n in range(1, order):
-                harmonic = (a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
-                            b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T))
-                total_harmonic += harmonic
-                axs[0].plot(t / xscale, harmonic / yscale, lw=0.8)
-
-            # Calcola l'ampiezza massima della somma delle armoniche
-            max_harmonic_amplitude = _np.max(_np.abs(total_harmonic / yscale))
-            axs[0].set_ylim(-1.5 * max_harmonic_amplitude, 1.5 * max_harmonic_amplitude)
-            axs[0].tick_params(labelbottom=False)
-            axs[0].set_yticklabels('')
-            # axs[0].set_yticks([])
-        else:
-            gs = fig.add_gridspec(2, hspace=0, height_ratios=[0, 1])
-            axs = gs.subplots(sharex=True)
-            #axs = gs.subplots()
-            axs[0].remove()  # Rimuovi axs[0], axs[1] rimane valido
-
-        # Pannello inferiore: dati originali e approssimazione
-        # axs[1].plot(t / xscale, data / yscale, label="Input data", lw=1, color="blue")
-        # axs[1].plot(t / xscale, f_approx / yscale, label=f"Fourier approx. (order={order})", lw=1, color="red")
-        # axs[1].set_xlabel(xlabel)
-        # axs[1].set_ylabel(ylabel)
-        # axs[1].legend()
-
-        # Pannello inferiore: dati originali e approssimazione
-        axs[1].plot(
-            t / xscale, data / yscale, label= "Input data", lw=1,
-            color =  "mediumblue", marker=''
-        )
-
-        axs[1].plot(
-            t / xscale, f_approx / yscale, label=f"Partial Fourier series\nNo. of terms = {order}", lw=1,
-            color = "crimson", linestyle='-'
-        )
-
-        # Imposta limiti se forniti
-        if xlim:
-            if showpanel:
-                axs[0].set_xlim(xlim)
-            axs[1].set_xlim(xlim)
-        if ylim:
-            axs[1].set_ylim(ylim)
-
-        axs[1].set_xlabel(xlabel)
-        axs[1].set_ylabel(ylabel)
-        axs[1].legend()
-
-    return f_approx, a0, a_n, b_n
 
 def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], interval: Tuple[float, float], order: int, 
                    num_points: int = 1000, xlabel: str = "x [ux]", ylabel: str = "y [uy]", 
-                   xscale: int = 0, yscale: int = 0) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
+                   xscale: int = 0, yscale: int = 0) -> Tuple[ArrayLike, ArrayLike, ArrayLike, float, ArrayLike, ArrayLike]:
     """
     Computes the Fourier series approximation of a function f(x)
     
@@ -777,33 +769,33 @@ def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike
     f : callable
         Function to approximate.
     interval : tuple of float
-        The interval (a, b) over which to compute the Fourier series.
+        The interval `(a, b)` over which to compute the Fourier series.
     order : int
-        Number of Fourier modes (n) to use in the approximation.
+        Number of Fourier modes to use in the approximation.
     num_points : int, optional
-        Number of points for plotting (default is 1000).
+        Number of points for plotting. Default is 1000).
         
     Returns
     -------
-    x : numpy.array
+    x : array-like
         Array of shape (N,), representing the uniformly spaced sample points over one period.
         These are the evaluation points at which both the original function and the Fourier
         approximation are computed.
-    f_original : numpy.array
+    f_original : array-like
         Array of shape (N,), representing the values of the original input function evaluated at 
         the sample points `x`. This is the reference signal used for comparison with the Fourier 
         approximation.
-    f_approx : numpy.array
+    f_approx : array-like
         Array of shape (N,), containing the values of the truncated Fourier series evaluated at 
         the same sample points `x`. This is the approximation of `f_original` using a finite number 
         of harmonics (up to the specified order).
     a0 : float
         Zeroth Fourier coefficient (mean value component of the function over the period). It 
         corresponds to the constant term of the Fourier series.
-    a_n : numpy.array
+    a_n : array-like
         Array of cosine coefficients (Fourier coefficients of the even part of the function),
         corresponding to each harmonic up to the specified order (excluding a0).
-    b_n : numpy.array
+    b_n : array-like
         Array of sine coefficients (Fourier coefficients of the odd part of the function),
         corresponding to each harmonic up to the specified order.
 
@@ -1184,13 +1176,13 @@ def envelope(signal: ArrayLike,
 
         filter_size : int, optional
             Size of the smoothing filter for 'adaptive' method. Must be odd and positive.
-            Defaults to 31.
+            Defaults to `31`.
         fs : float, optional
             Sampling frequency in Hz, used for frequency estimation in 'adaptive' method.
-            Defaults to 1.0.
+            Defaults to `1.0`.
         remove_mean : bool, optional
             If True, removes the signal mean before computing the envelope.
-            Defaults to False.
+            Defaults to `False`.
 
     Returns
     -------
@@ -1294,4 +1286,4 @@ def envelope(signal: ArrayLike,
             return upper, -lower_env
 
     except Exception as e:
-        raise ValueError(f"Error computing envelope: {str(e)}")
+        raise GenericError(f"Error computing envelope: {str(e)}")
