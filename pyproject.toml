@@ -17,7 +17,7 @@ authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
 ]
 readme = "README.md"
-license = 'MIT'
+license = { text = "BSD-3-Clause" }
 license-files = ["LICENSE"]
 requires-python = ">= 3.9.6"
 
