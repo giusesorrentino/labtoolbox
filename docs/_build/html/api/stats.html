@@ -1,0 +1,883 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Statistics (labtoolbox.stats) &#8212; labtoolbox 3.1.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=dd1205ac"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/stats';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Utilities (labtoolbox.utils)" href="utils.html" />
+    <link rel="prev" title="Signal Processing (labtoolbox.signals)" href="signals.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo_light.png" class="logo__image only-light" alt="labtoolbox 3.1.0 documentation - Home"/>
+    <img src="../_static/logo_dark.png" class="logo__image only-dark pst-js-only" alt="labtoolbox 3.1.0 documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../deprecated.html">
+    Deprecated Features
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../deprecated.html">
+    Deprecated Features
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Modules:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signal Processing (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.signals</span></code>)</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Statistics (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.stats</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.utils</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fit.html">Fitting (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.fit</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uncertainty.html">Uncertainty Quantification (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.uncertainty</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical.html">Numerical Methods (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.numerical</span></code>)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="special.html">Special Functions (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.special</span></code>)</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Statistics (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.stats</span></code>)</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-labtoolbox.stats">
+<span id="statistics-labtoolbox-stats"></span><h1>Statistics (<a class="reference internal" href="#module-labtoolbox.stats" title="labtoolbox.stats"><code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.stats</span></code></a>)<a class="headerlink" href="#module-labtoolbox.stats" title="Link to this heading">#</a></h1>
+<p>Statistical tools for LabToolbox.</p>
+<p>Provides histogram, residual analysis, outlier rejection, Bayesian inference,
+and basic statistical estimators.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.bayes_factor">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">bayes_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_err</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p0_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p0_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxfev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_bounds1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_bounds2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#bayes_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.bayes_factor" title="Link to this definition">#</a></dt>
+<dd><p>Estimate the Bayes factor between two models using the Bayesian Information Criterion (BIC).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em>) – Independent variable values of the dataset.</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – Dependent variable (observed data).</p></li>
+<li><p><strong>y_err</strong> (<em>array-like</em>) – Uncertainties (standard deviations) on the observed data.</p></li>
+<li><p><strong>f1</strong> (<em>callable</em>) – First model function to compare.</p></li>
+<li><p><strong>p0_1</strong> (<em>list</em><em> or </em><em>array-like</em>) – Initial guess for the parameters of the first model.</p></li>
+<li><p><strong>f2</strong> (<em>callable</em>) – Second model function to compare.</p></li>
+<li><p><strong>p0_2</strong> (<em>list</em><em> or </em><em>array-like</em>) – Initial guess for the parameters of the second model.</p></li>
+<li><p><strong>burn</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of initial MCMC steps to discard. Default is <cite>1000</cite>.</p></li>
+<li><p><strong>steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Total number of MCMC steps per walker. Default is <cite>5000</cite>.</p></li>
+<li><p><strong>thin</strong> (<em>int</em><em>, </em><em>optional</em>) – Thinning factor applied when flattening the MCMC chains. Default is <cite>10</cite>.</p></li>
+<li><p><strong>maxfev</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of function evaluations for the curve fitting. Default is <cite>5000</cite>.</p></li>
+<li><p><strong>prior_bounds1</strong> (<em>list</em><em> of </em><em>tuples</em><em>, </em><em>optional</em>) – Bounds for the uniform priors of the first model. Each element must be a <cite>(min, max)</cite> tuple.
+If <cite>None</cite>, unbounded uniform priors are assumed.</p></li>
+<li><p><strong>prior_bounds2</strong> (<em>list</em><em> of </em><em>tuples</em><em>, </em><em>optional</em>) – Bounds for the uniform priors of the second model.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints a formatted table of the returns. Default is <cite>True</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>lnB12</strong> (<em>float</em>) – Estimated natural logarithm of the Bayes factor.
+A positive value favors model M1; a negative value favors model M1.</p></li>
+<li><p><strong>BIC1</strong> (<em>float</em>) – Bayesian Information Criterion for the first model.</p></li>
+<li><p><strong>BIC2</strong> (<em>float</em>) – Bayesian Information Criterion for the second model.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Interpretation of ln(B12):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>ln B12 &gt; 5            : Strong evidence for model 1</p></li>
+<li><p>ln B12 ∈ [2.5, 5)     : Moderate evidence for model 1</p></li>
+<li><p>ln B12 ∈ [1, 2.5)     : Weak evidence for model 1</p></li>
+<li><p>ln B12 ∈ [-1, 1)      : Inconclusive</p></li>
+<li><p>ln B12 ∈ [-2.5, -1)   : Weak evidence for model 2</p></li>
+<li><p>ln B12 ∈ [-5, -2.5)   : Moderate evidence for model 2</p></li>
+<li><p>ln B12 &lt; -5           : Strong evidence for model 2</p></li>
+</ul>
+</div></blockquote>
+<p>The approximation assumes that the prior volume is not too informative and that the maximum a posteriori estimate is close to the maximum likelihood.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.hist">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_err</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.hist" title="Link to this definition">#</a></dt>
+<dd><p>Plots the histogram of a dataset and assess its Gaussianity using statistical indicators and a Shapiro-Wilk test.</p>
+<p>This function visualizes the empirical distribution of a dataset <cite>data</cite>, optionally accounting for individual measurement
+uncertainties <cite>data_err</cite>. It overlays a Gaussian curve parameterized by the estimated mean and standard deviation, and
+performs a normality test, reporting skewness, kurtosis, and the p-value from the Shapiro-Wilk test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>array-like</em>) – Numerical data representing the variable of interest.</p></li>
+<li><p><strong>data_err</strong> (<em>scalar</em><em> or </em><em>array-like</em><em> or </em><em>None</em>) – Array of uncertainties associated with each element of <cite>data</cite>. If <cite>None</cite>, uncertainties are not included in the
+computation of the effective standard deviation.</p></li>
+<li><p><strong>scale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling exponent for <cite>data</cite> and <cite>data_err</cite> (default is <cite>0</cite>). For example, <cite>scale = -2</cite> rescales the i_nputs by 1e2.</p></li>
+<li><p><strong>bins</strong> (<em>int</em><em> or </em><em>str</em><em>, </em><em>optional</em>) – Number of bins or binning strategy passed to <cite>matplotlib.pyplot.hist</cite>. Defaults to <cite>“auto”</cite>.</p></li>
+<li><p><strong>label</strong> (<em>str</em><em>, </em><em>optional</em>) – Label for the x-axis, typically the name of the variable.</p></li>
+<li><p><strong>unit</strong> (<em>str</em><em>, </em><em>optional</em>) – Unit of measurement for the x-axis variable (e.g., “cm”). If provided, it will be displayed in the axis label and summary output.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints a formatted table of the histogram parameters. Defaults to <cite>True</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>mean</strong> (<em>float</em>) – Arithmetic mean of the scaled data.</p></li>
+<li><p><strong>sigma</strong> (<em>float</em>) – Effective standard deviation of the distribution, accounting for both the empirical spread and uncertainties (if provided).</p></li>
+<li><p><strong>skewness</strong> (<em>float</em>) – Skewness of the distribution.</p></li>
+<li><p><strong>kurtosis</strong> (<em>float</em>) – Kurtosis of the distribution.</p></li>
+<li><p><strong>p_value</strong> (<em>float</em>) – p-value from the Shapiro-Wilk test for normality.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>The effective standard deviation is computed as <cite>np.sqrt(data.std()**2 + np.sum(data_err**2)/len(data_err))</cite> if <cite>data_err</cite> is provided.</p></li>
+<li><p>The function rescales both <cite>data</cite> and <cite>data_err</cite> by <cite>10**scale</cite> for display purposes, but all statistics are computed on the scaled data.</p></li>
+<li><p>The normal distribution is refferd to as <cite>N(mu, sigma**2)</cite>.</p></li>
+</ul>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x_err</span><span class="p">,</span> <span class="n">scale</span><span class="o">=-</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Length&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.lin_fit">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">lin_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_err</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_err</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitmodel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wls'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">[ux]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'y</span> <span class="pre">[uy]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showlegend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legendloc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidencerange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">residuals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">summary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#lin_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.lin_fit" title="Link to this definition">#</a></dt>
+<dd><p>Performs a linear fit (Weighted Least Squares or Ordinary Least Squares) and displays experimental data along with the regression line and uncertainty band.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em>) – Values of the independent variable.</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – Values of the dependent variable.</p></li>
+<li><p><strong>y_err</strong> (<em>array-like</em>) – Uncertainties associated with y values.</p></li>
+<li><p><strong>x_err</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Uncertainties associated with x values.</p></li>
+<li><p><strong>fitmodel</strong> (<em>str</em><em>, </em><em>optional</em>) – Fitting model, either “wls” or “ols”. Default is “wls”.</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Label for the x-axis, including units in square brackets (e.g., “x [m]”).</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Label for the y-axis, including units in square brackets (e.g., “y [s]”).</p></li>
+<li><p><strong>showlegend</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, displays a legend with the values of m and c on the plot.</p></li>
+<li><p><strong>legendloc</strong> (<em>str</em><em>, </em><em>optional</em>) – Location of the legend on the plot (‘upper right’, ‘lower left’, ‘upper center’, etc.). Default is <cite>None</cite>.</p></li>
+<li><p><strong>log</strong> (<em>str</em><em>, </em><em>optional</em>) – If set to <cite>‘x’</cite> or <cite>‘y’</cite>, the corresponding axis is plotted on a logarithmic scale; if <cite>‘xy’</cite>, both axes. Default is <cite>None</cite>.</p></li>
+<li><p><strong>xscale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling factor for the x-axis (e.g., <cite>xscale = -2</cite> corresponds to 1e-2, to convert meters to centimeters).</p></li>
+<li><p><strong>yscale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling factor for the y-axis.</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Limits for the x-axis, in the form (xmin, xmax). The values should
+already be scaled with respect to <cite>xscale</cite>. If <cite>None</cite> or an empty tuple,
+the default limits will be automatically determined from the data.</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Limits for the y-axis, in the form (ymin, ymax). The values should
+already be scaled with respect to <cite>yscale</cite>. If <cite>None</cite> or an empty tuple,
+the default limits will be automatically determined from the data.</p></li>
+<li><p><strong>mscale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling factor for the slope <cite>m</cite>.</p></li>
+<li><p><strong>cscale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling factor for the intercept <cite>c</cite>.</p></li>
+<li><p><strong>m_units</strong> (<em>str</em><em>, </em><em>optional</em>) – Unit of measurement for <cite>m</cite>. Default is <cite>“”</cite>.</p></li>
+<li><p><strong>c_units</strong> (<em>str</em><em>, </em><em>optional</em>) – Unit of measurement for <cite>c</cite>. Default is <cite>“”</cite>.</p></li>
+<li><p><strong>confidence</strong> (<em>int</em><em>, </em><em>optional</em>) – Residual confidence interval to display, i.e., <cite>[-confidence, +confidence]</cite>.</p></li>
+<li><p><strong>confidencerange</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, shows the 1σ uncertainty band around the fit line.</p></li>
+<li><p><strong>residuals</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, adds an upper panel showing fit residuals.</p></li>
+<li><p><strong>norm</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, residuals in the upper panel will be normalized.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints the output of <cite>wls_fit</cite> (or <cite>ols_fit</cite>) to the screen. Default is <cite>False</cite>.</p></li>
+<li><p><strong>summary</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints a formatted summary report of the fit, including
+reduced chi-square, p-value, and percentage of residuals within ±2σ.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>m</strong> (<em>float</em>) – Slope of the regression line.</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Intercept of the regression line.</p></li>
+<li><p><strong>sigma_m</strong> (<em>float</em>) – Uncertainty on the slope.</p></li>
+<li><p><strong>sigma_c</strong> (<em>float</em>) – Uncertainty on the intercept.</p></li>
+<li><p><strong>chi2_red</strong> (<em>float</em>) – Reduced chi-square value (χ²/dof).</p></li>
+<li><p><strong>p_value</strong> (<em>float</em>) – Fit p-value.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>The values of <cite>xscale</cite> and <cite>yscale</cite> affect only the axis scaling in the plot and have no impact on the fitting computation itself. All model parameters are estimated using the original i_nput data as provided.</p></li>
+<li><p>LaTeX formatting is already embedded in the strings used to display the units of <cite>m</cite> and <cite>c</cite>. You do not need to use “$…$”.</p></li>
+<li><p>If <cite>c_scale = 0</cite> (recommended when using <cite>c_units</cite>), then <cite>c_units</cite> will represent the suffix corresponding to 10^yscale (+ <cite>y_units</cite>).</p></li>
+<li><p>If <cite>m_scale = 0</cite> (recommended when using <cite>m_units</cite>), then <cite>m_units</cite> will represent the suffix corresponding to 10^(yscale - xscale) [+ <cite>y_units/x_units</cite>].</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.mean">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'arith'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.mean" title="Link to this definition">#</a></dt>
+<dd><p>Compute the mean of an input scalar or numpy array, with the specified type of mean.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em><em> or </em><em>array-like</em>) – Input data. Can be a scalar or a numpy array. If a scalar is provided, it is returned as the mean.</p></li>
+<li><p><strong>kind</strong> (<em>str</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>Type of mean to compute. Supported options are:</dt><dd><ul>
+<li><p>’max’          : maximum value of x</p></li>
+<li><p>’min’          : minimum value of x</p></li>
+<li><p>’arith’        : arithmetic mean (default)</p></li>
+<li><p>’geom’         : geometric mean</p></li>
+<li><p>’harmonic’     : harmonic mean</p></li>
+<li><p>’rms’          : root mean square (quadratic mean)</p></li>
+<li><p>’cubic’        : cubic mean (third-order)</p></li>
+<li><p>’agm’          : arithmetic-geometric mean</p></li>
+<li><p>float (number) : generalized mean of order p</p></li>
+</ul>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>result</strong> – The computed mean of <cite>x</cite>, according to the specified type.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">labtoolbox.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mean</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;arithmetic&#39;</span><span class="p">)</span>
+<span class="go">2.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mean</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="s1">&#39;rms&#39;</span><span class="p">)</span>
+<span class="go">2.7386127875258306</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mean</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+<span class="go">2.7386127875258306</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.model_fit">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">model_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_err</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_err</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x</span> <span class="pre">[ux]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylabel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'y</span> <span class="pre">[uy]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ylim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">showlegend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legendloc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidencerange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxfev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">residuals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#model_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.model_fit" title="Link to this definition">#</a></dt>
+<dd><p>General-purpose fit of multi-parameter functions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em>) – Measured values of the independent variable.</p></li>
+<li><p><strong>y</strong> (<em>array-like</em>) – Measured values of the dependent variable.</p></li>
+<li><p><strong>f</strong> (<em>function</em>) – Function of one variable (first argument of <cite>f</cite>) with <cite>N</cite> free parameters.</p></li>
+<li><p><strong>x_err</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Uncertainties associated with the independent variable. Default is <cite>None</cite>.</p></li>
+<li><p><strong>y_err</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Uncertainties associated with the dependent variable. Default is <cite>None</cite>.</p></li>
+<li><p><strong>p0</strong> (<em>list</em><em> or </em><em>array-like</em><em> of </em><em>floats</em><em>, </em><em>optional</em>) – Initial guess for the model parameters, in the form <cite>[a, …, z]</cite>. Default is <cite>None</cite>.</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Label (and units) for the independent variable.</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em><em>, </em><em>optional</em>) – Label (and units) for the dependent variable.</p></li>
+<li><p><strong>xlim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Limits for the x-axis, in the form <cite>(xmin, xmax)</cite>. The values should
+already be scaled with respect to <cite>xscale</cite>. If <cite>None</cite> or an empty tuple,
+the default limits will be automatically determined from the data.</p></li>
+<li><p><strong>ylim</strong> (<em>tuple</em><em>, </em><em>optional</em>) – Limits for the y-axis, in the form <cite>(ymin, ymax)</cite>. The values should
+already be scaled with respect to <cite>yscale</cite>. If <cite>None</cite> or an empty tuple,
+the default limits will be automatically determined from the data.</p></li>
+<li><p><strong>showlegend</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, displays a legend with the reduced chi-square and p-value in the plot.</p></li>
+<li><p><strong>legendloc</strong> (<em>str</em><em>, </em><em>optional</em>) – Location of the legend in the plot (‘upper right’, ‘lower left’, ‘upper center’, etc.). Default is <cite>None</cite>.</p></li>
+<li><p><strong>bounds</strong> (<em>2-tuple</em><em> of </em><em>array-like</em><em>, </em><em>optional</em>) – Tuple <cite>([lower_bounds], [upper_bounds])</cite> specifying bounds for the parameters. Default is <cite>None</cite>.</p></li>
+<li><p><strong>confidencerange</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, displays the 1σ uncertainty band around the best-fit curve.</p></li>
+<li><p><strong>log</strong> (<em>str</em><em>, </em><em>optional</em>) – If set to <cite>‘x’</cite> or <cite>‘y’</cite>, the corresponding axis is plotted on a logarithmic scale; if <cite>‘xy’</cite>, both axes. Default is <cite>None</cite>.</p></li>
+<li><p><strong>maxfev</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of iterations allowed by <cite>curve_fit</cite>.</p></li>
+<li><p><strong>xscale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling factor for the x-axis (e.g., <cite>xscale = -2</cite> corresponds to 1e-2, to convert meters to centimeters).</p></li>
+<li><p><strong>yscale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling factor for the y-axis.</p></li>
+<li><p><strong>confidence</strong> (<em>int</em><em>, </em><em>optional</em>) – Residual confidence interval to display, i.e., <cite>[-confidence, +confidence]</cite>.</p></li>
+<li><p><strong>residuals</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, adds an upper panel showing fit residuals.</p></li>
+<li><p><strong>norm</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, residuals in the upper panel will be normalized.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints a formatted summary report of the fit, including
+reduced chi-square, p-value, and percentage of residuals within ±2σ.</p></li>
+<li><p><strong>print_parameters</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints the best-fit parameters along with their standard uncertainties.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>popt</strong> (<em>array-like</em>) – Array of optimal parameters estimated from the fit.</p></li>
+<li><p><strong>perr</strong> (<em>array-like</em>) – Uncertainties on the optimal parameters (only if <cite>y_err</cite> is provided).</p></li>
+<li><p><strong>chi2_red</strong> (<em>float</em>) – Reduced chi-square value (χ²/dof).</p></li>
+<li><p><strong>p_value</strong> (<em>float</em>) – Fit p-value.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The values of <cite>xscale</cite> and <cite>yscale</cite> affect only the axis scaling in the plot and have no impact on the fitting computation itself.
+All model parameters are estimated using the original input data as provided.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.posterior">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">posterior</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_err</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxfev</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'k'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#posterior"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.posterior" title="Link to this definition">#</a></dt>
+<dd><p>Performs a Bayesian parameter estimation using MCMC for a user-defined model function.</p>
+<p>This function fits a given model <cite>f</cite> to the experimental data <cite>(x, y)</cite> with associated uncertainties <cite>y_err</cite>
+by first performing a frequentist optimization (<cite>curve_fit</cite>) to obtain initial estimates, and then
+running a Markov Chain Monte Carlo (MCMC) sampling using the <cite>emcee</cite> package to derive the full
+posterior distribution of the model parameters. It returns the flattened MCMC sample chain representing the posterior samples,
+the maximum likelihood estimate (MLE) of the parameters, and it visualizes the posterior distribution via a corner plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em><em>,</em>) – Independent variable data points.</p></li>
+<li><p><strong>y</strong> (<em>array-like</em><em>,</em>) – Dependent variable data points to be fitted.</p></li>
+<li><p><strong>y_err</strong> (<em>array-like</em>) – Uncertainties of the dependent data <cite>y</cite>. Used for computing chi-squared
+and log-likelihood in the MCMC sampling. Can be <cite>None</cite>.</p></li>
+<li><p><strong>f</strong> (<em>callable</em>) – The model function to fit. Must be of the form <cite>f(x, *params)</cite>, where <cite>x</cite> is the independent variable
+and <cite>params</cite> are the free parameters of the model.</p></li>
+<li><p><strong>p0</strong> (<em>list</em><em> or </em><em>array-like</em>) – Initial guess for the M free parameters of the model. Used both for <cite>curve_fit</cite> and to initialize
+the MCMC walkers. Can be <cite>None</cite>.</p></li>
+<li><p><strong>burn</strong> (<em>int</em><em>, </em><em>optional</em>) – Number of burn-in steps to discard from the beginning of each walker chain before flattening.
+These initial steps are typically biased by the starting conditions. Default is <cite>1000</cite>.</p></li>
+<li><p><strong>steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Total number of MCMC steps for each walker. Default is <cite>5000</cite>.</p></li>
+<li><p><strong>thin</strong> (<em>int</em><em>, </em><em>optional</em>) – Subsampling factor to reduce autocorrelation between samples. Only every <cite>thin</cite>-th sample is retained. Default is 10.</p></li>
+<li><p><strong>maxfev</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum number of function evaluations for the <cite>curve_fit</cite> routine. If exceeded, the fit will fail. Default is 5000.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints a formatted table of … Default is <cite>True</cite>.</p></li>
+<li><p><strong>names</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Parameter names to be used in the <cite>corner</cite> plot and output. If <cite>None</cite>, defaults to [‘p0’, ‘p1’, …, ‘pN’].</p></li>
+<li><p><strong>prior_bounds</strong> (<em>list</em><em> of </em><em>tuple</em><em>, </em><em>optional</em>) – Prior bounds on the parameters, as a list of <cite>(min, max)</cite> tuples for each parameter.
+If <cite>None</cite>, assumes uninformative priors that only reject non-positive values.</p></li>
+<li><p><strong>plot_dataset</strong> (<em>bool</em><em>, </em><em>optional</em>) – Draw the individual data points. Default is <cite>False</cite>.</p></li>
+<li><p><strong>plot_density</strong> (<em>bool</em><em>, </em><em>optional</em>) – Draw the density colormap. Default is <cite>False</cite>.</p></li>
+<li><p><strong>color</strong> (<em>str</em><em>, </em><em>optional</em>) – A <cite>matplotlib</cite> style color for all histograms. Default is <cite>k</cite></p></li>
+<li><p><strong>**kwargs</strong> – Any remaining keyword arguments are passed to <cite>corner.corner</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>mle_params</strong> (<em>numpy.ndarray, shape (M,)</em>) – The parameter vector corresponding to the sample with the highest log-probability (maximum
+likelihood estimate) in the posterior chain</p></li>
+<li><p><strong>flat_samples</strong> (<em>numpy.ndarray, shape (n_samples, M)</em>) – Flattened MCMC sample chain (after burn-in and thinning). Each row is a sample of the M parameters.
+This chain can be used for uncertainty analysis, plotting posteriors, or further statistical inference.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>This implementation assumes a <strong>uniform prior</strong> over all parameters, constrained to be strictly positive.
+Parameters less than or equal to zero are automatically rejected (log-prob = -inf).</p></li>
+<li><p>The <cite>params</cite> object returned is for reference only; it does not contain MCMC results.
+To use posterior values in further analysis, refer to <cite>flat_samples</cite>.</p></li>
+<li><p>The performance and correctness of the posterior heavily depend on the choice of priors, model structure,
+and convergence of the sampler. Always check convergence diagnostics in real analyses.</p></li>
+</ul>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">b</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">_np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">_np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_err</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">_np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">posterior</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_err</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.propagate">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">propagate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_err</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Monte_Carlo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_sample_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#propagate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.propagate" title="Link to this definition">#</a></dt>
+<dd><p>Propagates uncertainty from i_nput arrays to a generic function using the <cite>uncertainty_class</cite> library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<em>callable</em>) – The base function, in the form <cite>f(x, a)</cite> where:
+- <cite>x</cite> is a vector of variables.
+- <cite>a</cite> is a vector of parameters (optional).</p></li>
+<li><p><strong>x_val</strong> (<em>list</em><em> of </em><em>numpy.array</em>) – List containing the i_nput variable arrays <cite>[x1, x2, …, xn]</cite>. Each entry can be:
+- a scalar,
+- a numpy array of values (same length across all xi).</p></li>
+<li><p><strong>x_err</strong> (<em>list</em><em> or </em><em>numpy.array</em>) – List of uncertainties for each variable (scalars or arrays),
+or a full covariance matrix.</p></li>
+<li><p><strong>params</strong> (<em>list</em><em> or </em><em>numpy.array</em><em>, </em><em>optional</em>) – List or array of constant parameters <cite>[a1, a2, …, am]</cite>.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – The uncertainty propagation method (‘Delta’ or ‘Monte_Carlo’).</p></li>
+<li><p><strong>MC_sample_size</strong> (<em>int</em><em>, </em><em>optional</em>) – Sample size for the Monte Carlo method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f_values</strong> (<em>numpy.ndarray</em>) – Values of the function calculated at each point <cite>j</cite>.</p></li>
+<li><p><strong>f_err</strong> (<em>numpy.ndarray</em>) – Propagated uncertainties on the output function for each point <cite>j</cite>.</p></li>
+<li><p><strong>confidence_bands</strong> (<em>tuple of numpy.ndarray</em>) – Lower and upper confidence bands for each point <cite>j</cite>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.remove_outliers">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">remove_outliers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_err</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'zscore'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#remove_outliers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.remove_outliers" title="Link to this definition">#</a></dt>
+<dd><p>Removes outliers from a data array according to the specified method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>array-like</em>) – Observed data.</p></li>
+<li><p><strong>data_err</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Uncertainties on the data. Necessary if comparing with <cite>‘expected’</cite>.</p></li>
+<li><p><strong>expected</strong> (<em>array-like</em><em>, </em><em>optional</em>) – Expected values for the data. If provided, the <cite>‘zscore’</cite> method is automatically used.</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – Method to use (<cite>“zscore”</cite>, <cite>“mad”</cite>, or <cite>“iqr”</cite>). Default: <cite>“zscore”</cite>.</p></li>
+<li><p><strong>threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – Threshold value to identify outliers. Default: <cite>3.0</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>data_clean</strong> – Data without outliers.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="labtoolbox.stats.residuals">
+<span class="sig-prename descclassname"><span class="pre">labtoolbox.stats.</span></span><span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_err</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">confidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/labtoolbox/stats/stats.html#residuals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#labtoolbox.stats.residuals" title="Link to this definition">#</a></dt>
+<dd><p>Analyzes and visualizes the residuals of the quantity of interes, including histogram, Gaussianity test, and autocorrelation test (Durbin-Watson statistic).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>array-like</em>) – Measured data points.</p></li>
+<li><p><strong>expected_data</strong> (<em>array-like</em>) – Expected values to compare with <cite>data</cite> (e.g., from a model, theoretical prediction, or fit).</p></li>
+<li><p><strong>data_err</strong> (<em>array-like</em>) – Uncertainties associated with each data point in <cite>data</cite>.</p></li>
+<li><p><strong>scale</strong> (<em>int</em><em>, </em><em>optional</em>) – Scaling exponent applied to all quantities (e.g. <cite>scale = -2</cite> scales meters to centimeters). Default is <cite>0</cite>.</p></li>
+<li><p><strong>unit</strong> (<em>str</em><em>, </em><em>optional</em>) – Unit of measurement of the data (e.g., <cite>“cm”</cite> or <cite>“s”</cite>). Used for labeling axes. Default is an empty string.</p></li>
+<li><p><strong>bins</strong> (<em>int</em><em> or </em><em>str</em><em>, </em><em>optional</em>) – Number of bins or binning strategy passed to <cite>matplotlib.pyplot.hist</cite>. Default is <cite>“auto”</cite>.</p></li>
+<li><p><strong>confidence</strong> (<em>float</em><em>, </em><em>optional</em>) – Confidence factor for visualizing bounds (e.g., <cite>confidence = 2</cite> draws ±2σ bounds). Default is <cite>2</cite>.</p></li>
+<li><p><strong>norm</strong> (<em>bool</em><em>, </em><em>optionale</em>) – If <cite>True</cite>, residuals will be normalized. Default is <cite>False</cite>.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <cite>True</cite>, prints a formatted table of the returns (mean value, standard deviation, skewness, kurtosis, p-value and Durbin–Watson statistic). Default is <cite>True</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>mean</strong> (<em>float</em>) – Mean value of the residuals, after applying the specified scale.</p></li>
+<li><p><strong>sigma</strong> (<em>float</em>) – Estimated standard deviation of the residuals, weighted by <cite>data_err</cite>.</p></li>
+<li><p><strong>skewness</strong> (<em>float</em>) – Skewness (third standardized moment) of the residual distribution.</p></li>
+<li><p><strong>kurtosis</strong> (<em>float</em>) – Excess kurtosis (fourth standardized moment minus 3) of the residual distribution.</p></li>
+<li><p><strong>p_value</strong> (<em>float</em>) – p-value from the Shapiro–Wilk normality test.</p></li>
+<li><p><strong>dw</strong> (<em>float</em>) – Durbin–Watson statistic for testing autocorrelation in the residuals.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>The residuals are computed as <cite>resid = data - expected_data</cite>, and scaled by <cite>10**scale</cite>.</p></li>
+<li><p>The standard deviation is computed as`np.sqrt(resid.std()**2 + np.sum(data_err**2)/len(data_err))`.</p></li>
+<li><p>The normal distribution is refferd to as <cite>N(mu, sigma**2)</cite>.</p></li>
+<li><dl class="simple">
+<dt>The Shapiro–Wilk test is used to test for normality of the residuals:</dt><dd><ul>
+<li><p>If <cite>p_value &gt;= 0.05</cite>, residuals are considered consistent with a normal distribution.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>The Durbin–Watson statistic is used to detect first-order autocorrelation:</dt><dd><ul>
+<li><p>Values ≈ 2 suggest no autocorrelation.</p></li>
+<li><p>Values &lt; 1.5 suggest positive autocorrelation.</p></li>
+<li><p>Values &gt; 2.5 suggest negative autocorrelation.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="signals.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Signal Processing (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.signals</span></code>)</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="utils.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">labtoolbox.utils</span></code>)</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.bayes_factor"><code class="docutils literal notranslate"><span class="pre">bayes_factor()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.hist"><code class="docutils literal notranslate"><span class="pre">hist()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.lin_fit"><code class="docutils literal notranslate"><span class="pre">lin_fit()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.mean"><code class="docutils literal notranslate"><span class="pre">mean()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.model_fit"><code class="docutils literal notranslate"><span class="pre">model_fit()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.posterior"><code class="docutils literal notranslate"><span class="pre">posterior()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.propagate"><code class="docutils literal notranslate"><span class="pre">propagate()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.remove_outliers"><code class="docutils literal notranslate"><span class="pre">remove_outliers()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#labtoolbox.stats.residuals"><code class="docutils literal notranslate"><span class="pre">residuals()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/stats.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Giuseppe Sorrentino.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
