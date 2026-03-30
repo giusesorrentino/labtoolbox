@@ -8,107 +8,99 @@ from typing import Callable, Union, List
 
 def PrintResult(value: Union[float, ArrayLike], err: Union[float, ArrayLike], name: Union[List[str], str] = "", unit: Union[List[str], str] = "") -> None:
     """
-    Returns a formatted string in the "mean ± sigma" format, with sigma to two significant figures,
-    and the mean rounded consistently.
+    Prints a formatted `mean ± sigma` representation with sigma rounded to two significant figures.
 
     Parameters
     ----------
     value : scalar or array-like
-        Value of the variable.
+        Central value(s).
     err : scalar or array-like
-        Uncertainty of the variable considered.
+        Uncertainty value(s), must match `value` shape when array-like.
     name : str or list of str, optional
-        Name of the variable to display before the value. Default is an empty string.
+        Variable name(s) used as prefix. Defaults to ``""``.
     unit : str or list of str, optional
-        Unit of measurement to display after the value in parentheses. Default is an empty string.
+        Unit symbol(s) appended to the result. Defaults to ``""``.
 
     Returns
     -------
     None
-        Prints the formatted string directly.
+        Output is printed to stdout.
+
+    Raises
+    ------
+    TypeError
+        If inputs are not numeric or incompatible with each other.
+    ValueError
+        If uncertainty is non-positive or values contain non-finite entries.
     """
 
-    if _np.isscalar(value) and _np.isscalar(err):
-        # 1. Arrotonda sigma a due cifre significative
-        if not isinstance(value, (int, float)):
-            raise TypeError("'value' must be a real number (int or float).")
-        if not isinstance(err, (int, float)):
-            raise TypeError("'err' must be a real number (int or float).")
-        
-        if err == 0:
-            raise ValueError("'err' cannot be zero.")
-        if err < 0:
-            raise ValueError("'err' cannot be negative.")
-            
-        exponent = int(_math.floor(_math.log10(abs(err))))
-        factor = 10**(exponent - 1)
-        rounded_sigma = round(err / factor) * factor
+    def _format_pair(mean_value: float, sigma_value: float, name_value: str, unit_value: str):
+        if not _np.isfinite(mean_value) or not _np.isfinite(sigma_value):
+            raise ValueError("'value' and 'err' must be finite numbers.")
+        if sigma_value <= 0:
+            raise ValueError("'err' must be positive and non-zero.")
 
-        # 2. Arrotonda mean allo stesso ordine di grandezza di sigma
-        rounded_mean = round(value, -exponent + 1)
+        exponent = int(_math.floor(_math.log10(abs(sigma_value))))
+        factor = 10 ** (exponent - 1)
+        rounded_sigma = round(sigma_value / factor) * factor
+        rounded_mean = round(mean_value, -exponent + 1)
 
-        # 3. Converte in stringa mantenendo zeri finali
-        fmt = f".{-exponent + 1}f" if exponent < 1 else "f"
-        mean_str = f"{rounded_mean:.{max(0, -exponent + 1)}f}"
-        sigma_str = f"{rounded_sigma:.{max(0, -exponent + 1)}f}"
+        digits = max(0, -exponent + 1)
+        mean_str = f"{rounded_mean:.{digits}f}"
+        sigma_str = f"{rounded_sigma:.{digits}f}"
 
-        # 4. Crea la stringa risultante
-        result = ""
-
-        # Costruzione della parte numerica
-        if unit != "":
-            value_part = f"({mean_str} ± {sigma_str}) {unit}"
-        else:
-            value_part = f"{mean_str} ± {sigma_str}"
-
-        # Aggiunta della percentuale relativa se possibile
+        value_part = f"({mean_str} ± {sigma_str}) {unit_value}" if unit_value else f"{mean_str} ± {sigma_str}"
         if rounded_mean != 0:
-            nu = rounded_sigma / rounded_mean
-            value_part += f" [{_np.abs(nu) * 100:.2f}%]"
+            rel = _np.abs(rounded_sigma / rounded_mean) * 100
+            value_part += f" [{rel:.2f}%]"
 
-        # Aggiunta del nome della variabile, se fornito
-        if name != "":
-            result = f"{name} = {value_part}"
-        else:
-            result = value_part
+        if name_value:
+            value_part = f"{name_value} = {value_part}"
 
-        print(result)
+        return value_part
+
+    if _np.isscalar(value) and _np.isscalar(err):
+        if not isinstance(value, (int, float, _np.integer, _np.floating)):
+            raise TypeError("'value' must be a real number (int or float).")
+        if not isinstance(err, (int, float, _np.integer, _np.floating)):
+            raise TypeError("'err' must be a real number (int or float).")
+
+        name_value = name if isinstance(name, str) else ""
+        unit_value = unit if isinstance(unit, str) else ""
+
+        print(_format_pair(float(value), float(err), name_value, unit_value))
+
     else:
-        value = _np.asarray(value)
-        err = _np.asarray(err)
+        value_arr = _np.asarray(value, dtype=float)
+        err_arr = _np.asarray(err, dtype=float)
 
-        if not all(isinstance(item, (int, float)) for item in value):
-            raise TypeError("All elements in 'value' must be real numbers (int or float).")
-        if not all(isinstance(item, (int, float)) for item in err):
-            raise TypeError("All elements in 'err' must be real numbers (int or float).")
-        
-        if not isinstance(name, list):
-            raise TypeError("'name' must be a list")
-        if not all(isinstance(item, str) for item in name):
-            raise TypeError("All elements in 'name' must be strings")
-        
-        if not isinstance(unit, list):
-            raise TypeError("'unit' must be a list")
-        if not all(isinstance(item, str) for item in unit):
-            raise TypeError("All elements in 'unit' must be strings")
+        if value_arr.shape != err_arr.shape:
+            raise ValueError("Shapes of 'value' and 'err' must match.")
+        if value_arr.size == 0:
+            raise ValueError("'value' and 'err' cannot be empty arrays.")
+        if not _np.all(_np.isfinite(value_arr)) or not _np.all(_np.isfinite(err_arr)):
+            raise ValueError("'value' and 'err' must be finite numbers.")
 
-        if not (len(value) == len(err) == len(name) == len(unit)):
-            raise ValueError("'value', 'err', 'name' and 'unit' must have the same length.")
+        if isinstance(name, str):
+            names = [name] * value_arr.size
+        elif isinstance(name, list):
+            if len(name) != value_arr.size:
+                raise ValueError("Length of 'name' must match length of 'value'.")
+            names = name
+        else:
+            raise TypeError("'name' must be a string or list of strings.")
 
-        if value.size == 0 and err.size != 0:
-            raise ValueError("'value' is an empty array.")
-        if err.size == 0 and value.size != 0:
-            raise ValueError("'err' is an empty array.")
-        if value.size == 0 and err.size == 0:
-            raise ValueError("'value' and 'err' are empty arrays.")
-        
-        if not _np.all(_np.isfinite(value)):
-            raise ValueError("'value' contains non-finite values (NaN or inf).")
-        if not _np.all(_np.isfinite(err)):
-            raise ValueError("'err' contains non-finite values (NaN or inf).")
+        if isinstance(unit, str):
+            units = [unit] * value_arr.size
+        elif isinstance(unit, list):
+            if len(unit) != value_arr.size:
+                raise ValueError("Length of 'unit' must match length of 'value'.")
+            units = unit
+        else:
+            raise TypeError("'unit' must be a string or list of strings.")
 
-        for i in range(len(value)):
-            PrintResult(value[i], err[i], name[i], unit[i])
+        for mean_value, sigma_value, name_value, unit_value in zip(value_arr, err_arr, names, units):
+            print(_format_pair(float(mean_value), float(sigma_value), name_value, unit_value))
 
 def format_str(data: Union[float, ArrayLike], err: Union[float, ArrayLike]) -> List[str]:
     """
@@ -125,6 +117,13 @@ def format_str(data: Union[float, ArrayLike], err: Union[float, ArrayLike]) -> L
     -------
     list of str
         LaTeX strings like "$data \pm data_err$" with proper rounding.
+
+    Raises
+    ------
+    TypeError
+        If elements in `data` or `err` are not real numbers.
+    ValueError
+        If shapes of `data` and `err` do not match, or if arrays are empty or contain non-finite values.
     """
 
     data = _np.atleast_1d(data)
@@ -184,6 +183,13 @@ def latex_table(data: List[ArrayLike], header: List[str], filename: str, caption
         Label used for referencing the table in LaTeX.
     align : str, optional
         Column alignment string (e.g., "lcr"). If a single character ("l", "c", or "r") is given, it is repeated for all columns.
+    
+    Raises
+    ------
+    ValueError
+        If length of `header` does not match number of columns in `data`.
+    TypeError
+        If `data` is not a list of numpy arrays, `header` is not a list of strings, or `caption`, `label`, `align` are not scalars.
     
     Notes
     -----
@@ -277,11 +283,6 @@ def latex_table(data: List[ArrayLike], header: List[str], filename: str, caption
         f.write("\\end{tabular}\n")
         f.write("\\end{table}\n")
     
-def noise(n, std):
-    warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
-    from .stats import samples
-    return samples(n, 'normal', mu = 0, sigma = std)
-
 def convert(value: Union[float, ArrayLike], from_unit: Union[str, List[str]], to_unit: Union[str, List[str]]) -> Union[float, ArrayLike]:
     """
     Converts a physical quantity between units, supporting SI prefixes, non-SI units and 
@@ -296,13 +297,22 @@ def convert(value: Union[float, ArrayLike], from_unit: Union[str, List[str]], to
     to_unit : str or list of str
         Desired target unit (e.g., 'J', 'm/s', 'GeV/fm^3').
 
+    Raises
+    ------
+    TypeError
+        If `value` has invalid type or units are improperly specified.
+    ValueError
+        If units cannot be parsed or converted.
+    ImportError
+        If `astropy` is not installed.
+
     Returns
     -------
-    float or numpy.arrayf
-        The value converted to the target unit.
+    float or numpy.ndarray
+        Value converted to the target unit.
     """
 
-    from ._helper import parse_unit
+    from .._helper import parse_unit
 
     try:
         from astropy import units as u
@@ -314,20 +324,20 @@ def convert(value: Union[float, ArrayLike], from_unit: Union[str, List[str]], to
         )
 
     if _np.isscalar(value):
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, (int, float, _np.integer, _np.floating)):
             raise TypeError("'value' must be a real number (int or float).")
+
+        parsed_from = parse_unit(from_unit)
+        parsed_to = parse_unit(to_unit)
+        quantity = float(value) * u.Unit(parsed_from)
+
         try:
-            parsed_from = parse_unit(from_unit)
-            parsed_to = parse_unit(to_unit)
-            quantity = value * u.Unit(parsed_from)
             converted = quantity.to(parsed_to)
-            print(f"I_nput:  {value} [{from_unit}]")
-            print(f"Output: {converted.value} [{to_unit}]")
-            return converted.value
         except UnitConversionError as e:
-            raise UnitConversionError(f"Cannot convert from '{from_unit}' to '{to_unit}': {e}")
-        except ValueError as e:
-            raise ValueError(f"Invalid unit specified: {e}")
+            raise UnitConversionError(f"Cannot convert from '{from_unit}' to '{to_unit}': {e}") from e
+
+        return float(converted.value)
+
     else:
         # Rigorous input validation
         if not isinstance(value, _np.ndarray):
@@ -349,20 +359,21 @@ def convert(value: Union[float, ArrayLike], from_unit: Union[str, List[str]], to
             raise ValueError("'value' contains non-finite values (NaN or inf).")
 
         # Vectorized conversion
+        value_arr = _np.asarray(value, dtype=float)
+
+        if value_arr.shape[0] != len(from_unit) or value_arr.shape[0] != len(to_unit):
+            raise ValueError("'value', 'from_unit', and 'to_unit' must have the same length.")
+
         converted_values = []
-        for v, f_unit, t_unit in zip(value, from_unit, to_unit):
+        for v, f_unit, t_unit in zip(value_arr, from_unit, to_unit):
+            parsed_f = parse_unit(f_unit)
+            parsed_t = parse_unit(t_unit)
+            q = float(v) * u.Unit(parsed_f)
             try:
-                parsed_f = parse_unit(f_unit)
-                parsed_t = parse_unit(t_unit)
-                q = v * u.Unit(parsed_f)
                 c = q.to(parsed_t)
-                print(f"I_nput:  {v} [{f_unit}]")
-                print(f"Output: {c.value} [{t_unit}]")
-                converted_values.append(c.value)
             except UnitConversionError as e:
-                raise UnitConversionError(f"Cannot convert from '{f_unit}' to '{t_unit}': {e}")
-            except ValueError as e:
-                raise ValueError(f"Invalid unit specified for item: {e}")
+                raise UnitConversionError(f"Cannot convert from '{f_unit}' to '{t_unit}': {e}") from e
+            converted_values.append(float(c.value))
 
         return _np.array(converted_values)
 
@@ -466,4 +477,4 @@ def genspace(start: float, stop: float, num: int, f: Callable[[Union[float, Arra
         return points
     
     except Exception as e:
-        raise warnings.warn(f"Error generating points: {str(e)}")
+        raise RuntimeError(f"Error generating points: {e}") from e

@@ -18,12 +18,18 @@ Modules
 Public API in the LabToolbox namespace
 --------------------------------------
 ::
-
+ __version__   --- 
  PrintResult   --- Pretty-print numerical results with uncertainties
  convert       --- Units converter
  mean          --- Generalised means
  genspace      --- Generalized linspace generator
 """
+
+# labtoolbox - A Python library for scientific data analysis
+# Copyright (c) 2025, Giuseppe Sorrentino
+# Licensed under the BSD 3-Clause License. See LICENSE file for details.
+
+__version__ = "3.1.0"
 
 # Public API
 from .utils import PrintResult, convert, genspace

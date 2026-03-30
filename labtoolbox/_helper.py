@@ -346,6 +346,10 @@ class uncert_prop:
         - Upper and lower confident bands of func(x). If sample_size = None then critical value is taken from normal distribution. Else, t-Student distribution is used.
    
     """
+    
+    # this class, available at https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master, 
+    # provides functionality for uncertainty propagation in calculations.
+
     import functools
     
     def __init__(self,func,x,cov_matrix=None,method='Delta',MC_sample_size=10000,grad_dx=1e-8):

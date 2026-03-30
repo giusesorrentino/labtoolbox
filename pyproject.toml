@@ -11,13 +11,13 @@ labtoolbox = ["README.md", "LICENSE"]
 
 [project]
 name = "labtoolbox"
-version = "3.1.0rc3"
+version = "3.1.0rc4"
 description = "A Python package for the analysis and processing of experimental data in scientific research."
 authors = [
     { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
 ]
 readme = "README.md"
-license = 'MIT'
+license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 requires-python = ">= 3.9.6"
 

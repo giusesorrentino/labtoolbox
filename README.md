@@ -8,8 +8,8 @@
 
 <p align="left">
   <picture>
-    <source srcset="https://github.com/giusesorrentino/labtoolbox/raw/master/docs/logo_dark.png" media="(prefers-color-scheme: dark)">
-    <img src="https://github.com/giusesorrentino/labtoolbox/raw/master/docs/logo_light.png" alt="LabToolbox logo" width="700">
+    <source srcset="https://github.com/giusesorrentino/labtoolbox/raw/master/docs/_static/logo_dark.png" media="(prefers-color-scheme: dark)">
+    <img src="https://github.com/giusesorrentino/labtoolbox/raw/master/docs/_static/logo_light.png" alt="LabToolbox logo" width="700">
   </picture>
 </p>
 
@@ -68,11 +68,6 @@ LabToolbox relies on a set of well-established scientific Python libraries. When
 - **numpy** – fundamental package for numerical computing.
 - **scipy** – scientific and technical computing tools.
 - **matplotlib** – for plotting and data visualization.
-<!-- - **statsmodels** – statistical modeling and inference.
-- **emcee** – affine-invariant ensemble sampler for MCMC.
-- **corner** – corner plots for visualizing multidimensional distributions.
-- **lmfit** – flexible curve-fitting with parameter constraints.
-- **astropy** – core astronomy library for Python. -->
 
 > **Note**: Up to version 2.0.3, the package was tested and validated on Python 3.9. Starting from version 3.1.0, it has been tested only on Python 3.11. While compatibility with earlier Python versions (≥ 3.9.6) is still expected, it is no longer officially guaranteed. The minimum required version remains Python 3.9.6.
 
@@ -88,14 +83,15 @@ The `labtoolbox` package is organized into multiple submodules, each dedicated t
 | `special`      | Special mathematical functions. |
 | `stats`        | Tools for statistical analysis and data modeling. |
 | `utils`        | A collection of general-purpose utilities used throughout the package. |
-<!-- | `fit`        | Routines for linear and non-linear curve fitting, with support for uncertainty-aware methods. | -->
-<!-- | `uncertainty`| Methods for estimating and propagating uncertainties in experimental contexts, allowing quantification of how input errors affect model outputs. | -->
-<!-- | `optics`       | Optics-related tools, including polarization modeling, Jones calculus, and waveplate simulations.                   |
-| `linalg`       | Tools for linear algebra operations, including matrix manipulations, eigensystems, and coordinate transformations. | -->
 
 ## Documentation
 
-Detailed documentation for all modules and functions is available in the [GitHub Wiki](https://github.com/giusesorrentino/labtoolbox/wiki). The wiki includes function descriptions, usage examples, and practical guidance to help you get the most out of the library.
+Complete API documentation and tutorials are available at [labtoolbox.readthedocs.io](https://labtoolbox.readthedocs.io/). The documentation is automatically built from the source code docstrings and includes:
+
+- **API Reference**: Detailed documentation for all modules and functions
+- **Deprecation Notices**: Information about removed and deprecated features
+<!-- - **Installation & Setup Guides** -->
+- **Module Overview**: Signal processing, statistics, numerical methods, uncertainty quantification, and utilities
 
 ## Citation
 

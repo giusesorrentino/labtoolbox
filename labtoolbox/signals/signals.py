@@ -3,12 +3,16 @@ import matplotlib.pyplot as _plt
 import warnings
 from typing import Union, Tuple, Optional, Callable, List
 from numpy.typing import ArrayLike
-from ._helper import GenericError
+from .._helper import GenericError
 
-def fft(data: ArrayLike, 
-        t: Optional[Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]] = None,
-        dt: Optional[Union[float, Tuple[float, float]]] = None, 
-        oversample: int = 2) -> Union[ArrayLike, Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike, ArrayLike]]:
+# __all__ = ["fft", "ifft", "dfs", "fourier_series", "decompose", "harmonic", "envelope"]
+
+def fft(
+    data: _np.ndarray,
+    t: Optional[Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray]]] = None,
+    dt: Optional[Union[float, Tuple[float, float]]] = None,
+    oversample: int = 2
+) -> Union[_np.ndarray, Tuple[_np.ndarray, _np.ndarray], Tuple[_np.ndarray, _np.ndarray, _np.ndarray]]:
     """
     Compute the Fast Fourier Transform (FFT) of a signal.
 
@@ -24,9 +28,8 @@ def fft(data: ArrayLike,
     t : ndarray or tuple of ndarray, optional
         Time samples:
 
-        - For 1D: 1D array of shape `(N,)`, monotonically increasing.
-        - For 2D: Tuple `(t1, t2)` where `t1` (shape `(N,)`) and `t2` (shape `(M,)`) are
-          1D arrays, monotonically increasing.
+        - For 1D: 1D array of shape (N,), monotonically increasing.
+        - For 2D: Tuple `(t1, t2)` where `t1` and `t2` are 1D arrays, monotonically increasing.
 
         If `None`, only `X` is returned unless `dt` is provided. Defaults to `None`.
     dt : float or tuple of float, optional
@@ -54,100 +57,98 @@ def fft(data: ArrayLike,
 
     Notes
     -----
-
-        - For 1D uniform sampling with N <= 16, a direct DFT is used. For power-of-2 lengths, the Cooley-Tukey FFT algorithm is used.
-        - For 1D non-uniform sampling, a NUFFT algorithm with Gaussian interpolation is used, with O(N log N + M) complexity.
-        - For 2D signals, applies 1D FFTs along rows and columns for uniform sampling.
-
+    - For 1D uniform sampling with N ≤ 16, a direct DFT is used. For power-of-2 lengths, the Cooley-Tukey FFT algorithm is used.
+    - For 1D non-uniform sampling, a NUFFT algorithm with Gaussian interpolation is used, with O(N log N + M) complexity.
+    - For 2D signals, applies 1D FFTs along rows and columns for uniform sampling.
     """
-    from ._helper import ispow2, fft_cooley_tukey, dft_direct
-    import scipy.fft as spf
+    try:
+        from .._helper import ispow2, fft_cooley_tukey, dft_direct, GenericError
+        import scipy.fft as spf
+        
+        # Validate inputs
+        data = _np.asarray(data, dtype=complex)
+        if data.ndim not in (1, 2):
+            raise ValueError("'data' must be a 1D or 2D array.")
+        if not _np.all(_np.isfinite(data)):
+            raise ValueError("'data' contains non-finite values (NaN or inf).")
 
-    # Validate inputs
-    data = _np.asarray(data, dtype=complex)
-    if data.ndim not in (1, 2):
-        raise ValueError("'data' must be a 1D or 2D array.")
-    if not _np.all(_np.isfinite(data)):
-        raise ValueError("'data' contains non-finite values (NaN or inf).")
+        if not isinstance(oversample, int) or oversample < 1:
+            raise TypeError("'oversample' must be a positive integer.")
 
-    if not isinstance(oversample, int) or oversample < 1:
-        raise TypeError("'oversample' must be a positive integer.")
+        if data.ndim == 1:
+            N = len(data)
+            if N == 0:
+                warnings.warn("'data' is empty. Returning empty array.", UserWarning)
+                return _np.array([])
+            if N == 1:
+                warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
+                return data, _np.array([0.0]) if (t is not None or dt is not None) else data
 
-    if data.ndim == 1:
-        N = len(data)
-        if N == 0:
-            warnings.warn("'data' is empty. Returning empty array.", UserWarning)
-            return _np.array([])
-        if N == 1:
-            warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
-            return data, _np.array([0.0]) if (t is not None or dt is not None) else data
-
-        # Validate t for 1D
-        is_uniform = True
-        if t is not None:
-            t = _np.asarray(t, dtype=float)
-            if t.ndim != 1 or t.size != N:
-                raise ValueError("'t' must be a 1D array of length 'N' for 1D data.")
-            if not _np.all(_np.isreal(t)):
-                raise TypeError("'t' must contain only real numbers.")
-            if not _np.all(_np.isfinite(t)):
-                raise ValueError("'t' contains non-finite values (NaN or inf).")
-            if not _np.all(_np.diff(t) > 0):
-                raise ValueError("'t' must be monotonically increasing.")
-            # Check uniformity
-            if t.size > 1 and not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
-                warnings.warn("Non-uniform sampling detected. Using NUFFT algorithm.", UserWarning)
-                is_uniform = False
-
-        # Validate dt for 1D
-        if dt is not None:
-            if not isinstance(dt, (int, float)):
-                raise TypeError("'dt' must be a real number for 1D data.")
-            if not _np.isfinite(dt) or dt <= 0:
-                raise ValueError("'dt' must be a positive finite value.")
-
-        # 1D Uniform sampling
-        if is_uniform:
-            if N <= 16:
-                X = dft_direct(data)
-            elif ispow2(N):
-                X = fft_cooley_tukey(data)
-            else:
-                M = int(2 ** _np.ceil(_np.log2(N)))
-                padded = _np.pad(data, (0, M - N), mode="constant")
-                X = fft_cooley_tukey(padded)
-                X = X[:N]
-
-            # Determine dt and frequencies
+            # Validate t for 1D
+            is_uniform = True
             if t is not None:
-                dt_final = (t[-1] - t[0]) / (N - 1) if N > 1 else 1.0
-            elif dt is not None:
-                dt_final = dt
-            else:
-                return X
+                t = _np.asarray(t, dtype=float)
+                if t.ndim != 1 or t.size != N:
+                    raise ValueError("'t' must be a 1D array of length 'N' for 1D data.")
+                if not _np.all(_np.isreal(t)):
+                    raise TypeError("'t' must contain only real numbers.")
+                if not _np.all(_np.isfinite(t)):
+                    raise ValueError("'t' contains non-finite values (NaN or inf).")
+                if not _np.all(_np.diff(t) > 0):
+                    raise ValueError("'t' must be monotonically increasing.")
+                # Check uniformity
+                if t.size > 1 and not _np.allclose(_np.diff(t), _np.diff(t)[0], rtol=1e-5):
+                    warnings.warn("Non-uniform sampling detected. Using NUFFT algorithm.", UserWarning)
+                    is_uniform = False
 
-            f = _np.fft.fftfreq(N, d=dt_final)
+            # Validate dt for 1D
+            if dt is not None:
+                if not isinstance(dt, (int, float)):
+                    raise TypeError("'dt' must be a real number for 1D data.")
+                if not _np.isfinite(dt) or dt <= 0:
+                    raise ValueError("'dt' must be a positive finite value.")
 
-            # Check aliasing
-            spectrum_magnitude = _np.abs(X)
-            threshold = _np.max(spectrum_magnitude) * 0.05
-            freq_components = _np.abs(f[spectrum_magnitude > threshold])
-            if freq_components.size > 0:
-                f_max = _np.max(freq_components)
-                fs = 1 / dt_final
-                if f_max >= fs / 2:
-                    warnings.warn(
-                        f"Potential aliasing detected: the signal contains frequency components up to {f_max:.2g}, "
-                        f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
-                        "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
-                        UserWarning
-                    )
+            # 1D Uniform sampling
+            if is_uniform:
+                if N <= 16:
+                    X = dft_direct(data)
+                elif ispow2(N):
+                    X = fft_cooley_tukey(data)
+                else:
+                    M = int(2 ** _np.ceil(_np.log2(N)))
+                    padded = _np.pad(data, (0, M - N), mode="constant")
+                    X = fft_cooley_tukey(padded)
+                    X = X[:N]
 
-            order = _np.argsort(f)
-            return X[order], f[order]
+                # Determine dt and frequencies
+                if t is not None:
+                    dt_final = (t[-1] - t[0]) / (N - 1) if N > 1 else 1.0
+                elif dt is not None:
+                    dt_final = dt
+                else:
+                    return X
 
-        # 1D Non-uniform sampling: NUFFT
-        try:
+                f = _np.fft.fftfreq(N, d=dt_final)
+
+                # Check aliasing
+                spectrum_magnitude = _np.abs(X)
+                threshold = _np.max(spectrum_magnitude) * 0.05
+                freq_components = _np.abs(f[spectrum_magnitude > threshold])
+                if freq_components.size > 0:
+                    f_max = _np.max(freq_components)
+                    fs = 1 / dt_final
+                    if f_max >= fs / 2:
+                        warnings.warn(
+                            f"Potential aliasing detected: the signal contains frequency components up to {f_max:.2g}, "
+                            f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
+                            "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
+                            UserWarning
+                        )
+
+                order = _np.argsort(f)
+                return X[order], f[order]
+
+            # 1D Non-uniform sampling: NUFFT
             points = t
             M = N
             t_min, t_max = points.min(), points.max()
@@ -198,60 +199,64 @@ def fft(data: ArrayLike,
             scaled_frequencies = frequencies * (t_max - t_min)
             return result, scaled_frequencies
 
-        except Exception as e:
-            raise ValueError(f"Error computing NUFFT: {str(e)}")
+        else:  # 2D data
+            N, M = data.shape
+            if N == 0 or M == 0:
+                warnings.warn("'data' is empty. Returning empty array.", UserWarning)
+                return _np.array([])
+            if N == 1 and M == 1:
+                warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
+                return data, _np.array([0.0]), _np.array([0.0]) if (t is not None or dt is not None) else data
 
-    else:  # 2D data
-        N, M = data.shape
-        if N == 0 or M == 0:
-            warnings.warn("'data' is empty. Returning empty array.", UserWarning)
-            return _np.array([])
-        if N == 1 and M == 1:
-            warnings.warn("'data' is a scalar. Returning 'data'.", UserWarning)
-            return data, _np.array([0.0]), _np.array([0.0]) if (t is not None or dt is not None) else data
+            # Validate t for 2D
+            t1, t2 = None, None
+            if t is not None:
+                if not isinstance(t, tuple) or len(t) != 2:
+                    raise TypeError("'t' must be a tuple of two 1D NumPy arrays for 2D data.")
+                t1, t2 = _np.asarray(t[0], dtype=float), _np.asarray(t[1], dtype=float)
+                if t1.ndim != 1 or t2.ndim != 1 or t1.shape[0] != N or t2.shape[0] != M:
+                    raise ValueError("'t1' and 't2' must be 1D arrays of lengths 'N' and 'M', respectively.")
+                if not _np.all(_np.isreal(t1)) or not _np.all(_np.isreal(t2)):
+                    raise TypeError("'t1' and 't2' must contain only real numbers.")
+                if not _np.all(_np.isfinite(t1)) or not _np.all(_np.isfinite(t2)):
+                    raise ValueError("'t1' or 't2' contains non-finite values (NaN or inf).")
+                if not _np.all(_np.diff(t1) > 0) or not _np.all(_np.diff(t2) > 0):
+                    raise ValueError("'t1' and 't2' must be monotonically increasing.")
+                # Check uniformity for 2D (required by docstring)
+                if t1.size > 1 and not _np.allclose(_np.diff(t1), _np.diff(t1)[0], rtol=1e-5):
+                    raise ValueError("Non-uniform sampling not supported for 2D data: 't1' must be uniformly spaced.")
+                if t2.size > 1 and not _np.allclose(_np.diff(t2), _np.diff(t2)[0], rtol=1e-5):
+                    raise ValueError("Non-uniform sampling not supported for 2D data: 't2' must be uniformly spaced.")
 
-        # Validate t for 2D
-        t1, t2 = None, None
-        if t is not None:
-            if not isinstance(t, tuple) or len(t) != 2:
-                raise TypeError("'t' must be a tuple of two 1D NumPy arrays for 2D data.")
-            t1, t2 = _np.asarray(t[0], dtype=float), _np.asarray(t[1], dtype=float)
-            if t1.ndim != 1 or t2.ndim != 1 or t1.shape[0] != N or t2.shape[0] != M:
-                raise ValueError("'t1' and 't2' must be 1D arrays of lengths 'N' and 'M', respectively.")
-            if not _np.all(_np.isreal(t1)) or not _np.all(_np.isreal(t2)):
-                raise TypeError("'t1' and 't2' must contain only real numbers.")
-            if not _np.all(_np.isfinite(t1)) or not _np.all(_np.isfinite(t2)):
-                raise ValueError("'t1'or 't2' contains non-finite values (NaN or inf).")
-            if not _np.all(_np.diff(t1) > 0) or not _np.all(_np.diff(t2) > 0):
-                raise ValueError("'t1' and 't2' must be monotonically increasing.")
+            # Validate dt for 2D
+            if dt is not None:
+                if not isinstance(dt, tuple) or len(dt) != 2:
+                    raise TypeError("'dt' must be a tuple of two floats for 2D data.")
+                dt1, dt2 = dt
+                if not isinstance(dt1, (int, float)) or not isinstance(dt2, (int, float)):
+                    raise TypeError("'dt1' and 'dt2' must be real numbers.")
+                if not _np.isfinite(dt1) or not _np.isfinite(dt2) or dt1 <= 0 or dt2 <= 0:
+                    raise ValueError("'dt1' and 'dt2' must be positive finite values.")
 
-        # Validate dt for 2D
-        if dt is not None:
-            if not isinstance(dt, tuple) or len(dt) != 2:
-                raise TypeError("'dt' must be a tuple of two floats for 2D data.")
-            dt1, dt2 = dt
-            if not isinstance(dt1, (int, float)) or not isinstance(dt2, (int, float)):
-                raise TypeError("'dt1' and 'dt2' must be real numbers.")
-            if not _np.isfinite(dt1) or not _np.isfinite(dt2) or dt1 <= 0 or dt2 <= 0:
-                raise ValueError("'dt1' and 'dt2' must be positive finite values.")
+            # Suppress aliasing warnings during 1D FFT calls
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="Potential aliasing detected", category=UserWarning)
+                # Initialize output
+                X = _np.zeros((N, M), dtype=complex)
 
-        try:
-            # Initialize output
-            X = _np.zeros((N, M), dtype=complex)
+                # FFT along rows (axis 1, using t2)
+                for i in range(N):
+                    row_t = t2 if t is not None else None
+                    row_dt = dt2 if dt is not None else None
+                    X[i, :], _ = fft(data[i, :], t=row_t, dt=row_dt, oversample=oversample)
 
-            # FFT along rows (axis 1, using t2)
-            for i in range(N):
-                row_t = t2 if t2 is not None else None
-                row_dt = dt2 if dt is not None else None
-                X[i, :], _ = fft(data[i, :], t=row_t, dt=row_dt, oversample=oversample)
-
-            # FFT along columns (axis 0, using t1)
-            X = X.T.copy()
-            for j in range(M):
-                col_t = t1 if t1 is not None else None
-                col_dt = dt1 if dt is not None else None
-                X[j, :], _ = fft(X[j, :], t=col_t, dt=col_dt, oversample=oversample)
-            X = X.T
+                # FFT along columns (axis 0, using t1)
+                X = X.T.copy()
+                for j in range(M):
+                    col_t = t1 if t is not None else None
+                    col_dt = dt1 if dt is not None else None
+                    X[j, :], _ = fft(X[j, :], t=col_t, dt=col_dt, oversample=oversample)
+                X = X.T
 
             # Compute frequencies
             if t is not None:
@@ -274,8 +279,8 @@ def fft(data: ArrayLike,
                 fs1 = 1 / dt1_final
                 if f1_max >= fs1 / 2:
                     warnings.warn(
-                        f"Potential aliasing detected on axis 0: the signal contains frequency components up to {f_max:.2g}, "
-                        f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
+                        f"Potential aliasing detected on axis 0: the signal contains frequency components up to {f1_max:.2g}, "
+                        f"which exceeds the Nyquist frequency ({fs1/2:.2g}). "
                         "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
                         UserWarning
                     )
@@ -285,8 +290,8 @@ def fft(data: ArrayLike,
                 fs2 = 1 / dt2_final
                 if f2_max >= fs2 / 2:
                     warnings.warn(
-                        f"Potential aliasing detected on axis 1: the signal contains frequency components up to {f_max:.2g}, "
-                        f"which exceeds the Nyquist frequency ({fs/2:.2g}). "
+                        f"Potential aliasing detected on axis 1: the signal contains frequency components up to {f2_max:.2g}, "
+                        f"which exceeds the Nyquist frequency ({fs2/2:.2g}). "
                         "Consider increasing the sampling frequency or applying an anti-aliasing filter.",
                         UserWarning
                     )
@@ -295,12 +300,17 @@ def fft(data: ArrayLike,
             X = X[order1][:, order2]
             return X, f1[order1], f2[order2]
 
-        except Exception as e:
-            raise GenericError(f"Error computing FFT2: {str(e)}")
+    except Exception as e:
+        raise GenericError(
+            message=f"Error computing FFT: {str(e)}",
+            context="executing fft",
+            original_error=e,
+            details={"data_shape": data.shape, "t_type": type(t), "dt_type": type(dt)}
+        )
 
 def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, ArrayLike]]] = None,
-         df: Optional[Union[float, Tuple[float, float]]] = None, 
-         oversample: int = 2) -> Union[ArrayLike, Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike, ArrayLike]]:
+        df: Optional[Union[float, Tuple[float, float]]] = None, 
+        oversample: int = 2) -> Union[ArrayLike, Tuple[ArrayLike, ArrayLike], Tuple[ArrayLike, ArrayLike, ArrayLike]]:
     """
     Compute the Inverse Fast Fourier Transform (IFFT) of a signal.
 
@@ -317,8 +327,7 @@ def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, Array
         Frequency samples:
 
         - For 1D: 1D array of shape `(N,)`, monotonically increasing.
-        - For 2D: Tuple `(f1, f2)` where `f1` (shape `(N,)`) and `f2` (shape `(M,)`) are
-          1D arrays, monotonically increasing.
+        - For 2D: Tuple `(f1, f2)` where `f1` (shape `(N,)`) and `f2` (shape `(M,)`) are 1D arrays, monotonically increasing.
 
         If `None`, time bins are returned only if `df` is provided. Defaults to `None`.
     df : float or tuple of float, optional
@@ -346,14 +355,12 @@ def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, Array
     Notes
     -----
 
-    - For 1D uniform sampling with N <= 16, a direct IDFT is used. For power-of-2 lengths,
-      the Cooley-Tukey IFFT algorithm is used.
-    - For 1D non-uniform sampling, a NUIFFT algorithm with Gaussian interpolation is used,
-      with O(N log N + M) complexity.
+    - For 1D uniform sampling with N <= 16, a direct IDFT is used. For power-of-2 lengths, the Cooley-Tukey IFFT algorithm is used.
+    - For 1D non-uniform sampling, a NUIFFT algorithm with Gaussian interpolation is used, with O(N log N + M) complexity.
     - For 2D signals, applies 1D IFFTs along rows and columns for uniform sampling.
 
     """
-    from ._helper import ispow2, idft_direct, ifft_cooley_tukey
+    from .._helper import ispow2, idft_direct, ifft_cooley_tukey
     import scipy.fft as spf
 
     # Validate inputs
@@ -548,10 +555,7 @@ def dfs(
     data: ArrayLike,
     order: int,
     plot: bool = True,
-    showharmonics: bool = False,
     showlegend: bool = True,
-    shift: bool = True,
-    apply_filter: bool = True,
     xlabel: str = "",
     ylabel: str = "",
     xscale: int = 0,
@@ -572,17 +576,8 @@ def dfs(
         Order of the Fourier approximation (number of harmonics).
     plot : bool, optional
         If `True`, plots the original function and its Fourier approximation.
-    showharmonics : bool, optional
-        If `True`, overlays individual harmonics (sinusoidal basis functions) used in the Fourier
-        approximation on the main plot with reduced opacity. This visualizes the contributions of
-        each harmonic to the approximation of the input data. If `False`, only the input data and
-        the Fourier approximation are plotted. Defaults to `False`.
     showlegend : bool, optional
         If `True`, ...
-    shift : bool, optional
-        If `True`, shifts the individual harmonics of `a0` (the mean value of `data`).
-    apply_filter : bool, optional
-        If `True`, applies a basic low-pass filter to reduce high-frequency noise.
     xlabel : str, optional
         Label for the x-axis, including units in square brackets (e.g., "Time [s]").
     ylabel : str, optional
@@ -692,10 +687,10 @@ def dfs(
             sin_term = _np.sin(2 * _np.pi * n * t / T)
             an = 2 * simpson(data * cos_term, t) / T
             bn = 2 * simpson(data * sin_term, t) / T
-            if apply_filter:
-                decay = _np.exp(- (n / order)**2)
-                an *= decay
-                bn *= decay
+            # if apply_filter:
+            #     decay = _np.exp(- (n / order)**2)
+            #     an *= decay
+            #     bn *= decay
             a_n.append(an)
             b_n.append(bn)
 
@@ -710,21 +705,21 @@ def dfs(
         if plot:
 
             # Plot armoniche con alpha ridotto se showpanel=True
-            if showharmonics:
-                if shift:
-                    i = a0
-                max_harmonics = min(order - 1, 5)  # Limita a 10 armoniche per chiarezza
-                # cmap = _cm.viridis
-                # norm = _plt.Normalize(1, max_harmonics)
-                for n in range(1, max_harmonics + 1):
-                    harmonic = (
-                        a_n[n-1] * _np.cos(2 * _np.pi * n * t / T) +
-                        b_n[n-1] * _np.sin(2 * _np.pi * n * t / T)
-                    )
-                    _plt.plot(
-                        t / xscale, ((harmonic + i) / yscale),
-                        color="dodgerblue", lw=0.8, alpha=0.3
-                    )
+            # if showharmonics:
+            #     if shift:
+            #         i = a0
+            #     max_harmonics = min(order - 1, 5)  # Limita a 10 armoniche per chiarezza
+            #     # cmap = _cm.viridis
+            #     # norm = _plt.Normalize(1, max_harmonics)
+            #     for n in range(1, max_harmonics + 1):
+            #         harmonic = (
+            #             a_n[n-1] * _np.cos(2 * _np.pi * n * t / T) +
+            #             b_n[n-1] * _np.sin(2 * _np.pi * n * t / T)
+            #         )
+            #         _plt.plot(
+            #             t / xscale, ((harmonic + i) / yscale),
+            #             color="dodgerblue", lw=0.8, alpha=0.3
+            #         )
 
             # color=cmap(norm(n))
             
@@ -778,15 +773,15 @@ def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike
     Returns
     -------
     x : array-like
-        Array of shape (N,), representing the uniformly spaced sample points over one period.
+        1D array representing the uniformly spaced sample points over one period.
         These are the evaluation points at which both the original function and the Fourier
         approximation are computed.
     f_original : array-like
-        Array of shape (N,), representing the values of the original input function evaluated at 
+        1D array representing the values of the original input function evaluated at 
         the sample points `x`. This is the reference signal used for comparison with the Fourier 
         approximation.
     f_approx : array-like
-        Array of shape (N,), containing the values of the truncated Fourier series evaluated at 
+        1D Array containing the values of the truncated Fourier series evaluated at 
         the same sample points `x`. This is the approximation of `f_original` using a finite number 
         of harmonics (up to the specified order).
     a0 : float

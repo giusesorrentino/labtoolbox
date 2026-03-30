@@ -1,6 +1,5 @@
 import numpy as _np
 from warnings import warn as _warn
-from .stats import propagate
 
 def numerical(f, x_val, x_err, params=()):
     """
@@ -44,7 +43,7 @@ def numerical(f, x_val, x_err, params=()):
 
         # Calcolo h_i come distanza minima tra punti consecutivi diviso 100
         dx = _np.diff(x)
-        min_dx = _np.min(np.abs(dx[dx != 0])) if _np.any(dx != 0) else 1.0
+        min_dx = _np.min(_np.abs(dx[dx != 0])) if _np.any(dx != 0) else 1.0
         h = min_dx / 100
 
         # Copia degli array per ±h
@@ -59,7 +58,7 @@ def numerical(f, x_val, x_err, params=()):
         df_dxi = (f_plus - f_minus) / (2 * h)
         f_var += (df_dxi * x_err[i])**2
 
-    f_err = np.sqrt(f_var)
+    f_err = _np.sqrt(f_var)
 
     return f_val, f_err
 

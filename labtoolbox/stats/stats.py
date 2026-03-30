@@ -31,7 +31,7 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
     unit : str, optional
         Unit of measurement for the x-axis variable (e.g., "cm"). If provided, it will be displayed in the axis label and summary output.
     verbose : bool, optional
-        If `True`, prints a formatted table of ... Default is `True`.
+        If `True`, prints a formatted table of the histogram parameters. Defaults to `True`.
 
     Returns
     -------
@@ -135,6 +135,7 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
     label1 = f"$\\mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
     label2 = label+ux_str
 
+    _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
     # histogram of the data
     _, bin_edges, _ = _plt.hist(data,bins=bins,color="blue",edgecolor='blue', histtype = "step", zorder=2, label='Data distribution')
     _plt.ylabel('Counts')
@@ -149,6 +150,7 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
     _plt.xlabel(label2)
     _plt.xlim(mean - 3 * sigma, mean + 3 * sigma)
     _plt.legend()
+    _plt.show()
 
     skewness = _np.sum((data - mean)**3) / (len(data) * sigma**3)
     kurtosis = _np.sum((data - mean)**4) / (len(data) * sigma**4) - 3 
@@ -204,10 +206,6 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
 
     return mean, sigma, skewness, kurtosis, p_value
 
-def analyze_residuals(*args, **kwargs):
-    warnings.warn("This function is deprecated and will be removed in a future release. Use labtoolbox.stats.residuals instead.", DeprecationWarning)
-    return residuals(args, kwargs)
-
 def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, scale: int = 0, 
               unit: str = "", bins: Union[str, int] = "auto", confidence: int = 2, 
               norm: bool = False, verbose: bool = True) -> Tuple[float, float, float, float, float, float]:
@@ -233,7 +231,7 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     norm : bool, optionale
         If `True`, residuals will be normalized. Default is `False`.
     verbose : bool, optional
-        If `True`, prints a formatted table of ... Default is `True`.
+        If `True`, prints a formatted table of the returns (mean value, standard deviation, skewness, kurtosis, p-value and Durbin–Watson statistic). Default is `True`.
 
     Returns
     -------
@@ -367,7 +365,7 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 
-    fig = _plt.figure(figsize=(6.4, 4.8))
+    fig = _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
     gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
     axs = gs.subplots()
     # Aggiungi linee di riferimento
@@ -409,6 +407,8 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     axs[1].set_xlim(mean - 3 * sigma, mean + 3 * sigma)
 
     axs[1].legend()
+    
+    _plt.show()
 
     skewness = _np.sum((resid - mean)**3) / (len(resid) * sigma**3)
     kurtosis = _np.sum((resid - mean)**4) / (len(resid) * sigma**4) - 3
@@ -477,125 +477,120 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
 
     return mean, sigma, skewness, kurtosis, p_value, dw
 
-def samples(n, distribution='normal', **params):
-    """
-    Generates synthetic data from common probability distributions.
+# def samples(n, distribution='normal', **params):
+#     """
+#     Generates synthetic data from common probability distributions.
 
-    Parameters
-    ----------
-    n : int
-        Number of data points to generate.
-    distribution : {'normal', 'uniform', 'exponential', 'poisson', 'binomial', 'gamma', 'beta', 'lognormal', 'weibull', 'chi2', 't'}, optional
-        Type of distribution to sample from. Default is 'normal'.
-    **params : dict
-        Distribution-specific parameters:
-        - normal:      mu (mean), sigma (stddev)
-        - uniform:     low, high
-        - exponential: scale (1/lambda)
-        - poisson:     lam (expected rate)
-        - binomial:    n (number of trials), p (success probability)
-        - gamma:       shape, scale
-        - beta:        alpha, beta
-        - lognormal:   mean, sigma
-        - weibull:     shape
-        - chi2:        df (degrees of freedom)
-        - t:           df (degrees of freedom)
+#     Parameters
+#     ----------
+#     n : int
+#         Number of data points to generate.
+#     distribution : {'normal', 'uniform', 'exponential', 'poisson', 'binomial', 'gamma', 'beta', 'lognormal', 'weibull', 'chi2', 't'}, optional
+#         Type of distribution to sample from. Default is 'normal'.
+#     **params : dict
+#         Distribution-specific parameters:
+#         - normal:      mu (mean), sigma (stddev)
+#         - uniform:     low, high
+#         - exponential: scale (1/lambda)
+#         - poisson:     lam (expected rate)
+#         - binomial:    n (number of trials), p (success probability)
+#         - gamma:       shape, scale
+#         - beta:        alpha, beta
+#         - lognormal:   mean, sigma
+#         - weibull:     shape
+#         - chi2:        df (degrees of freedom)
+#         - t:           df (degrees of freedom)
 
-    Returns
-    -------
-    data : ndarray
-        Array of length `n` with samples drawn from the specified distribution.
+#     Returns
+#     -------
+#     data : ndarray
+#         Array of length `n` with samples drawn from the specified distribution.
 
-    Examples
-    --------
-    >>> samples(1000, 'normal', mu=0, sigma=1)
-    array([...])
-    >>> samples(500, 'uniform', low=0, high=10)
-    array([...])
-    >>> samples(200, 'poisson', lam=3)
-    array([...])
-    """
-    warnings.warn("This function is deprecated and will be removed in a future release. Consider using scipy.stats", DeprecationWarning)
-
-    dist = distribution.lower()
-    rng = _np.random.default_rng()
+#     Examples
+#     --------
+#     >>> samples(1000, 'normal', mu=0, sigma=1)
+#     array([...])
+#     >>> samples(500, 'uniform', low=0, high=10)
+#     array([...])
+#     >>> samples(200, 'poisson', lam=3)
+#     array([...])
+#     """
+#     raise NotImplementedError("The function 'samples' has been removed in favor of scipy.stats routines.")
+#         mu = params.get('mu')
+#         sigma = params.get('sigma')
+#         if mu is None or sigma is None:
+#             raise ValueError("For 'normal' distribution, provide 'mu' and 'sigma'.")
+#         return rng.normal(loc=mu, scale=sigma, size=n)
     
-    if dist == 'normal':
-        mu = params.get('mu')
-        sigma = params.get('sigma')
-        if mu is None or sigma is None:
-            raise ValueError("For 'normal' distribution, provide 'mu' and 'sigma'.")
-        return rng.normal(loc=mu, scale=sigma, size=n)
+#     elif dist == 'uniform':
+#         low = params.get('low')
+#         high = params.get('high')
+#         if low is None or high is None:
+#             raise ValueError("For 'uniform' distribution, provide 'low' and 'high'.")
+#         return rng.uniform(low=low, high=high, size=n)
     
-    elif dist == 'uniform':
-        low = params.get('low')
-        high = params.get('high')
-        if low is None or high is None:
-            raise ValueError("For 'uniform' distribution, provide 'low' and 'high'.")
-        return rng.uniform(low=low, high=high, size=n)
+#     elif dist == 'exponential':
+#         scale = params.get('scale')
+#         if scale is None:
+#             raise ValueError("For 'exponential' distribution, provide 'scale'.")
+#         return rng.exponential(scale=scale, size=n)
     
-    elif dist == 'exponential':
-        scale = params.get('scale')
-        if scale is None:
-            raise ValueError("For 'exponential' distribution, provide 'scale'.")
-        return rng.exponential(scale=scale, size=n)
+#     elif dist == 'poisson':
+#         lam = params.get('lam')
+#         if lam is None:
+#             raise ValueError("For 'poisson' distribution, provide 'lam'.")
+#         return rng.poisson(lam=lam, size=n)
     
-    elif dist == 'poisson':
-        lam = params.get('lam')
-        if lam is None:
-            raise ValueError("For 'poisson' distribution, provide 'lam'.")
-        return rng.poisson(lam=lam, size=n)
+#     elif dist == 'binomial':
+#         trials = params.get('n')
+#         p = params.get('p')
+#         if trials is None or p is None:
+#             raise ValueError("For 'binomial' distribution, provide 'n' (trials) and 'p' (probability).")
+#         return rng.binomial(n=trials, p=p, size=n)
     
-    elif dist == 'binomial':
-        trials = params.get('n')
-        p = params.get('p')
-        if trials is None or p is None:
-            raise ValueError("For 'binomial' distribution, provide 'n' (trials) and 'p' (probability).")
-        return rng.binomial(n=trials, p=p, size=n)
+#     elif dist == 'gamma':
+#         shape = params.get('shape')
+#         scale = params.get('scale', 1)
+#         if shape is None:
+#             raise ValueError("For 'gamma' distribution, provide 'shape'.")
+#         return rng.gamma(shape=shape, scale=scale, size=n)
     
-    elif dist == 'gamma':
-        shape = params.get('shape')
-        scale = params.get('scale', 1)
-        if shape is None:
-            raise ValueError("For 'gamma' distribution, provide 'shape'.")
-        return rng.gamma(shape=shape, scale=scale, size=n)
+#     elif dist == 'beta':
+#         alpha = params.get('alpha')
+#         beta = params.get('beta')
+#         if alpha is None or beta is None:
+#             raise ValueError("For 'beta' distribution, provide 'alpha' and 'beta'.")
+#         return rng.beta(alpha=alpha, beta=beta, size=n)
     
-    elif dist == 'beta':
-        alpha = params.get('alpha')
-        beta = params.get('beta')
-        if alpha is None or beta is None:
-            raise ValueError("For 'beta' distribution, provide 'alpha' and 'beta'.")
-        return rng.beta(alpha=alpha, beta=beta, size=n)
+#     elif dist == 'lognormal':
+#         mean = params.get('mean')
+#         sigma = params.get('sigma')
+#         if mean is None or sigma is None:
+#             raise ValueError("For 'lognormal' distribution, provide 'mean' and 'sigma'.")
+#         return rng.lognormal(mean=mean, sigma=sigma, size=n)
     
-    elif dist == 'lognormal':
-        mean = params.get('mean')
-        sigma = params.get('sigma')
-        if mean is None or sigma is None:
-            raise ValueError("For 'lognormal' distribution, provide 'mean' and 'sigma'.")
-        return rng.lognormal(mean=mean, sigma=sigma, size=n)
+#     elif dist == 'weibull':
+#         shape = params.get('shape')
+#         if shape is None:
+#             raise ValueError("For 'weibull' distribution, provide 'shape'.")
+#         return rng.weibull(a=shape, size=n)
     
-    elif dist == 'weibull':
-        shape = params.get('shape')
-        if shape is None:
-            raise ValueError("For 'weibull' distribution, provide 'shape'.")
-        return rng.weibull(a=shape, size=n)
+#     elif dist == 'chi2':
+#         df = params.get('df')
+#         if df is None:
+#             raise ValueError("For 'chi2' distribution, provide 'df'.")
+#         return rng.chisquare(df=df, size=n)
     
-    elif dist == 'chi2':
-        df = params.get('df')
-        if df is None:
-            raise ValueError("For 'chi2' distribution, provide 'df'.")
-        return rng.chisquare(df=df, size=n)
+#     elif dist == 't':
+#         df = params.get('df')
+#         if df is None:
+#             raise ValueError("For 't' distribution, provide 'df'.")
+#         return rng.standard_t(df=df, size=n)
     
-    elif dist == 't':
-        df = params.get('df')
-        if df is None:
-            raise ValueError("For 't' distribution, provide 'df'.")
-        return rng.standard_t(df=df, size=n)
-    
-    else:
-        raise ValueError(f"Unsupported distribution '{distribution}'. "
-                         f"Choose from 'normal', 'uniform', 'exponential', 'poisson', 'binomial', "
-                         f"'gamma', 'beta', 'lognormal', 'weibull', 'chi2', 't'.")
+#     else:
+#         raise ValueError(f"Unsupported distribution '{distribution}'. "
+#                          f"Choose from 'normal', 'uniform', 'exponential', 'poisson', 'binomial', "
+#                          f"'gamma', 'beta', 'lognormal', 'weibull', 'chi2', 't'.")
     
 def remove_outliers(data, data_err=None, expected=None, method="zscore", threshold=3.0):
     """
@@ -1008,7 +1003,10 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
             Lower and upper confidence bands for each point `j`.
     """
 
-    from ._helper import uncert_prop
+    from .._helper import uncert_prop
+
+    # the `uncertainty_class` package, available at https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master, 
+    # provides functionality for uncertainty propagation in calculations.
 
     # --- Controllo func ---
     if not callable(func):
@@ -1172,20 +1170,20 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
     p0_2 : list or array-like
         Initial guess for the parameters of the second model.
     burn : int, optional
-        Number of initial MCMC steps to discard (default is 1000).
+        Number of initial MCMC steps to discard. Default is `1000`.
     steps : int, optional
-        Total number of MCMC steps per walker (default is 5000).
+        Total number of MCMC steps per walker. Default is `5000`.
     thin : int, optional
-        Thinning factor applied when flattening the MCMC chains (default is 10).
+        Thinning factor applied when flattening the MCMC chains. Default is `10`.
     maxfev : int, optional
-        Maximum number of function evaluations for the curve fitting (default is 5000).
+        Maximum number of function evaluations for the curve fitting. Default is `5000`.
     prior_bounds1 : list of tuples, optional
-        Bounds for the uniform priors of the first model. Each element must be a (min, max) tuple.
-        If None, unbounded uniform priors are assumed.
+        Bounds for the uniform priors of the first model. Each element must be a `(min, max)` tuple.
+        If `None`, unbounded uniform priors are assumed.
     prior_bounds2 : list of tuples, optional
         Bounds for the uniform priors of the second model.
     verbose : bool, optional
-        If `True`, prints a formatted table of ... Default is `True`.
+        If `True`, prints a formatted table of the returns. Default is `True`.
 
     Returns
     -------
@@ -1212,14 +1210,14 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
     The approximation assumes that the prior volume is not too informative and that the maximum a posteriori estimate is close to the maximum likelihood.
     """
 
-    from ._helper import format_smart
+    from .._helper import format_smart
     from scipy.optimize import curve_fit
 
     try:
         import emcee
     except ImportError:
         raise ImportError(
-            "The 'emcee' package is not installed. "
+            "The 'emcee' package is not installed."
             "Please install it by running 'pip install emcee'."
         )
 
@@ -1363,7 +1361,6 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
 
         label_width = 10
 
-        # Definisci le stringhe e il risultato
         if lnB12 >= 5:
             result = "Strong evidence for model 1"
         elif 2.5 <= lnB12 < 5:
@@ -1406,7 +1403,7 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
 
 def mean(x: Union[float, ArrayLike], kind: str = 'arith') -> float:
     """
-    Compute the mean of an i_nput scalar or numpy array, with the specified type of mean.
+    Compute the mean of an input scalar or numpy array, with the specified type of mean.
 
     Parameters
     ----------
@@ -1581,7 +1578,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
 
     from scipy.stats import chi2
     import math as _math
-    from ._helper import my_cov, my_mean, my_var, my_line, y_estrapolato
+    from .._helper import my_cov, my_mean, my_var, my_line, y_estrapolato
 
     try:
         import statsmodels.api as sm
@@ -1859,7 +1856,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         bar2 = resid / yscale
         dash = confidence * y_err
 
-    fig = _plt.figure(figsize=(6.4, 4.8))
+    fig = _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
 
     # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
@@ -1938,6 +1935,8 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         axs[1].set_yscale("log")
         if residuals:
             axs[0].set_xscale("log")
+            
+    _plt.show()
 
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
@@ -2010,7 +2009,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         popt : array-like
             Array of optimal parameters estimated from the fit.
         perr : array-like
-            Uncertainties on the optimal parameters. Only if `y_err` is provided.
+            Uncertainties on the optimal parameters (only if `y_err` is provided).
         chi2_red : float
             Reduced chi-square value (χ²/dof).
         p_value : float
@@ -2260,9 +2259,12 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         lista = [x1] + parametri_ripetuti
         lista_err = [_np.repeat(0, len(x1))] + errori_ripetuti
 
-        from .stats import propagate as _propagate
-        # Ora puoi usarli nella propagazione
-        _, _ , confid = _propagate(f, lista, lista_err)
+        from .stats import propagate
+
+        # the `uncertainty_class` package, available at https://github.com/yiorgoskost/Uncertainty-Propagation/tree/master, 
+        # provides functionality for uncertainty propagation in calculations (labtoolbox.stats.propagate).
+
+        _, _ , confid = propagate(f, lista, lista_err)
 
         y1_plus_1sigma = confid[1] / yscale
         y1_minus_1sigma = confid[0] / yscale
@@ -2280,7 +2282,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
     if x_err is not None:
         x_err = x_err / xscale
 
-    fig = _plt.figure(figsize=(6.4, 4.8))
+    fig = _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
 
     # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
@@ -2360,6 +2362,8 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         axs[1].set_yscale("log")
         if residuals:
             axs[0].set_xscale("log")
+            
+    _plt.show()
 
     if y_err is not None:
         return popt, perr, chi2_red, p_value
