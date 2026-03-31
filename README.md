@@ -86,7 +86,7 @@ The `labtoolbox` package is organized into multiple submodules, each dedicated t
 
 ## Documentation
 
-Complete API documentation and tutorials are available at [labtoolbox.readthedocs.io](https://labtoolbox.readthedocs.io/). The documentation is automatically built from the source code docstrings and includes:
+Complete API documentation and tutorials are available at [ReadtheDocs](https://labtoolbox.readthedocs.io/). The documentation is automatically built from the source code docstrings and includes:
 
 - **API Reference**: Detailed documentation for all modules and functions
 - **Deprecation Notices**: Information about removed and deprecated features
