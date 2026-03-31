@@ -1,6 +1,7 @@
-Fitting (:mod:`labtoolbox.fit`)
-===============================
+..
+   Fitting (:mod:`labtoolbox.fit`)
+   ===============================
 
-.. automodule:: labtoolbox.fit
-   :members:
-   :show-inheritance:
+   .. automodule:: labtoolbox.fit
+      :members:
+      :show-inheritance:

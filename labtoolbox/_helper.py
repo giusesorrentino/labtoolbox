@@ -1,6 +1,33 @@
 import numpy as np
 
+DEFAULT_FIGSIZE = (6.4 * 1.2, 4.8 * 1.2)
+
 # --------------------------------------------------------------------------------
+
+def apply_inward_ticks(target):
+    """Apply inward major and minor ticks on all four sides."""
+    if isinstance(target, (list, tuple)):
+        axes = target
+    elif isinstance(target, np.ndarray):
+        axes = target.ravel().tolist()
+    elif hasattr(target, "get_figure"):
+        axes = [target]
+    elif hasattr(target, "axes"):
+        axes = target.axes
+    else:
+        axes = [target]
+
+    for ax in axes:
+        if ax is None:
+            continue
+        try:
+            ax.minorticks_on()
+        except Exception:
+            pass
+        try:
+            ax.tick_params(which="both", direction="in", top=True, right=True, bottom=True, left=True)
+        except Exception:
+            pass
 
 def my_mean(x, w):
     return np.sum( x*w ) / np.sum( w )
@@ -330,13 +357,13 @@ class uncert_prop:
     x_MC_samples() : array
         - Array of sampled variables
         
-    x_MC_dist_plot(contours = 15,cmap='jet',x_label=None, y_label=None, save_name=None) : array
+    x_MC_dist_plot(contours = 15,cmap='jet',x_label=None, y_label=None, save_name=None, figsize=DEFAULT_FIGSIZE) : array
         - 3D and 2D plots of x_MC_samples distribution  
 
     f_MC() : array
         - Array of func(x_MC_samples)
         
-    f_MC_dist_plot(func_name='f',save_name=None) : str, optional
+    f_MC_dist_plot(func_name='f',save_name=None, figsize=DEFAULT_FIGSIZE) : str, optional
         - Plot of f_MC distribution 
         
     SEM() : float
@@ -388,7 +415,7 @@ class uncert_prop:
             return print('x_MC_samples defined only for Monte_Carlo method')
             
     # Plot distribution from which popt_MC is sampled
-    def x_MC_dist_plot(self,contours = 15,cmap='jet',xlabel=None, ylabel=None, save_name=None):
+    def x_MC_dist_plot(self,contours = 15,cmap='jet',xlabel=None, ylabel=None, save_name=None, figsize=DEFAULT_FIGSIZE):
         import matplotlib.pyplot as plt
         from scipy.stats import multivariate_normal
         if self.method=='Monte_Carlo':
@@ -401,7 +428,7 @@ class uncert_prop:
                 pos[:, :, 0] = X; 
                 pos[:, :, 1] = Y
                 rv = multivariate_normal(self.x, self.cov_matrix)
-                fig = plt.figure()
+                fig = plt.figure(figsize=figsize)
                 ax1 = fig.add_subplot(1,2,1, projection='3d')
                 ax1.plot_surface(X, Y, rv.pdf(pos),cmap=cmap,linewidth=0)
                 ax2 = fig.add_subplot(1,2,2)
@@ -425,7 +452,7 @@ class uncert_prop:
                     ax1.set_ylabel('$x_2$')
                 ax1.set_zlabel('$Gaussian\ PDF$')
                 ax1.view_init(elev=30, azim=-70)
-                fig.set_size_inches((11.75,8.25), forward=False)
+                apply_inward_ticks((ax1, ax2))
                 if save_name != None:
                     fig.savefig(str(save_name)+'.png', dpi=300,bbox_inches='tight')
                 del fig
@@ -442,7 +469,7 @@ class uncert_prop:
             return print('f_MC defined only for Monte_Carlo method')
             
     # Plot distribution of f_MC
-    def f_MC_dist_plot(self,func_name='f',save_name=None):
+    def f_MC_dist_plot(self,func_name='f',save_name=None, figsize=DEFAULT_FIGSIZE):
         import matplotlib.pyplot as plt
         try:
             import seaborn as sns
@@ -453,7 +480,7 @@ class uncert_prop:
                 )
         from scipy import stats
         if self.method=='Monte_Carlo':
-            fig,ax=plt.subplots(1)
+            fig,ax=plt.subplots(1, figsize=figsize)
             sns.distplot(self.f_MC(),kde=True,kde_kws={"color": "b", "lw": 1.5, "label": "Kernel Density Estimation"})
             f_MC_lnsp = np.linspace(min(self.f_MC()),max(self.f_MC()),200)  
             plt.plot(f_MC_lnsp, stats.norm.pdf(f_MC_lnsp,loc=np.array(self.f_MC()).mean(),scale=np.std(self.f_MC())),'r--',label="Gaussian distribution \nwith same mean \nand standard deviation \nas Monte Carlo sample") 
@@ -462,8 +489,8 @@ class uncert_prop:
             plt.ylabel('Probability Density')
             plt.legend()
             plt.grid() 
+            apply_inward_ticks(ax)
             if save_name != None:
-                fig.set_size_inches((8.25,5.8), forward=False)
                 fig.savefig(str(save_name)+'.png', dpi=300,bbox_inches='tight')                       
         else:
             print('f_MC_dist_plot is only defined for Monte_Carlo method')  

@@ -1,13 +1,14 @@
-import math as _math
-import numpy as _np
-import matplotlib.pyplot as _plt
+import math
+import numpy as np
+import matplotlib.pyplot as plt
 import warnings
 from typing import Union, Tuple, List, Callable, Optional
 from numpy.typing import ArrayLike
+from .._helper import DEFAULT_FIGSIZE, apply_inward_ticks
 
 def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0, 
          bins: Union[str, int] = "auto", label: str = "", 
-         unit: str = "", verbose: bool = True) -> Tuple[float, float, float, float, float]:
+         unit: str = "", verbose: bool = True, figsize: Tuple[float, float] = DEFAULT_FIGSIZE) -> Tuple[float, float, float, float, float]:
     """
     Plots the histogram of a dataset and assess its Gaussianity using statistical indicators and a Shapiro-Wilk test.
 
@@ -23,7 +24,7 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
         Array of uncertainties associated with each element of `data`. If `None`, uncertainties are not included in the 
         computation of the effective standard deviation.
     scale : int, optional
-        Scaling exponent for `data` and `data_err` (default is `0`). For example, `scale = -2` rescales the i_nputs by 1e2.
+        Scaling exponent for `data` and `data_err` (default is `0`). For example, `scale = -2` rescales the inputs by 1e2.
     bins : int or str, optional
         Number of bins or binning strategy passed to `matplotlib.pyplot.hist`. Defaults to `"auto"`.
     label : str, optional
@@ -32,6 +33,8 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
         Unit of measurement for the x-axis variable (e.g., "cm"). If provided, it will be displayed in the axis label and summary output.
     verbose : bool, optional
         If `True`, prints a formatted table of the histogram parameters. Defaults to `True`.
+    figsize : tuple of float, optional
+        Figure size passed to `matplotlib`. Default is `(6.4 * 1.2, 4.8 * 1.2)`.
 
     Returns
     -------
@@ -54,6 +57,8 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
 
     Example
     -------
+    >>> import numpy as np
+    >>> from labtoolbox.stats import hist
     >>> x = np.random.normal(loc=5, scale=0.2, size=100)
     >>> x_err = np.full_like(x, 0.05)
     >>> hist(x, x_err, scale=-2, label="Length", unit="cm")
@@ -61,12 +66,12 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
 
     from scipy.stats import norm, shapiro
 
-    data = _np.asarray(data)
+    data = np.asarray(data)
 
-    if (not (_np.issubdtype(data.dtype, _np.floating) or _np.issubdtype(data.dtype, _np.integer))) or not _np.all(_np.isreal(data)):
+    if (not (np.issubdtype(data.dtype, np.floating) or np.issubdtype(data.dtype, np.integer))) or not np.all(np.isreal(data)):
             raise TypeError("'data' must contain only real numbers (int or float).")
     
-    if not _np.all(_np.isfinite(data)):
+    if not np.all(np.isfinite(data)):
             raise ValueError("'data' contains non-finite values (NaN or inf).")
     
     if not isinstance(scale, (int, float)):
@@ -81,30 +86,32 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
         raise TypeError("'label' must be a string.")
     if not isinstance(unit, str):
         raise TypeError("'unit' must be a string.")
+    if not isinstance(figsize, (list, tuple)) or len(figsize) != 2 or not all(isinstance(u, (int, float)) and np.isfinite(u) for u in figsize):
+        raise TypeError("'figsize' must be a list or tuple of exactly two finite real numbers.")
 
     data = data / 10**scale
 
     if data_err is not None:
 
-        if _np.isscalar(data_err):
+        if np.isscalar(data_err):
             if not isinstance(data_err, (int, float)):
                 raise TypeError("'data_err' must be a real number (int or float).")
-            data_err = _np.repeat(data_err, len(data))
+            data_err = np.repeat(data_err, len(data))
         else:
-            if (not (_np.issubdtype(data_err.dtype, _np.floating) or _np.issubdtype(data_err.dtype, _np.integer))) or not _np.all(_np.isreal(data_err)):
+            if (not (np.issubdtype(data_err.dtype, np.floating) or np.issubdtype(data_err.dtype, np.integer))) or not np.all(np.isreal(data_err)):
                 raise TypeError("'data_err' must contain only real numbers (int or float).")
-            if not _np.all(_np.isfinite(data)):
+            if not np.all(np.isfinite(data)):
                     raise ValueError("'data_err' contains non-finite values (NaN or inf).")
 
         data_err = data_err / 10**scale
-        sigma = _np.sqrt(data.std()**2 + _np.sum(data_err**2)/len(data))
+        sigma = np.sqrt(data.std()**2 + np.sum(data_err**2)/len(data))
 
     else:
         sigma = data.std()
     mean = data.mean()
 
     # Calcola l'esponente di sigma
-    exponent = int(_math.floor(_math.log10(abs(sigma))))
+    exponent = int(math.floor(math.log10(abs(sigma))))
     factor = 10**(exponent - 1)
     rounded_sigma = (round(sigma / factor) * factor)
 
@@ -117,7 +124,7 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
     # ----------------------------
 
     # Calcola l'esponente di var
-    exponent1 = int(_math.floor(_math.log10(abs(sigma**2))))
+    exponent1 = int(math.floor(math.log10(abs(sigma**2))))
     factor = 10**(exponent1 - 1)
     rounded_var = (round(sigma**2 / factor) * factor)
 
@@ -135,25 +142,26 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
     label1 = f"$\\mathcal{{N}}({rounded_mean1:.{max(0, -exponent1 + 1)}f}, {rounded_var:.{max(0, -exponent1 + 1)}f})$"
     label2 = label+ux_str
 
-    _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
+    plt.figure(figsize=figsize)
     # histogram of the data
-    _, bin_edges, _ = _plt.hist(data,bins=bins,color="blue",edgecolor='blue', histtype = "step", zorder=2, label='Data distribution')
-    _plt.ylabel('Counts')
+    _, bin_edges, _ = plt.hist(data,bins=bins,color="blue",edgecolor='blue', histtype = "step", zorder=2, label='Data distribution')
+    plt.ylabel('Counts')
 
-    lnspc = _np.linspace(data.min() - 2 * sigma, data.max() + 2 * sigma, 500) 
+    lnspc = np.linspace(data.min() - 2 * sigma, data.max() + 2 * sigma, 500) 
    
-    bin_widths = _np.diff(bin_edges)
-    mean_bin_width = _np.mean(bin_widths)
+    bin_widths = np.diff(bin_edges)
+    mean_bin_width = np.mean(bin_widths)
     f_gauss = data.size * mean_bin_width * norm.pdf(lnspc, mean, sigma)
 
-    _plt.plot(lnspc, f_gauss, linewidth=1, color='r',linestyle='--', label = label1, zorder=1)
-    _plt.xlabel(label2)
-    _plt.xlim(mean - 3 * sigma, mean + 3 * sigma)
-    _plt.legend()
-    _plt.show()
+    plt.plot(lnspc, f_gauss, linewidth=1, color='r',linestyle='--', label = label1, zorder=1)
+    plt.xlabel(label2)
+    plt.xlim(mean - 3 * sigma, mean + 3 * sigma)
+    plt.legend(frameon = False)
+    apply_inward_ticks(plt.gca())
+    plt.show()
 
-    skewness = _np.sum((data - mean)**3) / (len(data) * sigma**3)
-    kurtosis = _np.sum((data - mean)**4) / (len(data) * sigma**4) - 3 
+    skewness = np.sum((data - mean)**3) / (len(data) * sigma**3)
+    kurtosis = np.sum((data - mean)**4) / (len(data) * sigma**4) - 3 
 
     _, p_value = shapiro(data)
 
@@ -208,7 +216,7 @@ def hist(data: ArrayLike, data_err: ArrayLike, scale: int = 0,
 
 def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, scale: int = 0, 
               unit: str = "", bins: Union[str, int] = "auto", confidence: int = 2, 
-              norm: bool = False, verbose: bool = True) -> Tuple[float, float, float, float, float, float]:
+              norm: bool = False, verbose: bool = True, figsize: Tuple[float, float] = DEFAULT_FIGSIZE) -> Tuple[float, float, float, float, float, float]:
     """
     Analyzes and visualizes the residuals of the quantity of interes, including histogram, Gaussianity test, and autocorrelation test (Durbin-Watson statistic).
 
@@ -232,6 +240,8 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
         If `True`, residuals will be normalized. Default is `False`.
     verbose : bool, optional
         If `True`, prints a formatted table of the returns (mean value, standard deviation, skewness, kurtosis, p-value and Durbin–Watson statistic). Default is `True`.
+    figsize : tuple of float, optional
+        Figure size passed to `matplotlib`. Default is `(6.4 * 1.2, 4.8 * 1.2)`.
 
     Returns
     -------
@@ -272,26 +282,26 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
             "Please install it by running 'pip install statsmodels'."
         )
     
-    data = _np.asarray(data)
-    expected_data = _np.asarray(expected_data)
-    data_err = _np.asarray(data_err)
+    data = np.asarray(data)
+    expected_data = np.asarray(expected_data)
+    data_err = np.asarray(data_err)
 
-    if (not (_np.issubdtype(data.dtype, _np.floating) or _np.issubdtype(data.dtype, _np.integer))) or not _np.all(_np.isreal(data)):
+    if (not (np.issubdtype(data.dtype, np.floating) or np.issubdtype(data.dtype, np.integer))) or not np.all(np.isreal(data)):
             raise TypeError("'data' must contain only real numbers (int or float).")
     
-    if not _np.all(_np.isfinite(data)):
+    if not np.all(np.isfinite(data)):
             raise ValueError("'data' contains non-finite values (NaN or inf).")
     
-    if (not (_np.issubdtype(data_err.dtype, _np.floating) or _np.issubdtype(data_err.dtype, _np.integer))) or not _np.all(_np.isreal(data_err)):
+    if (not (np.issubdtype(data_err.dtype, np.floating) or np.issubdtype(data_err.dtype, np.integer))) or not np.all(np.isreal(data_err)):
             raise TypeError("'data_err' must contain only real numbers (int or float).")
     
-    if not _np.all(_np.isfinite(data_err)):
+    if not np.all(np.isfinite(data_err)):
             raise ValueError("'data_err' contains non-finite values (NaN or inf).")
     
-    if (not (_np.issubdtype(expected_data.dtype, _np.floating) or _np.issubdtype(expected_data.dtype, _np.integer))) or not _np.all(_np.isreal(expected_data)):
+    if (not (np.issubdtype(expected_data.dtype, np.floating) or np.issubdtype(expected_data.dtype, np.integer))) or not np.all(np.isreal(expected_data)):
             raise TypeError("'expected_data' must contain only real numbers (int or float).")
     
-    if not _np.all(_np.isfinite(expected_data)):
+    if not np.all(np.isfinite(expected_data)):
             raise ValueError("'expected_data' contains non-finite values (NaN or inf).")
     
     if not isinstance(scale, (int, float)):
@@ -307,11 +317,13 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     
     if not isinstance(unit, str):
         raise TypeError("'unit' must be a string.")
+    if not isinstance(figsize, (list, tuple)) or len(figsize) != 2 or not all(isinstance(u, (int, float)) and np.isfinite(u) for u in figsize):
+        raise TypeError("'figsize' must be a list or tuple of exactly two finite real numbers.")
 
     if not (len(data) == len(expected_data) == len(data_err)):
         raise ValueError("'data', 'expected_data' and 'data_err' must have the same length.")
 
-    x_data = _np.linspace(1, len(data), len(data))
+    x_data = np.linspace(1, len(data), len(data))
     data = data / 10**scale
     expected_data = expected_data / 10**scale
     data_err = data_err / 10**scale
@@ -324,10 +336,10 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
 
     mean = resid.mean()
 
-    sigma = _np.sqrt(resid.std()**2 + _np.sum(data_err**2)/len(data_err))
+    sigma = np.sqrt(resid.std()**2 + np.sum(data_err**2)/len(data_err))
 
     # Calcola l'esponente di sigma
-    exponent = int(_math.floor(_math.log10(abs(sigma))))
+    exponent = int(math.floor(math.log10(abs(sigma))))
     factor = 10**(exponent - 1)
     rounded_sigma = (round(sigma / factor) * factor)
 
@@ -340,7 +352,7 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     # ----------------------------
 
     # Calcola l'esponente di sigma
-    exponent1 = int(_math.floor(_math.log10(abs(sigma**2))))
+    exponent1 = int(math.floor(math.log10(abs(sigma**2))))
     factor = 10**(exponent1 - 1)
     rounded_var = (round(sigma**2 / factor) * factor)
 
@@ -353,9 +365,9 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     # ----------------------------
 
     if norm == True:
-        bar1 = _np.repeat(1, len(x_data))
+        bar1 = np.repeat(1, len(x_data))
         bar2 = resid / data_err
-        dash = _np.repeat(confidence, len(x_data))
+        dash = np.repeat(confidence, len(x_data))
     else:
         bar1 = data_err
         bar2 = resid
@@ -365,7 +377,7 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     # originally developed by Jens-Kristian Krogager under the MIT License.
     # https://github.com/jkrogager/VoigtFit
 
-    fig = _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
+    fig = plt.figure(figsize=figsize)
     gs = fig.add_gridspec(2, hspace=0, height_ratios=[0.1, 0.9])
     axs = gs.subplots()
     # Aggiungi linee di riferimento
@@ -374,7 +386,7 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     axs[0].plot(x_data, bar2, color='k', drawstyle='steps-mid', lw=1.15)
     axs[0].plot(x_data, dash, ls='dotted', color='crimson', lw=1.6)
     axs[0].plot(x_data, -dash, ls='dotted', color='crimson', lw=1.6)
-    axs[0].set_ylim(-_np.nanmean(3 * dash / 2), _np.nanmean(3 * dash / 2))
+    axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
 
     # Configurazioni estetiche per il pannello dei residui
     axs[0].tick_params(labelbottom=False)
@@ -395,10 +407,10 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     _, bin_edges, _ = axs[1].hist(resid, color="blue",edgecolor='blue', histtype = "step", bins=bins, label ="Residuals distribution", zorder=2)
     axs[1].set_ylabel('Counts')
 
-    lnspc = _np.linspace(resid.min() - 2 * sigma, resid.max() + 2 * sigma, 500) 
+    lnspc = np.linspace(resid.min() - 2 * sigma, resid.max() + 2 * sigma, 500) 
 
-    bin_widths = _np.diff(bin_edges)
-    mean_bin_width = _np.mean(bin_widths)
+    bin_widths = np.diff(bin_edges)
+    mean_bin_width = np.mean(bin_widths)
     f_gauss = data.size * mean_bin_width * norm.pdf(lnspc, mean, sigma)
 
     axs[1].plot(lnspc, f_gauss, linewidth=1, color='r',linestyle='--', label = label, zorder=1)
@@ -406,12 +418,13 @@ def residuals(data: ArrayLike, expected_data: ArrayLike, data_err: ArrayLike, sc
     axs[1].yaxis.set_major_locator(MaxNLocator(integer=True))
     axs[1].set_xlim(mean - 3 * sigma, mean + 3 * sigma)
 
-    axs[1].legend()
+    axs[1].legend(frameon = False)
+    apply_inward_ticks(axs[1])
     
-    _plt.show()
+    plt.show()
 
-    skewness = _np.sum((resid - mean)**3) / (len(resid) * sigma**3)
-    kurtosis = _np.sum((resid - mean)**4) / (len(resid) * sigma**4) - 3
+    skewness = np.sum((resid - mean)**3) / (len(resid) * sigma**3)
+    kurtosis = np.sum((resid - mean)**4) / (len(resid) * sigma**4) - 3
 
     _, p_value = shapiro(resid)
     dw = durbin_watson(resid)
@@ -614,40 +627,40 @@ def remove_outliers(data, data_err=None, expected=None, method="zscore", thresho
     data_clean : ndarray
         Data without outliers.
     """
-    data = _np.asarray(data)
+    data = np.asarray(data)
 
     # Caso 1: confronto con expected → forza 'zscore'
     if expected is not None:
         if data_err is None:
             raise ValueError("If you provide 'expected', you must also provide 'data_err'.")
         
-        expected = _np.asarray(expected)
-        data_err = _np.asarray(data_err)
+        expected = np.asarray(expected)
+        data_err = np.asarray(data_err)
 
         if len(data) != len(expected) or len(data) != len(data_err):
             raise ValueError("'data', 'expected', and 'data_err' must have the same length.")
 
         # Metodo unico valido
-        z_scores = _np.abs((data - expected) / data_err)
+        z_scores = np.abs((data - expected) / data_err)
         mask = z_scores < threshold
 
     else:
         # Caso 2: solo dati osservati → puoi scegliere il metodo
         if method == "zscore":
-            mean = _np.mean(data)
-            std = _np.std(data)
-            z_scores = _np.abs((data - mean) / std)
+            mean = np.mean(data)
+            std = np.std(data)
+            z_scores = np.abs((data - mean) / std)
             mask = z_scores < threshold
 
         elif method == "mad":
-            median = _np.median(data)
-            mad = _np.median(_np.abs(data - median))
+            median = np.median(data)
+            mad = np.median(np.abs(data - median))
             modified_z_scores = 0.6745 * (data - median) / mad
-            mask = _np.abs(modified_z_scores) < threshold
+            mask = np.abs(modified_z_scores) < threshold
 
         elif method == "iqr":
-            q1 = _np.percentile(data, 25)
-            q3 = _np.percentile(data, 75)
+            q1 = np.percentile(data, 25)
+            q3 = np.percentile(data, 75)
             iqr = q3 - q1
             lower_bound = q1 - threshold * iqr
             upper_bound = q3 + threshold * iqr
@@ -662,7 +675,7 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
               burn: int = 1000, steps: int = 5000, thin: int = 10, maxfev: int = 5000, verbose: bool = True,
               names: Optional[List[str]] = None, prior_bounds: Optional[List[tuple]] = None, 
               plot_dataset: bool = False, 
-              plot_density: bool = True, color: str = 'k', **kwargs) -> Tuple[ArrayLike, ArrayLike]:
+              plot_density: bool = True, color: str = 'k', figsize: Tuple[float, float] = DEFAULT_FIGSIZE, **kwargs) -> Tuple[ArrayLike, ArrayLike]:
     """
     Performs a Bayesian parameter estimation using MCMC for a user-defined model function.
 
@@ -709,6 +722,8 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
         Draw the density colormap. Default is `False`.
     color : str, optional
         A `matplotlib` style color for all histograms. Default is `k`
+    figsize : tuple of float, optional
+        Figure size passed to the corner plot. Default is `(6.4 * 1.2, 4.8 * 1.2)`.
     **kwargs
         Any remaining keyword arguments are passed to `corner.corner`.
 
@@ -733,11 +748,13 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
 
     Example
     --------
+    >>> import numpy as np
+    >>> from labtoolbox.stats import posterior
     >>> def model(x, a, b):
     ...     return a * x + b
-    >>> x = _np.linspace(0, 10, 50)
-    >>> y = model(x, 2.5, 1.0) + _np.random.normal(0, 0.5, size=x.size)
-    >>> y_err = 0.5 * _np.ones_like(y)
+    >>> x = np.linspace(0, 10, 50)
+    >>> y = model(x, 2.5, 1.0) + np.random.normal(0, 0.5, size=x.size)
+    >>> y_err = 0.5 * np.ones_like(y)
     >>> posterior(x, y, y_err, model, [1, 1])
     """
 
@@ -761,26 +778,26 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
     if not callable(f):
         raise TypeError("'f' must be a callable function.")
     
-    x = _np.asarray(x)
-    y = _np.asarray(y)
-    y_err = _np.asarray(y_err)
+    x = np.asarray(x)
+    y = np.asarray(y)
+    y_err = np.asarray(y_err)
 
     if not (len(x) == len(y) == len(y_err)):
         raise ValueError("'x', 'y' and 'y_err' must have the same length.")
 
-    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+    if (not (np.issubdtype(x.dtype, np.floating) or np.issubdtype(x.dtype, np.integer))) or not np.all(np.isreal(x)):
             raise TypeError("'x' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(x)):
+    if not np.all(np.isfinite(x)):
             raise ValueError("'x' contains non-finite values (NaN or inf).")
 
-    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
+    if (not (np.issubdtype(y.dtype, np.floating) or np.issubdtype(y.dtype, np.integer))) or not np.all(np.isreal(y)):
             raise TypeError("'y' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(y)):
+    if not np.all(np.isfinite(y)):
             raise ValueError("'y' contains non-finite values (NaN or inf).")
 
-    if (not (_np.issubdtype(y_err.dtype, _np.floating) or _np.issubdtype(y_err.dtype, _np.integer))) or not _np.all(_np.isreal(y_err)):
+    if (not (np.issubdtype(y_err.dtype, np.floating) or np.issubdtype(y_err.dtype, np.integer))) or not np.all(np.isreal(y_err)):
             raise TypeError("'y_err' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(y_err)):
+    if not np.all(np.isfinite(y_err)):
             raise ValueError("'y_err' contains non-finite values (NaN or inf).")
     
     if not isinstance(burn, (int)):
@@ -802,12 +819,14 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
         raise TypeError("'maxfev' must be an integer.")
     if maxfev <= 0:
         raise ValueError("'maxfev' must be equal or greater than 1.")
+    if not isinstance(figsize, (list, tuple)) or len(figsize) != 2 or not all(isinstance(u, (int, float)) and np.isfinite(u) for u in figsize):
+        raise TypeError("'figsize' must be a list or tuple of exactly two finite real numbers.")
 
-    p0 = _np.array(p0)
+    p0 = np.array(p0)
 
-    if (not (_np.issubdtype(p0.dtype, _np.floating) or _np.issubdtype(p0.dtype, _np.integer))) or not _np.all(_np.isreal(p0)):
+    if (not (np.issubdtype(p0.dtype, np.floating) or np.issubdtype(p0.dtype, np.integer))) or not np.all(np.isreal(p0)):
             raise TypeError("'p0' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(p0)):
+    if not np.all(np.isfinite(p0)):
             raise ValueError("'p0' contains non-finite values (NaN or inf).")
 
     ndim = len(p0)
@@ -818,7 +837,7 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
 
     if prior_bounds is None:
         # Wide uninformative priors
-        prior_bounds = [(-_np.inf, _np.inf)] * ndim
+        prior_bounds = [(-np.inf, np.inf)] * ndim
 
     from scipy.optimize import curve_fit
     # Fit iniziale per inizializzare bene i walkers
@@ -827,24 +846,24 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
     # Log-likelihood
     def log_likelihood(theta):
         model = f(x, *theta)
-        return -0.5 * _np.sum(((y - model) / y_err) ** 2)
+        return -0.5 * np.sum(((y - model) / y_err) ** 2)
 
     # Log-prior uniforme (con bound)
     def log_prior(theta):
         for i, (p, (low, high)) in enumerate(zip(theta, prior_bounds)):
             if not (low < p < high):
-                return -_np.inf
+                return -np.inf
         return 0.0
 
     # Log-posterior
     def log_posterior(theta):
         lp = log_prior(theta)
-        if not _np.isfinite(lp):
-            return -_np.inf
+        if not np.isfinite(lp):
+            return -np.inf
         return lp + log_likelihood(theta)
 
     # Inizializzazione walker intorno a popt
-    p0_walkers = popt + 1e-4 * _np.random.randn(nwalkers, ndim)
+    p0_walkers = popt + 1e-4 * np.random.randn(nwalkers, ndim)
 
     # Sampling
     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_posterior)
@@ -858,18 +877,18 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
     # Calcola posteriori con arrotondamenti consistenti
     posterior_results = []
     log_prob = sampler.get_log_prob(discard=burn, thin=thin, flat=True)
-    mle_index = _np.argmax(log_prob)
+    mle_index = np.argmax(log_prob)
     mle_params = flat_samples[mle_index]
 
     for i in range(len(names)):
-        median = _np.median(flat_samples[:, i])
-        lower = _np.percentile(flat_samples[:, i], 16)
-        upper = _np.percentile(flat_samples[:, i], 84)
+        median = np.median(flat_samples[:, i])
+        lower = np.percentile(flat_samples[:, i], 16)
+        upper = np.percentile(flat_samples[:, i], 84)
         plus = upper - median
         minus = median - lower
 
-        exponent1 = int(_math.floor(_math.log10(abs(plus)))) if plus != 0 else 0
-        exponent2 = int(_math.floor(_math.log10(abs(minus)))) if minus != 0 else 0
+        exponent1 = int(math.floor(math.log10(abs(plus)))) if plus != 0 else 0
+        exponent2 = int(math.floor(math.log10(abs(minus)))) if minus != 0 else 0
         common_exponent = min(exponent1, exponent2)
         factor = 10 ** (common_exponent - 1)
 
@@ -947,6 +966,7 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
                         hist_kwargs={"linewidth": 0.8}, 
                         #contourf_kwargs={"cmap": "viridis", "colors": None},
                         **kwargs)
+    # fig.set_size_inches(forward=True)
 
     # Ora scorro tutti gli assi (subplots) e modifico la linewidth delle linee dei contorni
     # Per ogni asse (subplot) cerco se ci sono contorni 2D (QuadContourSet)
@@ -958,15 +978,16 @@ def posterior(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f: Callable[[float],
                 # Modifica linewidth per gli istogrammi 1D (linee)
         for line in ax.lines:
             line.set_linewidth(0.8)
+    apply_inward_ticks(fig)
 
-    _plt.show()
+    plt.show()
 
     return mle_params, flat_samples
 
 def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], x_val: List[ArrayLike], x_err: List[ArrayLike], 
               params: Optional[List[ArrayLike]] = None, method: str = 'Monte_Carlo', MC_sample_size: int = 10000) -> Tuple[ArrayLike, ArrayLike, Tuple[ArrayLike, ArrayLike]]:
     """
-    Propagates uncertainty from i_nput arrays to a generic function using the `uncertainty_class` library.
+    Propagates uncertainty from input arrays to a generic function using the `uncertainty_class` library.
 
     Parameters
     ----------
@@ -976,7 +997,7 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
         - `a` is a vector of parameters (optional).
         
     x_val : list of numpy.array
-        List containing the i_nput variable arrays `[x1, x2, ..., xn]`. Each entry can be:
+        List containing the input variable arrays `[x1, x2, ..., xn]`. Each entry can be:
         - a scalar,
         - a numpy array of values (same length across all xi).
         
@@ -1020,13 +1041,13 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
 
     array_lengths = []
     for i, xi in enumerate(x_val):
-        if _np.isscalar(xi):
+        if np.isscalar(xi):
             if not isinstance(xi, (int, float)):
                 raise TypeError(f"'x_val[{i}]' scalar must be a real number (int or float).")
-        elif isinstance(xi, _np.ndarray):
-            if not (_np.issubdtype(xi.dtype, _np.floating) or _np.issubdtype(xi.dtype, _np.integer)):
+        elif isinstance(xi, np.ndarray):
+            if not (np.issubdtype(xi.dtype, np.floating) or np.issubdtype(xi.dtype, np.integer)):
                 raise TypeError(f"'x_val[{i}]' must contain real numbers (int or float).")
-            if not _np.all(_np.isfinite(xi)):
+            if not np.all(np.isfinite(xi)):
                 raise ValueError(f"'x_val[{i}]' contains non-finite values (NaN or inf)..")
             array_lengths.append(len(xi))
         else:
@@ -1041,34 +1062,34 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
         if len(x_err) != len(x_val):
             raise ValueError("'x_err' list must have the same length as 'x_val'.")
         for i, err_i in enumerate(x_err):
-            if not (_np.isscalar(err_i) or isinstance(err_i, _np.ndarray)):
+            if not (np.isscalar(err_i) or isinstance(err_i, np.ndarray)):
                 raise TypeError(f"'x_err[{i}]' must be a scalar or numpy.ndarray.")
-            if _np.isscalar(err_i):
+            if np.isscalar(err_i):
                 if not isinstance(err_i, (int, float)):
                     raise TypeError(f"'x_err[{i}]' scalar must be a real number (int or float).")
-            if isinstance(err_i, _np.ndarray):
-                if not (_np.issubdtype(err_i.dtype, _np.floating) or _np.issubdtype(err_i.dtype, _np.integer)):
+            if isinstance(err_i, np.ndarray):
+                if not (np.issubdtype(err_i.dtype, np.floating) or np.issubdtype(err_i.dtype, np.integer)):
                     raise TypeError(f"'x_err[{i}]' must contain real numbers (int or float).")
-                if not _np.all(_np.isfinite(err_i)):
+                if not np.all(np.isfinite(err_i)):
                     raise ValueError(f"'x_err[{i}]' contains non-finite values (NaN or inf).")
                 if array_lengths and len(err_i) != array_lengths[0]:
                     raise ValueError(f"'x_err[{i}]' must have the same length as 'x_val' arrays.")
-    elif isinstance(x_err, _np.ndarray):
+    elif isinstance(x_err, np.ndarray):
         if x_err.ndim != 2 or x_err.shape[0] != x_err.shape[1]:
             raise ValueError("'x_err' numpy.ndarray covariance matrix must be 2D square.")
         expected_size = len(x_val)
         if x_err.shape[0] != expected_size:
             raise ValueError(f"'x_err' covariance matrix must be of size {expected_size}x{expected_size}.")
-        if not (_np.issubdtype(x_err.dtype, _np.floating) or _np.issubdtype(x_err.dtype, _np.integer)):
+        if not (np.issubdtype(x_err.dtype, np.floating) or np.issubdtype(x_err.dtype, np.integer)):
             raise TypeError("'x_err' covariance matrix must contain real numbers (int or float).")
-        if not _np.all(_np.isfinite(x_err)):
+        if not np.all(np.isfinite(x_err)):
             raise ValueError("'x_err' covariance matrix contains non-finite values (NaN or inf).")
     else:
         raise TypeError("'x_err' must be a list or numpy.ndarray.")
 
     # --- Controllo params ---
     if params is not None:
-        if not (isinstance(params, list) or isinstance(params, _np.ndarray)):
+        if not (isinstance(params, list) or isinstance(params, np.ndarray)):
             raise TypeError("'params' must be a list or numpy.ndarray.")
         else:
             # Se vuoi, puoi aggiungere controlli sul contenuto di params qui
@@ -1081,7 +1102,7 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
         raise ValueError("'MC_sample_size' must be equal or greater than 1.")
 
     # Normalizza x_val in lista di array
-    x_val = [_np.atleast_1d(xi) for xi in x_val]
+    x_val = [np.atleast_1d(xi) for xi in x_val]
 
     # Determina la lunghezza degli array
     lengths = [len(xi) for xi in x_val]
@@ -1093,10 +1114,10 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
         raise ValueError("All input arrays (or scalars) must have the same length.")
     
     # Inizializza gli array di output
-    f_values = _np.zeros(n_points)
-    f_err = _np.zeros(n_points)
-    confidence_bands_lower = _np.zeros(n_points)
-    confidence_bands_upper = _np.zeros(n_points)
+    f_values = np.zeros(n_points)
+    f_err = np.zeros(n_points)
+    confidence_bands_lower = np.zeros(n_points)
+    confidence_bands_upper = np.zeros(n_points)
     
     # Prepara la funzione wrapper che accetta un vettore di variabili
     def wrapped_func(x_vector):
@@ -1108,17 +1129,17 @@ def propagate(func: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]]
     # Per ogni punto j, calcola f[j] e la sua incertezza
     for j in range(n_points):
         # Estrai i valori per il punto j
-        x_point = _np.array([x[j] for x in x_val])
+        x_point = np.array([x[j] for x in x_val])
         
         # Prepara la matrice di covarianza
         if isinstance(x_err, list):
             # Se uncertainties è una lista di incertezze per ogni variabile
             if all(isinstance(u, (int, float)) for u in x_err):
                 # Se sono scalari, crea una matrice diagonale
-                cov_matrix = _np.diag([u**2 for u in x_err])
+                cov_matrix = np.diag([u**2 for u in x_err])
             else:
                 # Se sono array, prendi il valore per il punto j
-                cov_matrix = _np.diag([u[j]**2 for u in x_err])
+                cov_matrix = np.diag([u[j]**2 for u in x_err])
         else:
             # Assume che uncertainties sia già una matrice di covarianza
             cov_matrix = x_err
@@ -1224,28 +1245,28 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
     # --- Controllo x ---
     if not hasattr(x, '__iter__'):
         raise TypeError("'x' must be array-like.")
-    x_arr = _np.asarray(x)
-    if not (_np.issubdtype(x_arr.dtype, _np.floating) or _np.issubdtype(x_arr.dtype, _np.integer)):
+    x_arr = np.asarray(x)
+    if not (np.issubdtype(x_arr.dtype, np.floating) or np.issubdtype(x_arr.dtype, np.integer)):
         raise TypeError("'x' must contain real numbers (int or float).")
-    if not _np.all(_np.isfinite(x_arr)):
+    if not np.all(np.isfinite(x_arr)):
         raise ValueError("'x' contains non-finite values (NaN or inf).")
 
     # --- Controllo y ---
     if not hasattr(y, '__iter__'):
         raise TypeError("'y' must be array-like.")
-    y_arr = _np.asarray(y)
-    if not (_np.issubdtype(y_arr.dtype, _np.floating) or _np.issubdtype(y_arr.dtype, _np.integer)):
+    y_arr = np.asarray(y)
+    if not (np.issubdtype(y_arr.dtype, np.floating) or np.issubdtype(y_arr.dtype, np.integer)):
         raise TypeError("'y' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(y_arr)):
+    if not np.all(np.isfinite(y_arr)):
         raise ValueError("'y' contains non-finite values (NaN or inf).")
 
     # --- Controllo y_err ---
     if not hasattr(y_err, '__iter__'):
         raise TypeError("'y_err' must be array-like.")
-    y_err_arr = _np.asarray(y_err)
-    if not (_np.issubdtype(y_err_arr.dtype, _np.floating) or _np.issubdtype(y_err_arr.dtype, _np.integer)):
+    y_err_arr = np.asarray(y_err)
+    if not (np.issubdtype(y_err_arr.dtype, np.floating) or np.issubdtype(y_err_arr.dtype, np.integer)):
         raise TypeError("'y_err' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(y_err_arr)):
+    if not np.all(np.isfinite(y_err_arr)):
         raise ValueError("'y_err' contains non-finite values (NaN or inf).")
 
     # --- Controllo lunghezze coerenti ---
@@ -1257,11 +1278,11 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
         raise TypeError("'f1' must be callable.")
 
     # --- Controllo p0_1 ---
-    p0_1 = _np.array(p0_1)
+    p0_1 = np.array(p0_1)
 
-    if (not (_np.issubdtype(p0_1.dtype, _np.floating) or _np.issubdtype(p0_1.dtype, _np.integer))) or not _np.all(_np.isreal(p0_1)):
+    if (not (np.issubdtype(p0_1.dtype, np.floating) or np.issubdtype(p0_1.dtype, np.integer))) or not np.all(np.isreal(p0_1)):
             raise TypeError("'p0_1' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(p0_1)):
+    if not np.all(np.isfinite(p0_1)):
             raise ValueError("'p0_1' contains non-finite values (NaN or inf).")
 
     # --- Controllo f2 ---
@@ -1269,11 +1290,11 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
         raise TypeError("'f2' must be callable.")
 
     # --- Controllo p0_2 ---
-    p0_2 = _np.array(p0_2)
+    p0_2 = np.array(p0_2)
 
-    if (not (_np.issubdtype(p0_2.dtype, _np.floating) or _np.issubdtype(p0_2.dtype, _np.integer))) or not _np.all(_np.isreal(p0_2)):
+    if (not (np.issubdtype(p0_2.dtype, np.floating) or np.issubdtype(p0_2.dtype, np.integer))) or not np.all(np.isreal(p0_2)):
             raise TypeError("'p0_2' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(p0_2)):
+    if not np.all(np.isfinite(p0_2)):
             raise ValueError("'p0_2' contains non-finite values (NaN or inf).")
 
     # --- Controllo burn ---
@@ -1325,31 +1346,31 @@ def bayes_factor(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, f1: Callable[[Uni
 
         def log_likelihood(theta):
             model = f(x, *theta)
-            return -0.5 * _np.sum(((y - model) / y_err) ** 2)
+            return -0.5 * np.sum(((y - model) / y_err) ** 2)
 
         def log_prior(theta):
             if prior_bounds is None:
                 return 0.0
             for p, (low, high) in zip(theta, prior_bounds):
                 if not (low < p < high):
-                    return -_np.inf
+                    return -np.inf
             return 0.0
 
         def log_posterior(theta):
             lp = log_prior(theta)
-            if not _np.isfinite(lp):
-                return -_np.inf
+            if not np.isfinite(lp):
+                return -np.inf
             return lp + log_likelihood(theta)
 
         # Sampling
-        p0_walkers = popt + 1e-4 * _np.random.randn(nwalkers, ndim)
+        p0_walkers = popt + 1e-4 * np.random.randn(nwalkers, ndim)
         sampler = emcee.EnsembleSampler(nwalkers, ndim, log_posterior)
         sampler.run_mcmc(p0_walkers, steps, progress=True)
 
         flat_log_prob = sampler.get_log_prob(discard=burn, thin=thin, flat=True)
-        max_log_like = _np.max(flat_log_prob)
+        max_log_like = np.max(flat_log_prob)
 
-        bic = ndim * _np.log(len(x)) - 2 * max_log_like
+        bic = ndim * np.log(len(x)) - 2 * max_log_like
         return bic, max_log_like
 
     BIC1, logL1 = fit_model(f1, p0_1, prior_bounds1)
@@ -1430,61 +1451,61 @@ def mean(x: Union[float, ArrayLike], kind: str = 'arith') -> float:
     Examples
     --------
     >>> from labtoolbox.stats import mean
-    >>> mean([1, 2, 3, 4], 'arithmetic')
+    >>> mean([1, 2, 3, 4], 'arith')
     2.5
     >>> mean([1, 2, 3, 4], 'rms')
     2.7386127875258306
     >>> mean([1, 2, 3, 4], 2)
     2.7386127875258306
     """
-    x = _np.asarray(x)
+    x = np.asarray(x)
     
     # Handle scalar case
-    if _np.isscalar(x):
+    if np.isscalar(x):
         if not isinstance(x, (int, float)):
             raise TypeError("'x' must be a real number (int or float).")
         return x
     else:
-        if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+        if (not (np.issubdtype(x.dtype, np.floating) or np.issubdtype(x.dtype, np.integer))) or not np.all(np.isreal(x)):
             raise TypeError("'x' must contain only real numbers (int or float).")
-        if not _np.all(_np.isfinite(x)):
+        if not np.all(np.isfinite(x)):
                 raise ValueError("'x' contains non-finite values (NaN or inf).")
     
     if kind == 'arith':
-        return _np.mean(x)
+        return np.mean(x)
     elif kind == 'geom':
-        if _np.any(x <= 0):
+        if np.any(x <= 0):
             raise ValueError("Geometric mean requires all elements to be positive.")
-        return _np.exp(_np.mean(_np.log(x)))
+        return np.exp(np.mean(np.log(x)))
     elif kind == 'harmonic':
-        if _np.any(x == 0):
+        if np.any(x == 0):
             raise ValueError("Harmonic mean requires non-zero elements.")
-        return len(x) / _np.sum(1.0 / x)
+        return len(x) / np.sum(1.0 / x)
     elif kind == 'max':
-        return _np.max(x)
+        return np.max(x)
     elif kind == 'min':
-        return _np.min(x)
+        return np.min(x)
     elif kind == 'rms':
-        return _np.sqrt(_np.mean(x**2))
+        return np.sqrt(np.mean(x**2))
     elif kind == 'cubic':
-        return _np.cbrt(_np.mean(x**3))
+        return np.cbrt(np.mean(x**3))
     elif kind == 'agm':
-        if _np.any(x <= 0):
+        if np.any(x <= 0):
             raise ValueError("Arithmetic-Geometric Mean requires all elements to be positive.")
-        a = _np.mean(x)
-        g = _np.exp(_np.mean(_np.log(x)))
-        while not _np.isclose(a, g, rtol=1e-10):
+        a = np.mean(x)
+        g = np.exp(np.mean(np.log(x)))
+        while not np.isclose(a, g, rtol=1e-10):
             a_new = 0.5 * (a + g)
-            g = _np.sqrt(a * g)
+            g = np.sqrt(a * g)
             a = a_new
         return a
     elif isinstance(kind, (float, int)):
         p = kind
         if p == 0:
-            if _np.any(x <= 0):
+            if np.any(x <= 0):
                 raise ValueError("Generalized mean of order 0 (geometric) requires positive values.")
-            return _np.exp(_np.mean(_np.log(x)))
-        return (_np.mean(x**p))**(1/p)
+            return np.exp(np.mean(np.log(x)))
+        return (np.mean(x**p))**(1/p)
     else:
         raise ValueError(f"Unsupported mean type '{kind}'.")
     
@@ -1493,7 +1514,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
             showlegend: bool = True, legendloc: Optional[str] = None, log: Optional[str] = None,
             xscale: int = 0, yscale: int = 0, mscale: int = 0, cscale: int = 0, m_units: str = "", c_units: str = "", 
             confidence: int = 2, confidencerange: bool = True, residuals: bool = True, norm: bool = True, 
-            verbose: bool = False, summary: bool = True) -> Tuple[float, float, float, float, float, float]:
+            verbose: bool = False, summary: bool = True, figsize: Tuple[float, float] = DEFAULT_FIGSIZE) -> Tuple[float, float, float, float, float, float]:
     """
     Performs a linear fit (Weighted Least Squares or Ordinary Least Squares) and displays experimental data along with the regression line and uncertainty band.
 
@@ -1552,6 +1573,8 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         summary : bool, optional  
             If `True`, prints a formatted summary report of the fit, including  
             reduced chi-square, p-value, and percentage of residuals within ±2σ.
+        figsize : tuple of float, optional
+            Figure size passed to `matplotlib`. Default is `(6.4 * 1.2, 4.8 * 1.2)`.
 
     Returns
     ----------
@@ -1570,14 +1593,14 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
 
     Notes
     ----------
-    - The values of `xscale` and `yscale` affect only the axis scaling in the plot and have no impact on the fitting computation itself. All model parameters are estimated using the original i_nput data as provided.
+    - The values of `xscale` and `yscale` affect only the axis scaling in the plot and have no impact on the fitting computation itself. All model parameters are estimated using the original input data as provided.
     - LaTeX formatting is already embedded in the strings used to display the units of `m` and `c`. You do not need to use "$...$".
     - If `c_scale = 0` (recommended when using `c_units`), then `c_units` will represent the suffix corresponding to 10^yscale (+ `y_units`).
     - If `m_scale = 0` (recommended when using `m_units`), then `m_units` will represent the suffix corresponding to 10^(yscale - xscale) [+ `y_units/x_units`].
     """
 
     from scipy.stats import chi2
-    import math as _math
+    import math as math
     from .._helper import my_cov, my_mean, my_var, my_line, y_estrapolato
 
     try:
@@ -1588,36 +1611,36 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
             "Please install it by running 'pip install statsmodels'."
         )
     
-    x = _np.asarray(x)
-    y = _np.asarray(y)
-    y_err = _np.asarray(y_err)
+    x = np.asarray(x)
+    y = np.asarray(y)
+    y_err = np.asarray(y_err)
 
     if x_err is not None:
-        x_err = _np.asarray(x_err)
+        x_err = np.asarray(x_err)
         if not (len(x) == len(y) == len(y_err) == len(x_err)):
                 raise ValueError("'x', 'y', 'x_err' and 'y_err' must have the same length.")
-        if (not (_np.issubdtype(x_err.dtype, _np.floating) or _np.issubdtype(x_err.dtype, _np.integer))) or not _np.all(_np.isreal(x_err)):
+        if (not (np.issubdtype(x_err.dtype, np.floating) or np.issubdtype(x_err.dtype, np.integer))) or not np.all(np.isreal(x_err)):
             raise TypeError("'y_err' must contain only real numbers (int or float).")
-        if not _np.all(_np.isfinite(x_err)):
+        if not np.all(np.isfinite(x_err)):
             raise ValueError("'x_err' contains non-finite values (NaN or inf).")
     else:
         if not (len(x) == len(y) == len(y_err)):
                 raise ValueError("'x', 'y' and 'y_err' must have the same length.")
     
-    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+    if (not (np.issubdtype(x.dtype, np.floating) or np.issubdtype(x.dtype, np.integer))) or not np.all(np.isreal(x)):
         raise TypeError("'x' must contain only real numbers (int or float).")
     
-    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
+    if (not (np.issubdtype(y.dtype, np.floating) or np.issubdtype(y.dtype, np.integer))) or not np.all(np.isreal(y)):
         raise TypeError("'y' must contain only real numbers (int or float).")
     
-    if (not (_np.issubdtype(y_err.dtype, _np.floating) or _np.issubdtype(y_err.dtype, _np.integer))) or not _np.all(_np.isreal(y_err)):
+    if (not (np.issubdtype(y_err.dtype, np.floating) or np.issubdtype(y_err.dtype, np.integer))) or not np.all(np.isreal(y_err)):
         raise TypeError("'y_err' must contain only real numbers (int or float).")
     
-    if not _np.all(_np.isfinite(x)):
+    if not np.all(np.isfinite(x)):
             raise ValueError("'x' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(y)):
+    if not np.all(np.isfinite(y)):
             raise ValueError("'y' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(y_err)):
+    if not np.all(np.isfinite(y_err)):
             raise ValueError("'y_err' contains non-finite values (NaN or inf).")
     
     if not isinstance(xscale, (int, float)):
@@ -1631,7 +1654,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         if len(xlim) != 0:
             if len(xlim) != 2:
                 raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
-            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+            if not all(isinstance(u, (int, float)) and np.isfinite(u) for u in xlim):
                 raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
         
     if ylim is not None:
@@ -1640,7 +1663,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         if len(ylim) != 0:
             if len(ylim) != 2:
                 raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
-            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+            if not all(isinstance(u, (int, float)) and np.isfinite(u) for u in ylim):
                 raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
         
     if not isinstance(xlabel, (str)):
@@ -1651,6 +1674,8 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     if log is not None:
         if log not in ("x", "y", "xy"):
             raise ValueError("The value of 'log' must be 'x', 'y' or 'xy'.")
+    if not isinstance(figsize, (list, tuple)) or len(figsize) != 2 or not all(isinstance(u, (int, float)) and np.isfinite(u) for u in figsize):
+        raise TypeError("'figsize' must be a list or tuple of exactly two finite real numbers.")
 
     xscale = 10**xscale
     yscale = 10**yscale
@@ -1682,7 +1707,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     sigma_m = float(results.bse[1])  # Incertezza sul coefficiente angolare (m)
     sigma_c = float(results.bse[0])  # Incertezza sull'intercetta (c)
 
-    chi2_value = _np.sum(((y - (m * x + c)) / y_err) ** 2)
+    chi2_value = np.sum(((y - (m * x + c)) / y_err) ** 2)
 
     # Gradi di libertà (DOF)
     dof = len(x) - 2
@@ -1694,15 +1719,15 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     p_value = chi2.sf(chi2_value, dof)
         
     m2 = my_cov(x, y, weights) / my_var(x, weights)
-    var_m2 = 1 / ( my_var(x, weights) * _np.sum(weights) )
+    var_m2 = 1 / ( my_var(x, weights) * np.sum(weights) )
         
     c2 = my_mean(y, weights) - my_mean(x, weights) * m
-    var_c2 = my_mean(x*x, weights)  / ( my_var(x, weights) * _np.sum(weights) )
+    var_c2 = my_mean(x*x, weights)  / ( my_var(x, weights) * np.sum(weights) )
 
     sigma_m2 = var_m2 ** 0.5
     sigma_c2 = var_c2 ** 0.5
         
-    cov_mc = - my_mean(x, weights) / ( my_var(x, weights) * _np.sum(weights) )
+    cov_mc = - my_mean(x, weights) / ( my_var(x, weights) * np.sum(weights) )
 
     # ------------------------ 
 
@@ -1710,7 +1735,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     mean_scaled = m / (10**mscale)
     sigma_scaled = sigma_m / (10**mscale)
 
-    exponent = int(_math.floor(_math.log10(abs(sigma_scaled))))
+    exponent = int(math.floor(math.log10(abs(sigma_scaled))))
     factor = 10**(exponent - 1)
     rounded_sigma = round(sigma_scaled / factor) * factor
 
@@ -1737,7 +1762,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     mean_scaled = c / (10**cscale)
     sigma_scaled = sigma_c / (10**cscale)
 
-    exponent = int(_math.floor(_math.log10(abs(sigma_scaled))))
+    exponent = int(math.floor(math.log10(abs(sigma_scaled))))
     factor = 10**(exponent - 1)
     rounded_sigma = round(sigma_scaled / factor) * factor
 
@@ -1764,7 +1789,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
     resid = y - (m * x + c)
     resid_norm = resid / y_err
 
-    k = _np.sum((-1 <= resid_norm) & (resid_norm <= 1))
+    k = np.sum((-1 <= resid_norm) & (resid_norm <= 1))
 
     n = k / len(resid_norm)
 
@@ -1824,7 +1849,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         
     xmin_plot = x.min() - .12 * (x.max() - x.min())
     xmax_plot = x.max() + .12 * (x.max() - x.min())
-    x1 = _np.linspace(xmin_plot, xmax_plot, 500)
+    x1 = np.linspace(xmin_plot, xmax_plot, 500)
     y1 = my_line(x1, m, c) / yscale
 
     y1_plus_1sigma = y1 + y_estrapolato(x1, m2, c2, sigma_m2, sigma_c2, cov_mc)[1] / yscale
@@ -1848,15 +1873,15 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         label = "Best fit"
 
     if norm == True:
-        bar1 = _np.repeat(1, len(x))
+        bar1 = np.repeat(1, len(x))
         bar2 = resid_norm
-        dash = _np.repeat(confidence, len(x1))
+        dash = np.repeat(confidence, len(x1))
     else :
         bar1 = y_err
         bar2 = resid / yscale
         dash = confidence * y_err
 
-    fig = _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
+    fig = plt.figure(figsize=figsize)
 
     # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
@@ -1879,7 +1904,7 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         else:
             axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.6)
             axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.6)
-        axs[0].set_ylim(-_np.nanmean(3 * dash / 2), _np.nanmean(3 * dash / 2))
+        axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
 
         # Configurazioni estetiche per il pannello dei residui
         axs[0].tick_params(labelbottom=False)
@@ -1920,9 +1945,9 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         axs[1].set_ylim(ylim)
 
     if legendloc == None:
-        axs[1].legend()
+        axs[1].legend(frameon = False)
     else:
-        axs[1].legend(loc = legendloc)
+        axs[1].legend(loc = legendloc, frameon = False)
 
     if log == "x":
         axs[1].set_xscale("log")
@@ -1935,8 +1960,8 @@ def lin_fit(x: ArrayLike, y: ArrayLike, y_err: ArrayLike, x_err: Optional[ArrayL
         axs[1].set_yscale("log")
         if residuals:
             axs[0].set_xscale("log")
-            
-    _plt.show()
+    apply_inward_ticks(axs[1])
+    plt.show()
 
     return m, c, sigma_m, sigma_c, chi2_red, p_value
 
@@ -1946,7 +1971,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
               showlegend: bool = True, legendloc: Optional[str] = None, bounds: Optional[Tuple[ArrayLike, ArrayLike]] = None, 
               confidencerange: bool = True, log: Optional[str] = None, maxfev: int = 5000, 
               xscale: int = 0, yscale: int = 0, confidence: int = 2, residuals: bool = True, norm: bool = True, 
-              verbose: bool = True, print_parameters: bool = True) -> Tuple[ArrayLike, ArrayLike, float, float]:
+              verbose: bool = True, print_parameters: bool = True, figsize: Tuple[float, float] = DEFAULT_FIGSIZE) -> Tuple[ArrayLike, ArrayLike, float, float]:
     """
     General-purpose fit of multi-parameter functions.
 
@@ -2003,6 +2028,8 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
             reduced chi-square, p-value, and percentage of residuals within ±2σ.
         print_parameters : bool, optional  
             If `True`, prints the best-fit parameters along with their standard uncertainties.
+        figsize : tuple of float, optional
+            Figure size passed to `matplotlib`. Default is `(6.4 * 1.2, 4.8 * 1.2)`.
 
     Returns
     ----------
@@ -2022,22 +2049,22 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
     """
 
     from scipy.optimize import curve_fit
-    import math as _math
+    import math as math
 
-    x = _np.asarray(x)
-    y = _np.asarray(y)
+    x = np.asarray(x)
+    y = np.asarray(y)
 
     if y_err is not None:
-        y_err = _np.asarray(y_err)
-        if (not (_np.issubdtype(y_err.dtype, _np.floating) or _np.issubdtype(y_err.dtype, _np.integer))) or not _np.all(_np.isreal(y_err)):
+        y_err = np.asarray(y_err)
+        if (not (np.issubdtype(y_err.dtype, np.floating) or np.issubdtype(y_err.dtype, np.integer))) or not np.all(np.isreal(y_err)):
             raise TypeError("'y_err' must contain only real numbers (int or float).")
-        if not _np.all(_np.isfinite(y_err)):
+        if not np.all(np.isfinite(y_err)):
             raise ValueError("'y_err' contains non-finite values (NaN or inf).")
     if x_err is not None:
-        x_err = _np.asarray(x_err)
-        if (not (_np.issubdtype(x_err.dtype, _np.floating) or _np.issubdtype(x_err.dtype, _np.integer))) or not _np.all(_np.isreal(x_err)):
+        x_err = np.asarray(x_err)
+        if (not (np.issubdtype(x_err.dtype, np.floating) or np.issubdtype(x_err.dtype, np.integer))) or not np.all(np.isreal(x_err)):
             raise TypeError("'x_err' must contain only real numbers (int or float).")
-        if not _np.all(_np.isfinite(x_err)):
+        if not np.all(np.isfinite(x_err)):
             raise ValueError("'x_err' contains non-finite values (NaN or inf).")
         
     if x_err is not None and y_err is not None:
@@ -2053,15 +2080,15 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         if not (len(x) == len(y)):
                 raise ValueError("'x' and 'y' must have the same length.")
 
-    if (not (_np.issubdtype(x.dtype, _np.floating) or _np.issubdtype(x.dtype, _np.integer))) or not _np.all(_np.isreal(x)):
+    if (not (np.issubdtype(x.dtype, np.floating) or np.issubdtype(x.dtype, np.integer))) or not np.all(np.isreal(x)):
         raise TypeError("'x' must contain only real numbers (int or float).")
     
-    if (not (_np.issubdtype(y.dtype, _np.floating) or _np.issubdtype(y.dtype, _np.integer))) or not _np.all(_np.isreal(y)):
+    if (not (np.issubdtype(y.dtype, np.floating) or np.issubdtype(y.dtype, np.integer))) or not np.all(np.isreal(y)):
         raise TypeError("'y' must contain only real numbers (int or float).")
     
-    if not _np.all(_np.isfinite(x)):
+    if not np.all(np.isfinite(x)):
             raise ValueError("'x' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(y)):
+    if not np.all(np.isfinite(y)):
             raise ValueError("'y' contains non-finite values (NaN or inf).")
     
     if not isinstance(xscale, (int, float)):
@@ -2075,7 +2102,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         if len(xlim) != 0:
             if len(xlim) != 2:
                 raise TypeError("'xlim' must be empty or a list of exactly two real numbers.")
-            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim):
+            if not all(isinstance(u, (int, float)) and np.isfinite(u) for u in xlim):
                 raise TypeError("Both elements in 'xlim' must be finite real numbers (int or float).")
 
     if ylim is not None:    
@@ -2084,7 +2111,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         if len(ylim) != 0:
             if len(ylim) != 2:
                 raise TypeError("'ylim' must be empty or a list of exactly two real numbers.")
-            if not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim):
+            if not all(isinstance(u, (int, float)) and np.isfinite(u) for u in ylim):
                 raise TypeError("Both elements in 'ylim' must be finite real numbers (int or float).")
         
     if not isinstance(xlabel, (str)):
@@ -2092,24 +2119,26 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
     if not isinstance(ylabel, (str)):
         raise TypeError("'ylabel' must be a string.")
     
-    p0 = _np.array(p0)
+    p0 = np.array(p0)
 
-    if (not (_np.issubdtype(p0.dtype, _np.floating) or _np.issubdtype(p0.dtype, _np.integer))) or not _np.all(_np.isreal(p0)):
+    if (not (np.issubdtype(p0.dtype, np.floating) or np.issubdtype(p0.dtype, np.integer))) or not np.all(np.isreal(p0)):
             raise TypeError("'p0' must contain only real numbers (int or float).")
-    if not _np.all(_np.isfinite(p0)):
+    if not np.all(np.isfinite(p0)):
             raise ValueError("'p0' contains non-finite values (NaN or inf).")
 
     if log is not None:
         if log not in ("x", "y", "xy"):
             raise ValueError("The value of 'log' must be 'x', 'y' or 'xy'.")
+    if not isinstance(figsize, (list, tuple)) or len(figsize) != 2 or not all(isinstance(u, (int, float)) and np.isfinite(u) for u in figsize):
+        raise TypeError("'figsize' must be a list or tuple of exactly two finite real numbers.")
 
     xscale = 10**xscale
     yscale = 10**yscale
 
     if bounds is None and p0 is not None:
-        bounds = (_np.repeat(-_np.inf, len(p0)), _np.repeat(_np.inf, len(p0)))
+        bounds = (np.repeat(-np.inf, len(p0)), np.repeat(np.inf, len(p0)))
     elif bounds is None and p0 is None:
-        bounds = (-_np.inf, _np.inf)
+        bounds = (-np.inf, np.inf)
 
     popt, pcov = curve_fit(
         f,
@@ -2122,7 +2151,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         bounds=bounds
     )
 
-    perr = _np.sqrt(_np.diag(pcov))
+    perr = np.sqrt(np.diag(pcov))
 
     # Calcolo del chi-quadrato
     y_fit = f(x, *popt)
@@ -2133,7 +2162,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
             for i in range(len(popt)):
 
                 # Calcola l'esponente di sigma
-                exponent = int(_math.floor(_math.log10(abs(perr[i]))))
+                exponent = int(math.floor(math.log10(abs(perr[i]))))
                 factor = 10**(exponent - 1)
                 rounded_sigma = (round(perr[i] / factor) * factor)
 
@@ -2146,7 +2175,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
                 if popt[i] != 0:
                     nu = perr[i] / popt[i]
                     print(
-                        f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f}) [{_np.abs(nu) * 100:.2f}%]"
+                        f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f}) [{np.abs(nu) * 100:.2f}%]"
                     )
                 else:
                     print(f"Parameter {i + 1} = ({rounded_mean:.{max(0, -exponent + 1)}f} ± {rounded_sigma:.{max(0, -exponent + 1)}f})")
@@ -2155,7 +2184,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
 
         print()
 
-    # k = _np.sum((-1 <= resid_norm) & (resid_norm <= 1))
+    # k = np.sum((-1 <= resid_norm) & (resid_norm <= 1))
 
     if y_err is not None:
 
@@ -2164,7 +2193,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         resid = y - y_fit
         resid_norm = resid / y_err
 
-        chi2_value = _np.sum((resid_norm) ** 2)
+        chi2_value = np.sum((resid_norm) ** 2)
 
         dof = len(x) - len(popt)
 
@@ -2172,7 +2201,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
 
         p_value = chi2.sf(chi2_value, dof)
     
-        n = _np.sum((-1 <= resid_norm) & (resid_norm <= 1)) / len(resid_norm)
+        n = np.sum((-1 <= resid_norm) & (resid_norm <= 1)) / len(resid_norm)
 
         labels = ["Reduced χ² (χ²/dof)", "p-value", "Residuals within ±2σ"]
         values = []
@@ -2238,26 +2267,26 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
     xmin_plot = x.min() - .12 * (x.max() - x.min())
     xmax_plot = x.max() + .12 * (x.max() - x.min())
 
-    x1 = _np.linspace(xmin_plot, xmax_plot, 500)
+    x1 = np.linspace(xmin_plot, xmax_plot, 500)
     y_fit_cont = f(x1, *popt)
 
     if y_err is not None:
 
         if norm is True:
-            bar1 = _np.repeat(1, len(x))
+            bar1 = np.repeat(1, len(x))
             bar2 = resid_norm
-            dash = _np.repeat(confidence, len(x1))
+            dash = np.repeat(confidence, len(x1))
         else :
             bar1 = y_err
             bar2 = resid / yscale
             dash = confidence * y_err
         # Ripeti ciascun parametro per len(x1) volte
-        parametri_ripetuti = [_np.repeat(p, len(x1)) for p in popt]
-        errori_ripetuti = [_np.repeat(e, len(x1)) for e in perr]
+        parametri_ripetuti = [np.repeat(p, len(x1)) for p in popt]
+        errori_ripetuti = [np.repeat(e, len(x1)) for e in perr]
 
         # Costruisci lista dei valori e delle incertezze
         lista = [x1] + parametri_ripetuti
-        lista_err = [_np.repeat(0, len(x1))] + errori_ripetuti
+        lista_err = [np.repeat(0, len(x1))] + errori_ripetuti
 
         from .stats import propagate
 
@@ -2282,7 +2311,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
     if x_err is not None:
         x_err = x_err / xscale
 
-    fig = _plt.figure(figsize=(6.4 * 1.5, 4.8 * 1.5))
+    fig = plt.figure(figsize=figsize)
 
     # The following code is adapted from the VoigtFit library,
     # originally developed by Jens-Kristian Krogager under the MIT License.
@@ -2300,7 +2329,7 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         else:
             axs[0].plot(x, dash, ls='dotted', color='crimson', lw=1.6)
             axs[0].plot(x, -dash, ls='dotted', color='crimson', lw=1.6)
-        axs[0].set_ylim(-_np.nanmean(3 * dash / 2), _np.nanmean(3 * dash / 2))
+        axs[0].set_ylim(-np.nanmean(3 * dash / 2), np.nanmean(3 * dash / 2))
 
         axs[0].tick_params(labelbottom=False)
         axs[0].set_yticklabels('')
@@ -2347,9 +2376,9 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         axs[1].set_ylim(ylim)
 
     if legendloc is None:
-        axs[1].legend()
+        axs[1].legend(frameon = False)
     else:
-        axs[1].legend(loc = legendloc)
+        axs[1].legend(loc = legendloc, frameon = False)
     
     if log == "x":
         axs[1].set_xscale("log")
@@ -2362,8 +2391,8 @@ def model_fit(x: ArrayLike, y: ArrayLike, f: Callable[[Union[float, ArrayLike]],
         axs[1].set_yscale("log")
         if residuals:
             axs[0].set_xscale("log")
-            
-    _plt.show()
+    apply_inward_ticks(axs[1])
+    plt.show()
 
     if y_err is not None:
         return popt, perr, chi2_red, p_value

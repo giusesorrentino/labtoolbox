@@ -14,6 +14,8 @@ Modules
  special       --- Special mathematical functions
  stats         --- Statistical and probabilistic analysis
  utils         --- Utility functions
+ # fit         --- Removed module
+ # uncertainty --- Removed module
 
 Public API in the LabToolbox namespace
 --------------------------------------
@@ -38,19 +40,19 @@ from .stats import mean
 # Available submodules
 from . import signals
 from . import utils
-from . import fit
 from . import stats
-from . import uncertainty
 from . import numerical
 from . import special
+
+# Removed modules kept commented for reference.
+# from . import fit
+# from . import uncertainty
 
 # Public symbols
 __all__ = [
     'signals',
     'utils',
-    'fit',
     'stats',
-    'uncertainty',
     'numerical',
     'special',
     'PrintResult',
@@ -58,6 +60,12 @@ __all__ = [
     'mean',
     'genspace',
 ]
+
+# Removed modules kept commented for reference.
+# __all__.extend([
+#     'fit',
+#     'uncertainty',
+# ])
 
 # --- Version checker ---
 

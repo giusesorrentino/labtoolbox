@@ -10,7 +10,7 @@ Removed Functions
 samples()
 ~~~~~~~~~
 
-.. versionremoved:: 3.0.0
+.. versionremoved:: 3.1.0
     The ``samples()`` function has been removed. Use ``scipy.stats`` distributions instead.
 
     **Migration:**
@@ -28,7 +28,7 @@ samples()
 noise()
 ~~~~~~~
 
-.. versionremoved:: 3.0.0
+.. versionremoved:: 3.1.0
     The ``noise()`` function has been removed. Use ``numpy.random`` instead.
 
     **Migration:**
@@ -42,11 +42,8 @@ noise()
 analyze_residuals()
 ~~~~~~~~~~~~~~~~~~~
 
-.. versionremoved:: 3.0.0
+.. versionremoved:: 3.1.0
     The ``analyze_residuals()`` function has been removed. Use ``stats.residuals()`` instead.
-
-Deprecated Functions
---------------------
 
 bootstrap_fit()
 ~~~~~~~~~~~~~~~
@@ -65,3 +62,54 @@ bootstrap_fit()
         # New (recommended)
         from scipy import stats
         result = stats.bootstrap(...)
+
+remove_outliers()
+~~~~~
+.. versionremoved:: 3.1.0
+    The ``remove_outliers()`` function has been removed from ``labtoolbox.stats``.
+
+.. versionremoved:: 3.1.0
+    The ``dfs()`` function has been removed from ``labtoolbox.signals``.
+
+dfs()
+~~~~~
+
+.. versionremoved:: 3.1.0
+    The ``dfs()`` function has been removed from ``labtoolbox.signals``.
+
+harmonic()
+~~~~~~~~~~
+
+.. versionremoved:: 3.1.0
+    The ``harmonic()`` function has been removed from ``labtoolbox.signals``.
+
+decompose()
+~~~~~~~~~~~
+
+.. versionremoved:: 3.1.0
+    The ``decompose()`` function has been removed from ``labtoolbox.signals``.
+
+
+Removed Modules
+---------------
+
+fit
+~~~
+
+.. versionremoved:: 3.1.0
+    The ``labtoolbox.fit`` module has been removed from the public API.
+
+    **Migration:**
+
+    - Use :mod:`labtoolbox.stats` for ``lin_fit`` and ``model_fit``.
+    - Use :func:`scipy.stats.bootstrap` instead of ``bootstrap_fit``.
+
+uncertainty
+~~~~~~~~~~~
+
+.. versionremoved:: 3.1.0
+    The ``labtoolbox.uncertainty`` module has been removed from the public API.
+
+    **Migration:**
+
+    - Use :func:`labtoolbox.stats.propagate` for uncertainty propagation.

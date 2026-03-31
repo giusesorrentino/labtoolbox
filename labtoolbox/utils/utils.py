@@ -406,8 +406,8 @@ def genspace(start: float, stop: float, num: int, f: Callable[[Union[float, Arra
 
     Examples
     --------
-    >>> from special import genspace
     >>> import numpy as np
+    >>> from labtoolbox.special import genspace
     >>> # Linear spacing (equivalent to np.linspace)
     >>> x = genspace(0, 1, 5, lambda x: 1.0)
     >>> print(x)  # [0.   0.25 0.5  0.75 1.  ]

@@ -11,7 +11,5 @@ Complete API documentation for LabToolbox modules and functions.
    api/signals
    api/stats
    api/utils
-   api/fit
-   api/uncertainty
    api/numerical
    api/special

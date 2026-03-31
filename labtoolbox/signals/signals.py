@@ -3,7 +3,7 @@ import matplotlib.pyplot as _plt
 import warnings
 from typing import Union, Tuple, Optional, Callable, List
 from numpy.typing import ArrayLike
-from .._helper import GenericError
+from .._helper import DEFAULT_FIGSIZE, GenericError, apply_inward_ticks
 
 # __all__ = ["fft", "ifft", "dfs", "fourier_series", "decompose", "harmonic", "envelope"]
 
@@ -550,212 +550,103 @@ def ifft(data: ArrayLike, freq: Optional[Union[ArrayLike, Tuple[ArrayLike, Array
         except Exception as e:
             raise GenericError(f"Error computing IFFT2: {str(e)}")
 
-def dfs(
-    t: ArrayLike,
-    data: ArrayLike,
-    order: int,
-    plot: bool = True,
-    showlegend: bool = True,
-    xlabel: str = "",
-    ylabel: str = "",
-    xscale: int = 0,
-    yscale: int = 0,
-    xlim: Optional[Tuple[float, float]] = None,
-    ylim: Optional[Tuple[float, float]] = None
-) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
-    """
-    Computes the discrete Fourier series approximation of a sampled signal.
-
-    Parameters
-    ----------
-    t : array-like
-        1D array of sample points (must be uniformly spaced).
-    data : array-like
-        1D array of sampled signal.
-    order : int
-        Order of the Fourier approximation (number of harmonics).
-    plot : bool, optional
-        If `True`, plots the original function and its Fourier approximation.
-    showlegend : bool, optional
-        If `True`, ...
-    xlabel : str, optional
-        Label for the x-axis, including units in square brackets (e.g., "Time [s]").
-    ylabel : str, optional
-        Label for the y-axis, including units in square brackets (e.g., "Intensity [V]").
-    xscale : int, optional
-        Scaling factor for the x-axis (e.g., `xscale = -3` corresponds to 1e-3, to convert seconds to milliseconds).
-    yscale : int, optional
-        Scaling factor for the y-axis.
-    xlim : tuple, optional
-        Limits for the x-axis, in the form `(xmin, xmax)`. The values should
-        already be scaled with respect to `xscale`. If `None` or an empty tuple,
-        the default limits will be automatically determined from the data.
-    ylim : tuple, optional
-        Limits for the y-axis, in the form `(ymin, ymax)`. The values should
-        already be scaled with respect to `yscale`. If `None` or an empty tuple,
-        the default limits will be automatically determined from the data.
-
-    Returns
-    -------
-    f_approx : numpy.array
-        Array of the same shape as `t`, containing the values of the Fourier series approximation
-        of the input function at each point in `t`.
-    a0 : float
-        Zeroth Fourier coefficient (mean value component of the function over the period). It 
-        corresponds to the constant term of the Fourier series.
-    a_n : numpy.array
-        Array of cosine coefficients (Fourier coefficients of the even part of the function),
-        corresponding to each harmonic up to the specified order (excluding a0).
-    b_n : numpy.array
-        Array of sine coefficients (Fourier coefficients of the odd part of the function),
-        corresponding to each harmonic up to the specified order.
-
-    Notes
-    ----------
-    The values of `xscale` and `yscale` affect only the axis scaling in the plot. All outputs are estimated using the original input data as provided.
-    """
-    try:
-        from scipy.integrate import simpson
-        # import matplotlib.cm as _cm
-        # Validazione input
-        data = _np.asarray(data)
-        t = _np.asarray(t)
-
-        if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
-            raise ValueError("'t' must be uniformly spaced.")
-        if not isinstance(order, int):
-            raise TypeError("'order' must be an integer.")
-        if order <= 0:
-            raise ValueError("'order' must be equal or greater than 1.")
-        if t.size != data.size:
-            raise ValueError("'t' must have the same length as 'data'")
-        if not _np.issubdtype(data.dtype, _np.number):
-            raise TypeError("'data' must contain only numeric types (int, float, or complex).")
-        if not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer)) or not _np.all(_np.isreal(t)):
-            raise TypeError("'t' must contain only real numbers (int or float).")
-        if not _np.all(_np.isfinite(data)):
-            raise ValueError("'data' contains non-finite values (NaN or inf).")
-        if not _np.all(_np.isfinite(t)):
-            raise ValueError("'t' contains non-finite values (NaN or inf).")
-        if not isinstance(xscale, (int, float)):
-            raise TypeError("'xscale' must be a real number (int or float).")
-        if not isinstance(yscale, (int, float)):
-            raise TypeError("'yscale' must be a real number (int or float).")
-        if xlim is not None:
-            if not isinstance(xlim, (list, tuple)):
-                raise TypeError("'xlim' must be a list or tuple (either empty or containing two real numbers).")
-            if len(xlim) != 0 and (len(xlim) != 2 or not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in xlim)):
-                raise TypeError("'xlim' must be empty or a list/tuple of exactly two finite real numbers.")
-        if ylim is not None:
-            if not isinstance(ylim, (list, tuple)):
-                raise TypeError("'ylim' must be a list or tuple (either empty or containing two real numbers).")
-            if len(ylim) != 0 and (len(ylim) != 2 or not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in ylim)):
-                raise TypeError("'ylim' must be empty or a list/tuple of exactly two finite real numbers.")
-        if not isinstance(xlabel, str):
-            raise TypeError("'xlabel' must be a string.")
-        if not isinstance(ylabel, str):
-            raise TypeError("'ylabel' must be a string.")
-
-        xscale = 10**xscale
-        yscale = 10**yscale
-
-        N = len(t)
-        dt = t[1] - t[0]
-        fs = 1 / dt
-        f_nyquist = fs / 2
-        max_freq = order / (t[-1] - t[0])
-
-        if max_freq > f_nyquist:
-            warnings.warn(
-                f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
-                f"which exceeds the Nyquist frequency ({f_nyquist:.2g}). "
-                "Consider increasing the sampling frequency or applying an anti-aliasing filter."
-            )
-
-        a = t[0]
-        b = t[-1]
-        T = b - a
-
-        # Zeroth coefficient
-        a0 = 2 * simpson(data, t) / T
-
-        a_n = []
-        b_n = []
-
-        for n in range(1, order):
-            cos_term = _np.cos(2 * _np.pi * n * t / T)
-            sin_term = _np.sin(2 * _np.pi * n * t / T)
-            an = 2 * simpson(data * cos_term, t) / T
-            bn = 2 * simpson(data * sin_term, t) / T
-            # if apply_filter:
-            #     decay = _np.exp(- (n / order)**2)
-            #     an *= decay
-            #     bn *= decay
-            a_n.append(an)
-            b_n.append(bn)
-
-        # Construct approximation
-        f_approx = _np.full_like(t, a0 / 2)
-        for n in range(1, order):
-            f_approx += (
-                a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
-                b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T)
-            )
-
-        if plot:
-
-            # Plot armoniche con alpha ridotto se showpanel=True
-            # if showharmonics:
-            #     if shift:
-            #         i = a0
-            #     max_harmonics = min(order - 1, 5)  # Limita a 10 armoniche per chiarezza
-            #     # cmap = _cm.viridis
-            #     # norm = _plt.Normalize(1, max_harmonics)
-            #     for n in range(1, max_harmonics + 1):
-            #         harmonic = (
-            #             a_n[n-1] * _np.cos(2 * _np.pi * n * t / T) +
-            #             b_n[n-1] * _np.sin(2 * _np.pi * n * t / T)
-            #         )
-            #         _plt.plot(
-            #             t / xscale, ((harmonic + i) / yscale),
-            #             color="dodgerblue", lw=0.8, alpha=0.3
-            #         )
-
-            # color=cmap(norm(n))
-            
-            # Plot dati originali e approssimazione
-            _plt.plot(
-                t / xscale, data / yscale, label="Input data",
-                lw=1, color="mediumblue", marker=''
-            )
-            _plt.plot(
-                t / xscale, f_approx / yscale, label=f"Partial Fourier series\nNo. of terms = {order}",
-                lw=1, color="crimson", linestyle='-'
-            )
-
-            # Imposta limiti e etichette
-            if xlim:
-                _plt.xlim(xlim)
-            if ylim:
-                _plt.ylim(ylim)
-            _plt.xlabel(xlabel)
-            _plt.ylabel(ylabel)
-            if showlegend:
-                _plt.legend()
-
-        return f_approx, a0, _np.array(a_n), _np.array(b_n)
-
-    except Exception as e:
-        raise GenericError(
-            message="Unexpected error in discrete Fourier series computation",
-            context="executing dfs",
-            original_error=e,
-            details={"t_shape": t.shape, "data_shape": data.shape, "order": order}
-        )
+# Removed function kept commented for reference.
+# def dfs(
+#     t: ArrayLike,
+#     data: ArrayLike,
+#     order: int,
+#     plot: bool = True,
+#     showlegend: bool = True,
+#     xlabel: str = "",
+#     ylabel: str = "",
+#     xscale: int = 0,
+#     yscale: int = 0,
+#     xlim: Optional[Tuple[float, float]] = None,
+#     ylim: Optional[Tuple[float, float]] = None,
+#     figsize: Tuple[float, float] = DEFAULT_FIGSIZE
+# ) -> Tuple[ArrayLike, float, ArrayLike, ArrayLike]:
+#     """
+#     Computes the discrete Fourier series approximation of a sampled signal.
+#     """
+#     try:
+#         from scipy.integrate import simpson
+#         data = _np.asarray(data)
+#         t = _np.asarray(t)
+#         if not _np.allclose(_np.diff(t), t[1] - t[0], rtol=1e-4):
+#             raise ValueError("'t' must be uniformly spaced.")
+#         if not isinstance(order, int):
+#             raise TypeError("'order' must be an integer.")
+#         if order <= 0:
+#             raise ValueError("'order' must be equal or greater than 1.")
+#         if t.size != data.size:
+#             raise ValueError("'t' must have the same length as 'data'")
+#         if not _np.issubdtype(data.dtype, _np.number):
+#             raise TypeError("'data' must contain only numeric types (int, float, or complex).")
+#         if not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer)) or not _np.all(_np.isreal(t)):
+#             raise TypeError("'t' must contain only real numbers (int or float).")
+#         if not _np.all(_np.isfinite(data)):
+#             raise ValueError("'data' contains non-finite values (NaN or inf).")
+#         if not _np.all(_np.isfinite(t)):
+#             raise ValueError("'t' contains non-finite values (NaN or inf).")
+#         xscale = 10**xscale
+#         yscale = 10**yscale
+#         dt = t[1] - t[0]
+#         fs = 1 / dt
+#         f_nyquist = fs / 2
+#         max_freq = order / (t[-1] - t[0])
+#         if max_freq > f_nyquist:
+#             warnings.warn(
+#                 f"Potential aliasing detected: the signal contains frequency components up to {max_freq:.2g}, "
+#                 f"which exceeds the Nyquist frequency ({f_nyquist:.2g}). "
+#                 "Consider increasing the sampling frequency or applying an anti-aliasing filter."
+#             )
+#         a = t[0]
+#         b = t[-1]
+#         T = b - a
+#         a0 = 2 * simpson(data, t) / T
+#         a_n = []
+#         b_n = []
+#         for n in range(1, order):
+#             cos_term = _np.cos(2 * _np.pi * n * t / T)
+#             sin_term = _np.sin(2 * _np.pi * n * t / T)
+#             an = 2 * simpson(data * cos_term, t) / T
+#             bn = 2 * simpson(data * sin_term, t) / T
+#             a_n.append(an)
+#             b_n.append(bn)
+#         f_approx = _np.full_like(t, a0 / 2)
+#         for n in range(1, order):
+#             f_approx += (
+#                 a_n[n - 1] * _np.cos(2 * _np.pi * n * t / T) +
+#                 b_n[n - 1] * _np.sin(2 * _np.pi * n * t / T)
+#             )
+#         if plot:
+#             _plt.figure(figsize=figsize)
+#             _plt.plot(t / xscale, data / yscale, label="Input data", lw=1, color="mediumblue", marker='')
+#             _plt.plot(
+#                 t / xscale, f_approx / yscale,
+#                 label=f"Partial Fourier series\nNo. of terms = {order}",
+#                 lw=1, color="crimson", linestyle='-'
+#             )
+#             if xlim:
+#                 _plt.xlim(xlim)
+#             if ylim:
+#                 _plt.ylim(ylim)
+#             _plt.xlabel(xlabel)
+#             _plt.ylabel(ylabel)
+#             if showlegend:
+#                 _plt.legend()
+#         return f_approx, a0, _np.array(a_n), _np.array(b_n)
+#     except Exception as e:
+#         raise GenericError(
+#             message="Unexpected error in discrete Fourier series computation",
+#             context="executing dfs",
+#             original_error=e,
+#             details={"t_shape": t.shape, "data_shape": data.shape, "order": order}
+#         )
 
 def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike]], interval: Tuple[float, float], order: int, 
                    num_points: int = 1000, xlabel: str = "x [ux]", ylabel: str = "y [uy]", 
-                   xscale: int = 0, yscale: int = 0) -> Tuple[ArrayLike, ArrayLike, ArrayLike, float, ArrayLike, ArrayLike]:
+                   xscale: int = 0, yscale: int = 0, figsize: Tuple[float, float] = DEFAULT_FIGSIZE) -> Tuple[ArrayLike, ArrayLike, ArrayLike, float, ArrayLike, ArrayLike]:
     """
     Computes the Fourier series approximation of a function f(x)
     
@@ -769,6 +660,16 @@ def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike
         Number of Fourier modes to use in the approximation.
     num_points : int, optional
         Number of points for plotting. Default is 1000).
+    xlabel : str, optional
+        Label for the x-axis.
+    ylabel : str, optional
+        Label for the y-axis.
+    xscale : int, optional
+        Scaling factor for the x-axis used only for visualization.
+    yscale : int, optional
+        Scaling factor for the y-axis used only for visualization.
+    figsize : tuple of float, optional
+        Figure size passed to `matplotlib`. Default is `(6.4 * 1.2, 4.8 * 1.2)`.
         
     Returns
     -------
@@ -841,6 +742,8 @@ def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike
         raise TypeError("'xscale' must be a real number (int or float).")
     if not isinstance(yscale, (int, float)):
         raise TypeError("'yscale' must be a real number (int or float).")
+    if not isinstance(figsize, (list, tuple)) or len(figsize) != 2 or not all(isinstance(u, (int, float)) and _np.isfinite(u) for u in figsize):
+        raise TypeError("'figsize' must be a list or tuple of exactly two finite real numbers.")
 
     xscale = 10**xscale
     yscale = 10**yscale
@@ -877,269 +780,100 @@ def fourier_series(f: Callable[[Union[float, ArrayLike]], Union[float, ArrayLike
     f_original = f(x)
 
     # Plot
+    _plt.figure(figsize=figsize)
     _plt.plot(x / xscale, f_original / yscale, label="Input function", lw=0.8, color = "blue")
     _plt.plot(x / xscale, f_approx / yscale, '--', label=f"Fourier approx. (order = {order})", lw=0.8, color = "red")
     _plt.xlabel(xlabel)
     _plt.ylabel(ylabel)
     _plt.legend()
+    apply_inward_ticks(_plt.gca())
 
     return f_original, f_approx, a0, a_n, b_n
 
-def harmonic(t: ArrayLike, y: ArrayLike, prominence: float = 0.05, n_max: Optional[int] = None, verbose: bool = True) -> List[dict]:
-    """
-    Identifies the dominant harmonics present in a real-valued signal.
-
-    This function computes the FFT of the input signal y(t), finds the peaks
-    in its amplitude spectrum, and returns their frequencies, amplitudes, and phases.
-    The phase of each harmonic is calculated relative to the phase of the first
-    (most prominent) harmonic. It does *not* reconstruct the time-domain components—only
-    reports what harmonics are strongest.
-
-    Parameters
-    ----------
-    t : array-like
-        Time array.
-    y : array-like
-        Signal samples corresponding to `t`.
-    prominence : float, optional
-        Minimum prominence of peaks in the power spectrum. Default is 0.05.
-    n_max : int or None, optional
-        If given, return at most `n_max` harmonics.
-    verbose : bool, optional
-        If `True`, prints a formatted table with the frequency, amplitude, and phase of the harmonics.
-
-    Returns
-    -------
-    harmonics : list of dict
-        Each dict contains frequency, amplitude, and phase (rad, relative to the first harmonic) of a harmonic component.
-    """
-    from scipy.signal import find_peaks
-
-    t = _np.asarray(t)
-    y = _np.asarray(y)
-
-    if t.size != y.size:
-        raise ValueError("'t' must have the same length as 'y'")
-
-    if not (_np.issubdtype(y.dtype, _np.number)):
-        raise TypeError("'y' must contain only numeric types (int, float, or complex).")
-    
-    if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
-        raise TypeError("'t' must contain only real numbers (int or float).")
-    
-    if not _np.all(_np.isfinite(y)):
-            raise ValueError("'data' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(t)):
-            raise ValueError("'t' contains non-finite values (NaN or inf).")
-    
-    if not isinstance(prominence, (int, float)):
-        raise TypeError("'prominence' must be a real number (int or float).")
-
-    N = len(y)
-
-    yf, freqs = fft(y, t) 
-
-    pos_mask = freqs > 0
-    freqs = freqs[pos_mask]
-    yf = yf[pos_mask]
-
-    power = _np.abs(yf)
-    phases = _np.angle(yf)
-
-    peaks, _ = find_peaks(power, prominence=prominence * _np.max(power))
-    sorted_peaks = peaks[_np.argsort(power[peaks])[::-1]]
-
-    if n_max is not None:
-        if not isinstance(prominence, (int)):
-            raise TypeError("'prominence' must be an integer.")
-        sorted_peaks = sorted_peaks[:n_max]
-
-    harmonics = []
-    if sorted_peaks.size > 0:
-        # Phase of the first (most prominent) harmonic
-        reference_phase = phases[sorted_peaks[0]]
-    else:
-        reference_phase = 0  # Fallback if no peaks are found
-
-    for idx in sorted_peaks:
-        harmonics.append({
-            "frequency": freqs[idx],
-            "amplitude": 2 * power[idx] / N,
-            "phase": phases[idx] - reference_phase  # Phase relative to the first harmonic
-        })
-
-    if verbose:
-        def format_dynamic_number(val):
-            if val == 0:
-                return "0"
-            abs_val = abs(val)
-            if abs_val >= 1e4 or abs_val <= 1e-3:
-                return f"{val:.3e}"  # Scientific format
-            elif abs_val >= 1:
-                return f"{val:.4f}".rstrip('0').rstrip('.')  # Decimal up to 4 places
-            else:
-                return f"{val:.4g}"  # Significant figures
-
-        headers = ["Harmonic", "Frequency", "Amplitude", "Phase"]
-
-        # Prepare rows with formatted values
-        rows = []
-        for i, h in enumerate(harmonics, 1):
-            row = [
-                f"H#{i}",
-                format_dynamic_number(h["frequency"]),
-                format_dynamic_number(h["amplitude"]),
-                format_dynamic_number(h["phase"])
-            ]
-            rows.append(row)
-
-        # Calculate maximum width for each column
-        col_widths = []
-        for col_idx, header in enumerate(headers):
-            max_data_width = max(len(row[col_idx]) for row in rows) if rows else len(header)
-            col_width = max(len(header), max_data_width)
-            col_widths.append(col_width)
-
-        # Build header line
-        header_line = f"{headers[0]:<{col_widths[0]}} | " + " | ".join(
-            f"{headers[i]:<{col_widths[i]}}" for i in range(1, len(headers))
-        )
-        divider = "-" * len(header_line)
-
-        # Pretty print
-        print()
-        print("=" * len(header_line))
-        print(header_line)
-        print(divider)
-        for row in rows:
-            line = f"{row[0]:<{col_widths[0]}} | " + " | ".join(
-                f"{row[i]:<{col_widths[i]}}" for i in range(1, len(row))
-            )
-            print(line)
-        print("=" * len(header_line))
-
-    return harmonics
-
-def decompose(t: ArrayLike, y: ArrayLike, freqs: ArrayLike, verbose: bool = True) -> List[dict]:
-    """
-    Reconstructs specified sinusoidal components from a real-valued signal.
-
-    Given a set of target frequencies, this function fits the time‑domain data
-    y(t) to a sum of sinusoids at those frequencies (via linear least squares),
-    and returns the amplitude and phase of each component. Use this when
-    you already know which harmonics to extract.
-
-    Parameters
-    ----------
-    t : array-like
-        Time array.
-    y : array-like
-        Signal samples.
-    freqs : array-like
-        Frequencies of the components to extract.
-    verbose : bool, optional
-        If `True`, prints a formatted table of the components.
-
-    Returns
-    -------
-    components : list of dict
-        Each dict contains frequency (Hz), amplitude, and phase (rad).
-    """
-
-    from numpy.linalg import lstsq
-
-    t = _np.asarray(t)
-    y = _np.asarray(y)
-    freqs = _np.asarray(freqs)
-
-    if t.size != y.size:
-        raise ValueError("'t' must have the same length as 'y'")
-    
-    if not (_np.issubdtype(y.dtype, _np.number)):
-        raise TypeError("'y' must contain only numeric types (int, float, or complex).")
-    
-    if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
-        raise TypeError("'t' must contain only real numbers (int or float).")
-    
-    if (not (_np.issubdtype(freqs.dtype, _np.floating) or _np.issubdtype(freqs.dtype, _np.integer))) or not _np.all(_np.isreal(freqs)):
-        raise TypeError("'freqs' must contain only real numbers (int or float).")
-    
-    if not _np.all(_np.isfinite(y)):
-            raise ValueError("'data' contains non-finite values (NaN or inf).")
-    if not _np.all(_np.isfinite(t)):
-            raise ValueError("'t' contains non-finite values (NaN or inf).")
-
-    A = []
-    for f in freqs:
-        A.append(_np.sin(2 * _np.pi * f * t))
-        A.append(_np.cos(2 * _np.pi * f * t))
-    A = _np.vstack(A).T
-
-    coeffs, _, _, _ = lstsq(A, y, rcond=None)
-    components = []
-
-    for i, f in enumerate(freqs):
-        sin_coef = coeffs[2 * i]
-        cos_coef = coeffs[2 * i + 1]
-        amplitude = _np.hypot(sin_coef, cos_coef)
-        phase = _np.arctan2(cos_coef, sin_coef)
-        components.append({
-            "frequency": f,
-            "amplitude": amplitude,
-            "phase": phase
-        })
-
-    if verbose:
-        def format_dynamic_number(val):
-            if val == 0:
-                return "0"
-            abs_val = abs(val)
-            if abs_val >= 1e4 or abs_val <= 1e-3:
-                return f"{val:.3e}"  # formato scientifico
-            elif abs_val >= 1:
-                return f"{val:.4f}".rstrip('0').rstrip('.')  # decimali fino a 4 cifre
-            else:
-                return f"{val:.4g}"  # cifre significative
-
-
-        headers = ["Frequency", "Amplitude", "Phase"]
-
-            # Prepara righe con valori formattati
-        rows = []
-        for i, h in enumerate(components, 1):
-            row = [
-                format_dynamic_number(h["frequency"]),
-                format_dynamic_number(h["amplitude"]),
-                format_dynamic_number(h["phase"])
-            ]
-            rows.append(row)
-
-        # Calcola larghezza massima per ogni colonna
-        col_widths = []
-        for col_idx, header in enumerate(headers):
-            max_data_width = max(len(row[col_idx]) for row in rows)
-            col_width = max(len(header), max_data_width)
-            col_widths.append(col_width)
-
-        # Costruisci la riga dell'intestazione
-        header_line = f"{headers[0]:<{col_widths[0]}} | " + " | ".join(
-            f"{headers[i]:<{col_widths[i]}}" for i in range(1, len(headers))
-        )
-        divider = "-" * len(header_line)
-
-        # Stampa elegante
-        print()
-        print("=" * len(header_line))
-        print(header_line)
-        print(divider)
-        for row in rows:
-            line = f"{row[0]:<{col_widths[0]}} | " + " | ".join(
-                f"{row[i]:<{col_widths[i]}}" for i in range(1, len(row))
-            )
-            print(line)
-        print("=" * len(header_line))
-
-    return components
+# Removed functions kept commented for reference.
+# def harmonic(t: ArrayLike, y: ArrayLike, prominence: float = 0.05, n_max: Optional[int] = None, verbose: bool = True) -> List[dict]:
+#     """
+#     Identifies the dominant harmonics present in a real-valued signal.
+#     """
+#     from scipy.signal import find_peaks
+#     t = _np.asarray(t)
+#     y = _np.asarray(y)
+#     if t.size != y.size:
+#         raise ValueError("'t' must have the same length as 'y'")
+#     if not (_np.issubdtype(y.dtype, _np.number)):
+#         raise TypeError("'y' must contain only numeric types (int, float, or complex).")
+#     if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
+#         raise TypeError("'t' must contain only real numbers (int or float).")
+#     if not _np.all(_np.isfinite(y)):
+#         raise ValueError("'data' contains non-finite values (NaN or inf).")
+#     if not _np.all(_np.isfinite(t)):
+#         raise ValueError("'t' contains non-finite values (NaN or inf).")
+#     if not isinstance(prominence, (int, float)):
+#         raise TypeError("'prominence' must be a real number (int or float).")
+#     N = len(y)
+#     yf, freqs = fft(y, t)
+#     pos_mask = freqs > 0
+#     freqs = freqs[pos_mask]
+#     yf = yf[pos_mask]
+#     power = _np.abs(yf)
+#     phases = _np.angle(yf)
+#     peaks, _ = find_peaks(power, prominence=prominence * _np.max(power))
+#     sorted_peaks = peaks[_np.argsort(power[peaks])[::-1]]
+#     if n_max is not None:
+#         if not isinstance(prominence, (int)):
+#             raise TypeError("'prominence' must be an integer.")
+#         sorted_peaks = sorted_peaks[:n_max]
+#     harmonics = []
+#     if sorted_peaks.size > 0:
+#         reference_phase = phases[sorted_peaks[0]]
+#     else:
+#         reference_phase = 0
+#     for idx in sorted_peaks:
+#         harmonics.append({
+#             "frequency": freqs[idx],
+#             "amplitude": 2 * power[idx] / N,
+#             "phase": phases[idx] - reference_phase
+#         })
+#     return harmonics
+#
+# def decompose(t: ArrayLike, y: ArrayLike, freqs: ArrayLike, verbose: bool = True) -> List[dict]:
+#     """
+#     Reconstructs specified sinusoidal components from a real-valued signal.
+#     """
+#     from numpy.linalg import lstsq
+#     t = _np.asarray(t)
+#     y = _np.asarray(y)
+#     freqs = _np.asarray(freqs)
+#     if t.size != y.size:
+#         raise ValueError("'t' must have the same length as 'y'")
+#     if not (_np.issubdtype(y.dtype, _np.number)):
+#         raise TypeError("'y' must contain only numeric types (int, float, or complex).")
+#     if (not (_np.issubdtype(t.dtype, _np.floating) or _np.issubdtype(t.dtype, _np.integer))) or not _np.all(_np.isreal(t)):
+#         raise TypeError("'t' must contain only real numbers (int or float).")
+#     if (not (_np.issubdtype(freqs.dtype, _np.floating) or _np.issubdtype(freqs.dtype, _np.integer))) or not _np.all(_np.isreal(freqs)):
+#         raise TypeError("'freqs' must contain only real numbers (int or float).")
+#     if not _np.all(_np.isfinite(y)):
+#         raise ValueError("'data' contains non-finite values (NaN or inf).")
+#     if not _np.all(_np.isfinite(t)):
+#         raise ValueError("'t' contains non-finite values (NaN or inf).")
+#     A = []
+#     for f in freqs:
+#         A.append(_np.sin(2 * _np.pi * f * t))
+#         A.append(_np.cos(2 * _np.pi * f * t))
+#     A = _np.vstack(A).T
+#     coeffs, _, _, _ = lstsq(A, y, rcond=None)
+#     components = []
+#     for i, f in enumerate(freqs):
+#         sin_coef = coeffs[2 * i]
+#         cos_coef = coeffs[2 * i + 1]
+#         amplitude = _np.hypot(sin_coef, cos_coef)
+#         phase = _np.arctan2(cos_coef, sin_coef)
+#         components.append({
+#             "frequency": f,
+#             "amplitude": amplitude,
+#             "phase": phase
+#         })
+#     return components
 
 def envelope(signal: ArrayLike, 
              method: str = 'peaks', 
