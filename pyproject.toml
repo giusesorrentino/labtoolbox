@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools", "wheel", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -14,12 +14,12 @@ name = "labtoolbox"
 version = "3.1.0"
 description = "A Python package for the analysis and processing of experimental data in scientific research."
 authors = [
-    { name = "Giuseppe Sorrentino", email = "sorrentinogiuse@icloud.com" }
+    { name = "Giuseppe Sorrentino", email = "166509923+giusesorrentino@users.noreply.github.com" }
 ]
 readme = "README.md"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
-requires-python = ">= 3.9.6"
+requires-python = ">= 3.12"
 
 dependencies = [
     "numpy",
@@ -81,7 +81,7 @@ all = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/giusesorrentino/labtoolbox/wiki"
+Documentation = "https://labtoolbox.readthedocs.io/en/latest/index.html"
 Source = "https://github.com/giusesorrentino/labtoolbox"
 Tracker = "https://github.com/giusesorrentino/labtoolbox/issues"
 Changelog = "https://github.com/giusesorrentino/labtoolbox/releases"
